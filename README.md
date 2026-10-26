@@ -84,6 +84,11 @@ pnpm test:e2e       # browser tests (Playwright), including the CSP check
 pnpm build          # production build in dist/
 ```
 
+Or open it in **GitHub Codespaces** (Code → Codespaces → Create): the dev container installs
+Node 24, pnpm, the dependencies and Claude Code. Run `pnpm dev` and open the forwarded port 5173
+at `/live/`. Before `pnpm test:e2e`, install the browser once with
+`pnpm exec playwright install --with-deps chromium`.
+
 Code lives in `src/modules/<module>/` (features) and `src/shared/` (reusable pieces).
 [`docs/architecture.md`](docs/architecture.md) explains the pipeline and the modules,
 [CONTRIBUTING.md](CONTRIBUTING.md) the workflow, commit format and releases, and
