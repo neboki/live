@@ -195,6 +195,29 @@ describe('verifyApiKey', () => {
     });
   });
 
+  it('catches a typed model name the account does not have, before anything is billed', async () => {
+    // A fresh reply per call: a body can only be read once
+    fetchMock.mockImplementation(async () =>
+      Response.json({ data: [{ id: 'gpt-6-luna' }, { id: 'my-model' }] }),
+    );
+
+    await expect(verifyApiKey({ apiKey: 'sk-k' }, ['gpt-6-luna', 'my-model'])).resolves.toBeNull();
+    await expect(verifyApiKey({ apiKey: 'sk-k' }, ['gpt-6-lunna'])).resolves.toMatchObject({
+      status: 404,
+      userMessageKey: 'errors.modelNotFound',
+    });
+  });
+
+  it('never blocks on the models the app ships with, nor on an empty list', async () => {
+    fetchMock.mockResolvedValue(Response.json({ data: [{ id: 'something-else' }] }));
+    await expect(
+      verifyApiKey({ apiKey: 'sk-k' }, ['gpt-6-luna', 'gpt-realtime-translate']),
+    ).resolves.toBeNull();
+
+    fetchMock.mockResolvedValue(Response.json({ data: [] }));
+    await expect(verifyApiKey({ apiKey: 'sk-k' }, ['typo'])).resolves.toBeNull();
+  });
+
   it('returns connectionFailed when offline', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
 
@@ -220,7 +243,9 @@ describe('Azure OpenAI', () => {
   it('verifies the key against the resource', async () => {
     fetchMock.mockResolvedValue(Response.json({ data: [] }));
 
-    await expect(verifyApiKey({ apiKey: 'az', endpoint: AZURE })).resolves.toBeNull();
+    await expect(
+      verifyApiKey({ apiKey: 'az', endpoint: AZURE }, ['my-deploy']),
+    ).resolves.toBeNull();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(`${AZURE}/openai/v1/models`);
   });
 

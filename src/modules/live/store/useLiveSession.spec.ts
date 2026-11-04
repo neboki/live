@@ -34,7 +34,7 @@ const fakes = vi.hoisted(() => {
     canSync: { value: false },
     syncOriginal: vi.fn<(seconds: number) => DelayedPlayback | null>(),
     unsyncOriginal: vi.fn<() => void>(),
-    verifyApiKey: vi.fn<(apiKey: string) => Promise<AppError | null>>(),
+    verifyApiKey: vi.fn<(access: unknown, models?: string[]) => Promise<AppError | null>>(),
     connect: vi.fn<(options: SttOptions, callbacks: SttCallbacks) => Promise<SttSession>>(),
     sessionClose: vi.fn<() => void>(),
     record: {
@@ -151,7 +151,10 @@ describe('useLiveSession', () => {
     expect(session.active).toBe(true);
     expect(session.starting).toBe(false);
     expect(session.showLive).toBe(true);
-    expect(fakes.verifyApiKey).toHaveBeenCalledWith({ apiKey: 'test-key', endpoint: undefined });
+    expect(fakes.verifyApiKey).toHaveBeenCalledWith(
+      { apiKey: 'test-key', endpoint: undefined },
+      expect.arrayContaining(['stt-custom']),
+    );
     expect(fakes.connect.mock.calls[0]?.[0]).toMatchObject({ model: 'stt-custom' });
     expect(fakes.record.begin).toHaveBeenCalledWith(
       expect.objectContaining({ pair: { from: 'AUTO', to: 'ES' }, glossary: 'Acme' }),

@@ -1,6 +1,12 @@
-import { AppError, ExternalServiceError, isAbortError } from '@/shared/errors';
+import { AppError, ExternalServiceError, NotFoundError, isAbortError } from '@/shared/errors';
 import type { Usage } from '../../types';
-import { NO_EFFORT_NONE_FAMILY, REASONING_FAMILY } from '../config';
+import {
+  INTERPRETER_MODEL,
+  INTERPRETER_SOURCE_MODEL,
+  NO_EFFORT_NONE_FAMILY,
+  REASONING_FAMILY,
+  TIER_MODELS,
+} from '../config';
 import { type OpenAiAccess, apiBase, authHeaders } from '../endpoint';
 import { errorFromResponse, networkError } from '../errors';
 import { readSseFrames } from './sse';
@@ -126,12 +132,52 @@ export async function completeChat(request: ChatRequest): Promise<string> {
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-/** Cheap call to check a key before starting a session. */
-export async function verifyApiKey(access: OpenAiAccess): Promise<AppError | null> {
+/** Models the app ships with: known to exist, so never second-guessed against the list */
+const KNOWN_MODELS: ReadonlySet<string> = new Set([
+  INTERPRETER_MODEL,
+  INTERPRETER_SOURCE_MODEL,
+  ...Object.values(TIER_MODELS).flatMap((tier) => Object.values(tier)),
+]);
+
+interface ModelList {
+  data?: { id?: unknown }[];
+}
+
+/** The first typed model name the account does not have, or null. */
+async function missingModel(response: Response, models: readonly string[]): Promise<string | null> {
+  const custom = models.filter((model) => model && !KNOWN_MODELS.has(model));
+  if (!custom.length) return null;
+  let list: ModelList;
+  try {
+    list = (await response.json()) as ModelList;
+  } catch {
+    return null;
+  }
+  const ids = new Set((list.data ?? []).map((model) => model.id).filter(Boolean));
+  // An empty or odd list proves nothing: better to start than to block on it
+  if (!ids.size) return null;
+  return custom.find((model) => !ids.has(model)) ?? null;
+}
+
+/**
+ * Cheap call to check a key before starting a session, and with it the model names the
+ * user typed in the settings: a typo is caught here, before any audio is sent and billed.
+ * Only on OpenAI: Azure lists base models, not the deployment names the settings hold.
+ */
+export async function verifyApiKey(
+  access: OpenAiAccess,
+  models: readonly string[] = [],
+): Promise<AppError | null> {
   try {
     const response = await fetch(`${apiBase(access)}/models`, { headers: authHeaders(access) });
-    if (response.ok) return null;
-    return errorFromResponse(response.status, await response.text(), access.apiKey);
+    if (!response.ok) {
+      return errorFromResponse(response.status, await response.text(), access.apiKey);
+    }
+    if (access.endpoint !== undefined) return null;
+    const missing = await missingModel(response, models);
+    return missing
+      ? new NotFoundError(`Model not available to this key: ${missing}`, 'errors.modelNotFound')
+      : null;
   } catch (err) {
     return err instanceof AppError ? err : networkError(err);
   }

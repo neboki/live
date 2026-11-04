@@ -208,6 +208,12 @@ export const useLiveSession = defineStore('live', () => {
     floating.close();
   }
 
+  /** The model names this session will call, for the check before it starts */
+  function modelsInUse(): string[] {
+    const models = Object.values(settings.models);
+    return settings.tts.engine === 'openai' ? [...models, settings.tts.model] : models;
+  }
+
   /** stop() or fail() ran while start() was waiting: clean up what it left behind. */
   function overtaken(token: number): boolean {
     if (token === startToken) return false;
@@ -337,7 +343,7 @@ export const useLiveSession = defineStore('live', () => {
       // The demo asks its server for a key meanwhile; a key of the user's own is checked
       const access: Promise<DemoGrant | AppError | null> = demo.value
         ? requestDemo()
-        : verifyApiKey({ apiKey, endpoint });
+        : verifyApiKey({ apiKey, endpoint }, modelsInUse());
       // The transcriber connects while the user picks what to share, not after it: the
       // first caption no longer waits for the connection, and what is said meanwhile waits
       // in the pipeline. The demo's needs the key its server hands out first
