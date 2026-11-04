@@ -5,6 +5,10 @@ export default defineConfig(
   mergeConfig(viteConfig({ command: 'serve', mode: 'test' }), {
     test: {
       environment: 'jsdom',
+      // One jsdom per worker, each spec file still in its own context: ~6x faster than a fresh
+      // jsdom per file. Node's web streams fill what the VM context lacks (tests/unit/setup.ts)
+      pool: 'vmThreads',
+      setupFiles: ['tests/unit/setup.ts'],
       include: ['src/**/*.spec.ts'],
       coverage: {
         provider: 'v8',
