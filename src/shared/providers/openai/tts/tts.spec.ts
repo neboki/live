@@ -115,7 +115,8 @@ describe('createOpenAiTts', () => {
     const done = tts.speak('Adiós', 'es');
     await vi.waitFor(() => expect(player.played).toHaveLength(1));
     tts.stop();
-    push([2, 0]);
+    // The download is cancelled at once: the stream takes nothing more
+    expect(() => push([2, 0])).toThrow();
     await expect(done).resolves.toBeUndefined();
 
     expect(player.stop).toHaveBeenCalled();

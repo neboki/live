@@ -34,6 +34,8 @@ export function createOpenAiTts(
 ): TtsProvider {
   /** Bumped by stop(): a clip still streaming then stops feeding the player */
   let run = 0;
+  /** Cancels the clip being downloaded, so a stop does not keep fetching it */
+  let cancelCurrent: (() => void) | null = null;
 
   async function request(
     config: OpenAiTtsConfig,
@@ -79,6 +81,7 @@ export function createOpenAiTts(
       void reader.cancel().catch(() => undefined);
     };
     signal?.addEventListener('abort', cancel, { once: true });
+    cancelCurrent = cancel;
     let samples = 0;
     try {
       for (;;) {
@@ -94,6 +97,7 @@ export function createOpenAiTts(
       }
     } finally {
       signal?.removeEventListener('abort', cancel);
+      if (cancelCurrent === cancel) cancelCurrent = null;
     }
   }
 
@@ -124,6 +128,7 @@ export function createOpenAiTts(
 
   function stop(): void {
     run++;
+    cancelCurrent?.();
     player.stop();
   }
 
