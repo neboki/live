@@ -15,7 +15,8 @@ pre-commit:
 commit-msg:
   commands:
     commitlint:
-      run: pnpm exec commitlint --edit {1}
+      # No path: commitlint finds the message itself, also in a worktree whose path has spaces
+      run: pnpm exec commitlint --edit
 
 pre-push:
   commands:
