@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
-import { useOverlayStore } from './useOverlayStore';
+import { SIZE_WRITE_DELAY_MS, useOverlayStore } from './useOverlayStore';
 
 const PREFS_KEY = 'neboki-live:overlay-prefs';
 
@@ -207,11 +207,20 @@ describe('useOverlayStore', () => {
     });
 
     it('remember the bar and floating window sizes', async () => {
+      vi.useFakeTimers();
       const store = useOverlayStore();
-      store.setSize({ width: 800 });
-      store.setSize({ height: 300 });
+      const write = vi.spyOn(Storage.prototype, 'setItem');
       store.pipSize = { width: 700, height: 260 };
       await nextTick();
+      write.mockClear();
+      // A drag: many sizes in a row, one write once it rests
+      for (let width = 600; width <= 800; width += 10) store.setSize({ width });
+      store.setSize({ height: 300 });
+      await nextTick();
+      expect(write).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(SIZE_WRITE_DELAY_MS);
+      expect(write).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
 
       setActivePinia(createPinia());
       const next = useOverlayStore();

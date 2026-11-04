@@ -24,6 +24,9 @@ const MAX_SUMMARY_POINTS = 4;
 /** Original audio under the translated voice: still there, but out of its way */
 const ORIGINAL_UNDER_VOICE = 0.25;
 
+/** How long a resize must rest before its size is written to storage */
+export const SIZE_WRITE_DELAY_MS = 300;
+
 export const useOverlayStore = defineStore('overlay', () => {
   // Preferences (remembered on this device)
   const saved = loadPrefs();
@@ -213,6 +216,30 @@ export const useOverlayStore = defineStore('overlay', () => {
   );
   // Replies to a conversation make no sense as questions about a talk, nor the other way
   watch(mode, () => (suggestions.value = []));
+  let sizeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function persist(): void {
+    clearTimeout(sizeTimer);
+    sizeTimer = undefined;
+    const prefs: OverlayPrefs = {
+      options: { ...options },
+      mode: mode.value,
+      glossary: glossary.value,
+      scale: scale.value,
+      opacity: opacity.value,
+      theme: theme.value,
+      voiceVolume: voiceVolume.value,
+      originalLevel: originalLevel.value,
+      size: size.value,
+      pipSize: pipSize.value,
+      syncVideo: syncVideo.value,
+      syncDelay: syncDelay.value,
+      syncWait: syncWait.value,
+      placement: placement.value,
+    };
+    writeStorage(PREFS_STORAGE_KEY, JSON.stringify(storedPrefs(prefs)));
+  }
+
   watch(
     [
       options,
@@ -223,34 +250,28 @@ export const useOverlayStore = defineStore('overlay', () => {
       theme,
       voiceVolume,
       originalLevel,
-      size,
       pipSize,
       syncVideo,
       syncDelay,
       syncWait,
       placement,
     ],
+    persist,
+    { deep: true },
+  );
+  // A resize drag changes the size on every pointer move: it is written once it settles
+  watch(
+    size,
     () => {
-      const prefs: OverlayPrefs = {
-        options: { ...options },
-        mode: mode.value,
-        glossary: glossary.value,
-        scale: scale.value,
-        opacity: opacity.value,
-        theme: theme.value,
-        voiceVolume: voiceVolume.value,
-        originalLevel: originalLevel.value,
-        size: size.value,
-        pipSize: pipSize.value,
-        syncVideo: syncVideo.value,
-        syncDelay: syncDelay.value,
-        syncWait: syncWait.value,
-        placement: placement.value,
-      };
-      writeStorage(PREFS_STORAGE_KEY, JSON.stringify(storedPrefs(prefs)));
+      clearTimeout(sizeTimer);
+      sizeTimer = setTimeout(persist, SIZE_WRITE_DELAY_MS);
     },
     { deep: true },
   );
+  // Closing the tab mid-drag still keeps the last size
+  window.addEventListener('pagehide', () => {
+    if (sizeTimer !== undefined) persist();
+  });
 
   return {
     options,
