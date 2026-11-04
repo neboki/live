@@ -58,6 +58,9 @@ export function unlockAudioOutput(): void {
   }
 }
 
+/** Margin past the queued audio before whenDrained gives up on a context that does not play */
+export const DRAIN_GRACE_SECONDS = 3;
+
 export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
   let context: AudioContext | null = null;
   /** The context is this player's own, not the shared one: close() may close it */
@@ -132,8 +135,13 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
     const audio = ensure();
     if (!audio) return;
     const { ctx, out } = audio;
-    if (ctx.state === 'suspended')
-      void ctx.resume().catch((err: unknown) => logError('Audio output blocked', err));
+    if (ctx.state === 'suspended') {
+      // Refused (no user gesture, output blocked): drop the queue so nobody waits for it
+      void ctx.resume().catch((err: unknown) => {
+        logError('Audio output blocked', err);
+        cut();
+      });
+    }
     const buffer = ctx.createBuffer(1, pcm.length, TARGET_SAMPLE_RATE);
     const channel = buffer.getChannelData(0);
     for (let i = 0; i < pcm.length; i++) channel[i] = (pcm[i] ?? 0) / 0x8000;
@@ -173,9 +181,20 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
       void ctx.close().catch((err: unknown) => logError('Closing the audio output failed', err));
   }
 
+  /**
+   * Resolves once everything queued has played. Bounded by what is queued plus a margin,
+   * so a context that never runs (output blocked, suspended for good) cannot hang it.
+   */
   function whenDrained(): Promise<void> {
     if (!sources.length) return Promise.resolve();
-    return new Promise<void>((resolve) => drained.push(resolve));
+    const queued = Math.max(0, playAt - (context?.currentTime ?? 0));
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(cut, (queued + DRAIN_GRACE_SECONDS) * 1000);
+      drained.push(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
   }
 
   return { play, stop, close, whenDrained };

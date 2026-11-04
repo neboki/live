@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CATCH_UP_RATE,
   CATCH_UP_SECONDS,
-  LEAD_SECONDS,
   MAX_VOLUME,
+  DRAIN_GRACE_SECONDS,
+  LEAD_SECONDS,
   createPcmPlayer,
 } from './pcmPlayer';
 
@@ -179,6 +180,30 @@ describe('createPcmPlayer', () => {
     player.play(chunk(0.1));
     player.close();
     expect(ctx().close).toHaveBeenCalled();
+  });
+
+  it('never leaves whenDrained hanging when the output does not play', async () => {
+    vi.useFakeTimers();
+    const player = createPcmPlayer();
+    player.play(chunk(1));
+    let done = false;
+    void player.whenDrained().then(() => (done = true));
+    // The context stays at time 0: nothing ever ends
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync((1 + DRAIN_GRACE_SECONDS) * 1000);
+    expect(done).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('drops the queue when the browser refuses to resume the output', async () => {
+    const player = createPcmPlayer();
+    player.play(chunk(0.1));
+    ctx().state = 'suspended';
+    ctx().resume.mockRejectedValueOnce(new Error('NotAllowedError'));
+    player.play(chunk(0.1));
+    const drained = player.whenDrained();
+    await expect(drained).resolves.toBeUndefined();
   });
 
   it('resumes a suspended context and ignores empty chunks', () => {
