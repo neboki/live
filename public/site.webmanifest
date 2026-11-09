@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Neboki Live",
   "short_name": "Neboki Live",
-  "description": "Live translated captions that float over any call, video or webinar.",
+  "description": "Understand any conversation, in any language, live: translated captions for calls, videos and in-person meetings.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

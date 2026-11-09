@@ -3,24 +3,40 @@
 [![CI](https://github.com/neboki/live/actions/workflows/ci.yml/badge.svg)](https://github.com/neboki/live/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-Live translated captions that float over any call, video or webinar. A static web app: your
-browser sends the audio straight to OpenAI with your own key, there is no server in between.
+### Understand any conversation, in any language, live.
 
-**[Open the app](https://neboki-live.web.app/)**
+Translated captions for calls, videos and in-person meetings, about a second after each
+sentence. No server and no account: your audio goes straight to OpenAI with your own key.
+
+**[Open the app](https://neboki-live.web.app/)** · works on desktop and on your phone
 
 <!-- TODO: add a GIF (docs/demo.gif) once recorded -->
 
 > **Status:** working pre-release (v1.0.0 in preparation). Feedback is welcome.
 
-## What it does
+## Where it works
 
-- Streaming transcription and translation of any tab or screen that plays sound (Zoom, Teams,
-  Meet, YouTube…), shown in the app or in an always-on-top window (Document Picture-in-Picture),
-  as you prefer, and movable between the two at any time.
-- Optional extras: original text, spoken translation, reply suggestions and a live summary.
-- Glossary of names and terms that must not be translated.
-- Export of the session as Markdown, and an estimate of what it cost on your OpenAI bill.
-- OpenAI or Azure OpenAI, with configurable models.
+- **On your computer** — Zoom, Teams, Meet, YouTube, webinars. Captions float in a window that
+  stays on top of everything, even outside the browser, or stay in the app.
+- **In the room** — meetings, interviews, classes, events. Put your phone or laptop on the
+  table and read along; it listens through the microphone.
+- **Hybrid** — the call and the room at once: the shared tab and the microphone, mixed.
+
+## What you get
+
+- **Follow along** — the translation, with the original text underneath if you want it, or
+  read aloud (or the Interpreter mode, which translates as they speak).
+- **Join in** — what you could reply and what you could ask, in your language and theirs.
+- **Skip the notes** — a live summary, and the whole conversation exported as Markdown.
+- **Get the names right** — a glossary of names and terms that must not be translated.
+- **Keep the bill in check** — a live cost estimate and a spending limit per session.
+
+## Why you can trust it
+
+- Open source, no server, no analytics: audio and text go only to OpenAI.
+- Your key stays in your browser, and only if you choose to remember it.
+- OpenAI or Azure OpenAI (handy at work), with configurable models.
+- From about **$0.24/hour** on your own OpenAI bill at the default quality.
 
 ## How to use
 
