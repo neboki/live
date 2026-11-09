@@ -6,11 +6,12 @@ import { cloneSnapshot, MAX_SESSION_FILE_BYTES, parseSessionFile } from '../util
 import { useSessionRecord } from './useSessionRecord';
 
 /** Where the conversation on screen came from */
-export type ViewerSource = 'recent' | 'file';
+export type ViewerSource = 'recent' | 'file' | 'cloud';
 
 /**
- * The conversation shown in the session page: the one that just ended, or one opened from
- * a saved file. Closing it goes back home; the record of the current session is untouched.
+ * The conversation shown in the session page: the one that just ended, one opened from
+ * a saved file, or one kept in the account. Closing it goes back home; the record of the
+ * current session is untouched.
  */
 export const useSessionViewer = defineStore('session-viewer', () => {
   const record = useSessionRecord();
@@ -20,6 +21,8 @@ export const useSessionViewer = defineStore('session-viewer', () => {
   /** i18n key of why the last file could not be opened */
   const errorKey = ref<string | null>(null);
   const opening = ref(false);
+  /** Id in the account of the conversation on screen, when it came from there */
+  const cloudId = ref<string | null>(null);
 
   /** Shows the session that just ended. False when there is none. */
   function showRecent(): boolean {
@@ -27,8 +30,18 @@ export const useSessionViewer = defineStore('session-viewer', () => {
     snapshot.value = cloneSnapshot(record);
     source.value = 'recent';
     fileName.value = null;
+    cloudId.value = null;
     errorKey.value = null;
     return true;
+  }
+
+  /** Shows a conversation read from the account */
+  function showSaved(saved: SessionSnapshot, id: string): void {
+    snapshot.value = cloneSnapshot(saved);
+    source.value = 'cloud';
+    fileName.value = null;
+    cloudId.value = id;
+    errorKey.value = null;
   }
 
   /** Opens a saved conversation. On failure it stays home and errorKey says why. */
@@ -42,6 +55,7 @@ export const useSessionViewer = defineStore('session-viewer', () => {
       snapshot.value = parseSessionFile(await file.text());
       source.value = 'file';
       fileName.value = file.name;
+      cloudId.value = null;
       return true;
     } catch (err) {
       errorKey.value = logError(`Could not open ${file.name}`, err).userMessageKey;
@@ -54,6 +68,7 @@ export const useSessionViewer = defineStore('session-viewer', () => {
   function close(): void {
     snapshot.value = null;
     fileName.value = null;
+    cloudId.value = null;
   }
 
   function clearError(): void {
@@ -66,7 +81,9 @@ export const useSessionViewer = defineStore('session-viewer', () => {
     fileName,
     errorKey,
     opening,
+    cloudId,
     showRecent,
+    showSaved,
     openFile,
     close,
     clearError,

@@ -7,7 +7,7 @@ import {
   downloadSubtitles,
 } from '../../composables/useExportSession';
 import { useSettingsStore } from '@/modules/settings';
-import { useSessionViewer } from '../../store/useSessionViewer';
+import { useSessionViewer, type ViewerSource } from '../../store/useSessionViewer';
 import type { SessionSnapshot } from '../../types';
 import {
   audioSentSeconds,
@@ -23,6 +23,12 @@ import SessionTranscript from '../SessionTranscript/SessionTranscript.vue';
 type Saved = 'file' | 'markdown' | 'srt' | 'vtt' | null;
 
 const SAVED_FEEDBACK_MS = 2500;
+/** The page title, by where the conversation came from */
+const TITLES: Readonly<Record<ViewerSource, string>> = {
+  recent: 'session.view.ended',
+  file: 'session.view.fromFile',
+  cloud: 'session.view.fromAccount',
+};
 const EMPTY: SessionSnapshot = {
   startedAt: null,
   endedAt: null,
@@ -127,12 +133,14 @@ onBeforeUnmount(() => {
   <main class="session">
     <header class="lg-head">
       <h1 class="lg-head__title">
-        {{ viewer.source === 'file' ? t('session.view.fromFile') : t('session.view.ended') }}
+        {{ t(TITLES[viewer.source]) }}
       </h1>
       <div class="lg-head__actions">
         <span v-if="failed" class="session__failed" role="alert">
           {{ t('session.view.downloadFailed') }}
         </span>
+        <!-- What other modules add for their own conversations (deleting one from the account) -->
+        <slot name="actions" />
         <button class="lg-btn" type="button" @click="saveMarkdown">
           {{ saved === 'markdown' ? t('session.view.saved') : t('session.view.markdown') }}
         </button>

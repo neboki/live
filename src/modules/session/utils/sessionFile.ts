@@ -75,7 +75,8 @@ function parseUsage(value: unknown, index: number): Usage {
   return usage;
 }
 
-function parseSnapshot(value: unknown): SessionSnapshot {
+/** Checks a plain session (from a file or the account) and keeps only known fields. */
+export function parseSnapshot(value: unknown): SessionSnapshot {
   if (!isObject(value)) throw invalid('no session');
   const pair = isObject(value.pair) ? value.pair : {};
   return {

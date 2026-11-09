@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue';
+import { CloudSessionActions } from '@/modules/account';
 import { LiveCaptions, LiveView, useLiveSession } from '@/modules/live';
 import { OnboardingView } from '@/modules/onboarding';
 import { PrivacyView } from '@/modules/privacy';
@@ -35,7 +36,9 @@ function toTop(): void {
   <AppShell>
     <Transition name="page" mode="out-in" @before-enter="toTop">
       <LiveView v-if="session.showLive" />
-      <SessionView v-else-if="viewer.snapshot" />
+      <SessionView v-else-if="viewer.snapshot">
+        <template v-if="viewer.source === 'cloud'" #actions><CloudSessionActions /></template>
+      </SessionView>
       <PrivacyView v-else-if="appPage.privacyOpen" />
       <SettingsView v-else-if="appPage.settingsOpen" />
       <OnboardingView v-else @privacy="appPage.openPrivacy()" />

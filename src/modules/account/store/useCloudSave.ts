@@ -40,6 +40,8 @@ export const useCloudSave = defineStore('cloud-save', () => {
   const enabled = ref(readStorage(SAVE_KEY) === 'true');
   const status = ref<CloudSaveStatus>('idle');
   const lastSavedAt = ref<number | null>(null);
+  /** Id in the account of the conversation saved last */
+  const lastSavedId = ref<string | null>(null);
   const active = computed(() => account.enabled && enabled.value && account.user !== null);
 
   let tracked: Tracked | null = null;
@@ -101,6 +103,7 @@ export const useCloudSave = defineStore('cloud-save', () => {
       target.savedDoc = docKey;
       status.value = 'saved';
       lastSavedAt.value = Date.now();
+      lastSavedId.value = target.id;
     } catch (err) {
       logError('Saving the conversation to the account failed', err);
       status.value = 'error';
@@ -148,5 +151,5 @@ export const useCloudSave = defineStore('cloud-save', () => {
     document.removeEventListener('visibilitychange', onVisibility);
   }
 
-  return { enabled, active, status, lastSavedAt, setEnabled, flush, start, stop };
+  return { enabled, active, status, lastSavedAt, lastSavedId, setEnabled, flush, start, stop };
 });

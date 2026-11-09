@@ -63,3 +63,52 @@ export function chunksToWrite(saved: number, total: number): number[] {
 export function chunkLines(lines: readonly SessionLine[], index: number): SessionLine[] {
   return lines.slice(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE).map((line) => ({ ...line }));
 }
+
+/** One conversation of the account, as the history lists it (its sentences not read yet) */
+export interface CloudHistoryItem {
+  id: string;
+  startedAt: number;
+  endedAt: number | null;
+  pair: SessionPair;
+  lineCount: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** A history entry from a conversation document; null when it is not one of ours */
+export function toHistoryItem(id: string, data: unknown): CloudHistoryItem | null {
+  if (!isRecord(data) || typeof data.startedAt !== 'number') return null;
+  const pair = isRecord(data.pair) ? data.pair : {};
+  return {
+    id,
+    startedAt: data.startedAt,
+    endedAt: typeof data.endedAt === 'number' ? data.endedAt : null,
+    pair: {
+      from: typeof pair.from === 'string' ? pair.from : '',
+      to: typeof pair.to === 'string' ? pair.to : '',
+    },
+    lineCount: typeof data.lineCount === 'number' ? data.lineCount : 0,
+  };
+}
+
+/**
+ * The plain session a conversation document and its chunks (in order) make up, ready
+ * for the session module to check like a session file.
+ */
+export function fromCloudSession(data: unknown, chunks: readonly unknown[]): unknown {
+  const doc = isRecord(data) ? data : {};
+  const lines = chunks.flatMap((chunk) =>
+    isRecord(chunk) && Array.isArray(chunk.lines) ? (chunk.lines as unknown[]) : [],
+  );
+  return {
+    startedAt: doc.startedAt,
+    endedAt: doc.endedAt ?? null,
+    pair: doc.pair,
+    lines,
+    summary: doc.summary,
+    glossary: doc.glossary,
+    usage: doc.usage,
+  };
+}

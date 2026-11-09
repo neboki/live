@@ -108,5 +108,39 @@ export const useAccount = defineStore('account', () => {
     }
   }
 
-  return { enabled, user, ready, busy, errorKey, init, signIn, signOut };
+  /**
+   * Deletes the sign-in account itself (its conversations are deleted first, by the
+   * history). Google asks to sign in again when the last sign-in is not recent.
+   * False when it could not; errorKey says why unless the user cancelled.
+   */
+  async function deleteAccount(): Promise<boolean> {
+    if (!enabled || busy.value) return false;
+    busy.value = true;
+    errorKey.value = null;
+    try {
+      const [auth, { deleteUser, GoogleAuthProvider, reauthenticateWithPopup }] = await Promise.all(
+        [getFirebaseAuth(), import('firebase/auth')],
+      );
+      const current = auth.currentUser;
+      if (!current) return false;
+      try {
+        await deleteUser(current);
+      } catch (err) {
+        if (errorCode(err) !== 'auth/requires-recent-login') throw err;
+        await reauthenticateWithPopup(current, new GoogleAuthProvider());
+        await deleteUser(current);
+      }
+      return true;
+    } catch (err) {
+      if (!CANCELLED.has(errorCode(err))) {
+        logError('Deleting the account failed', err);
+        errorKey.value = 'account.deleteFailed';
+      }
+      return false;
+    } finally {
+      busy.value = false;
+    }
+  }
+
+  return { enabled, user, ready, busy, errorKey, init, signIn, signOut, deleteAccount };
 });

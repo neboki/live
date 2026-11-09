@@ -1,16 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useTwoStep } from '../../composables/useTwoStep';
 import { useAccount } from '../../store/useAccount';
+import { useCloudHistory } from '../../store/useCloudHistory';
 import { useCloudSave } from '../../store/useCloudSave';
 
 /**
- * The account card of the settings page: sign in with Google, and choose whether
- * conversations are kept in the account. Off by default; without it nothing is sent.
+ * The account card of the settings page: sign in with Google, choose whether
+ * conversations are kept in the account (off by default; without it nothing is sent),
+ * and delete them all or the account itself.
  */
 const { t, locale } = useI18n();
 const account = useAccount();
 const cloud = useCloudSave();
+const history = useCloudHistory();
+const busy = computed(() => account.busy || history.deleting);
+
+const deleteAll = useTwoStep(() => history.removeAll());
+// The data goes first: once the sign-in account is gone, its data can't be reached
+const deleteAccount = useTwoStep(async () => {
+  if (await history.removeAll()) await account.deleteAccount();
+});
 
 const savedAt = computed(() =>
   cloud.lastSavedAt === null
@@ -66,11 +77,45 @@ function onToggle(event: Event): void {
           t('account.saveFailed')
         }}</template>
       </p>
-      <div>
-        <button class="lg-btn" type="button" :disabled="account.busy" @click="account.signOut">
+      <div class="account__actions">
+        <button class="lg-btn" type="button" :disabled="busy" @click="account.signOut">
           {{ t('account.signOut') }}
         </button>
       </div>
+      <div class="account__actions">
+        <button
+          class="lg-btn"
+          :class="{ 'account__danger--armed': deleteAll.armed.value }"
+          type="button"
+          :disabled="busy"
+          @click="deleteAll.press"
+        >
+          {{ deleteAll.armed.value ? t('account.deleteAllConfirm') : t('account.deleteAll') }}
+        </button>
+        <button
+          class="lg-btn"
+          :class="{ 'account__danger--armed': deleteAccount.armed.value }"
+          type="button"
+          :disabled="busy"
+          @click="deleteAccount.press"
+        >
+          {{
+            deleteAccount.armed.value
+              ? t('account.deleteAccountConfirm')
+              : t('account.deleteAccount')
+          }}
+        </button>
+      </div>
+      <p v-if="history.deleting" class="account__status" role="status">
+        {{ t('account.history.deleting') }}
+      </p>
+      <p
+        v-else-if="history.errorKey || account.errorKey"
+        class="account__status account__status--error"
+        role="alert"
+      >
+        {{ t(history.errorKey ?? account.errorKey ?? '') }}
+      </p>
     </template>
     <template v-else>
       <p class="account__hint">{{ t('account.hint') }}</p>
@@ -148,6 +193,17 @@ function onToggle(event: Event): void {
     margin: 3px 0 0;
     accent-color: var(--accent);
     cursor: pointer;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__danger--armed {
+    border-color: var(--danger);
+    color: var(--danger);
   }
 
   &__status {

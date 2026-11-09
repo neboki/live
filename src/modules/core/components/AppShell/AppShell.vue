@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAccount, useCloudSave } from '@/modules/account';
+import {
+  useAccount,
+  useCloudHistory,
+  useCloudSave,
+  type CloudHistoryItem,
+} from '@/modules/account';
 import { useLiveSession } from '@/modules/live';
 import {
   useSessionRecord,
@@ -19,7 +24,7 @@ import { brand } from '@/shared/brand/brand';
 import { HOME_URL, PRIVACY_PATH, REPO_URL } from '@/shared/links';
 
 /** Which page the main area shows, mirrored from App's own choice */
-type Page = 'live' | 'recent' | 'file' | 'privacy' | 'settings' | 'start';
+type Page = 'live' | 'recent' | 'file' | 'cloud' | 'privacy' | 'settings' | 'start';
 
 /** The picker suggests our files; a renamed .json still opens */
 const ACCEPT = `${SESSION_FILE_EXTENSION},.json,application/json`;
@@ -40,6 +45,7 @@ const viewer = useSessionViewer();
 const appPage = useAppPage();
 const account = useAccount();
 const cloudSave = useCloudSave();
+const cloudHistory = useCloudHistory();
 const { t, locale } = useI18n();
 const menuOpen = ref(false);
 const input = ref<HTMLInputElement | null>(null);
@@ -72,6 +78,17 @@ const recentLabel = computed(() => {
   );
   return `${time} · ${elapsed(sessionDuration(record))}`;
 });
+// The one that just ended is already "Last conversation"
+const savedItems = computed(() =>
+  cloudHistory.items.filter((item) => !hasRecent.value || item.startedAt !== record.startedAt),
+);
+function savedLabel(item: CloudHistoryItem): string {
+  const when = new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(item.startedAt);
+  return item.endedAt === null ? when : `${when} · ${elapsed(item.endedAt - item.startedAt)}`;
+}
 // While live the record has no end yet: count up to now
 const elapsedLabel = computed(() =>
   record.startedAt === null ? '' : elapsed(now.value - record.startedAt),
@@ -99,6 +116,13 @@ function goRecent(): void {
   appPage.privacyOpen = false;
   viewer.showRecent();
   menuOpen.value = false;
+}
+
+function goSaved(id: string): void {
+  appPage.settingsOpen = false;
+  appPage.privacyOpen = false;
+  menuOpen.value = false;
+  void cloudHistory.open(id);
 }
 
 // A conversation on screen would hide the settings page: close it first
@@ -161,6 +185,7 @@ onMounted(() => {
   window.addEventListener('keydown', onKeydown);
   void account.init();
   cloudSave.start();
+  cloudHistory.start();
 });
 onBeforeUnmount(() => {
   cloudSave.stop();
@@ -277,6 +302,28 @@ onBeforeUnmount(() => {
             <small>{{ recentLabel }}</small>
           </span>
         </button>
+
+        <!-- Kept in the account: folded, the sidebar only has room for its icons -->
+        <template v-if="!compact">
+          <button
+            v-for="item in savedItems"
+            :key="item.id"
+            class="shell__item"
+            :class="{ 'shell__item--on': page === 'cloud' && viewer.cloudId === item.id }"
+            type="button"
+            :disabled="session.showLive || cloudHistory.openingId !== null"
+            :aria-current="page === 'cloud' && viewer.cloudId === item.id ? 'page' : undefined"
+            @click="goSaved(item.id)"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M6 14.5h8.5a3 3 0 0 0 .4-6 4.5 4.5 0 0 0-8.7-1A3.5 3.5 0 0 0 6 14.5z" />
+            </svg>
+            <span class="shell__text shell__label">
+              {{ cloudHistory.openingId === item.id ? t('nav.opening') : savedLabel(item) }}
+              <small>{{ item.pair.from || '…' }} → {{ item.pair.to }}</small>
+            </span>
+          </button>
+        </template>
 
         <button
           v-if="viewer.snapshot && viewer.source === 'file'"
