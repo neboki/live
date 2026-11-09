@@ -29,8 +29,39 @@ export const MAX_LAG_SECONDS = 3;
 /** Up to twice as loud: synthetic voices are mastered quiet; a limiter keeps peaks clean */
 export const MAX_VOLUME = 2;
 
+/**
+ * One output opened during a tap (see unlockAudioOutput), shared by every player. Safari
+ * only lets audio play from a context created or resumed inside a user gesture; the
+ * voice's first chunk arrives seconds after Start was pressed, too late to open one.
+ */
+let shared: AudioContext | null = null;
+
+/**
+ * Opens (or wakes) the shared audio output. Call it synchronously from a click or tap,
+ * before anything is awaited. A short silent buffer is played: iOS wants a sound started
+ * in the gesture, not only a resume().
+ */
+export function unlockAudioOutput(): void {
+  if (typeof AudioContext === 'undefined') return;
+  try {
+    if (!shared || shared.state === 'closed') {
+      shared = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
+    }
+    if (shared.state === 'suspended')
+      void shared.resume().catch((err: unknown) => logError('Audio output blocked', err));
+    const silence = shared.createBufferSource();
+    silence.buffer = shared.createBuffer(1, 1, TARGET_SAMPLE_RATE);
+    silence.connect(shared.destination);
+    silence.start();
+  } catch (err) {
+    logError('Could not open the audio output', err);
+  }
+}
+
 export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
   let context: AudioContext | null = null;
+  /** The context is this player's own, not the shared one: close() may close it */
+  let owned = false;
   let gain: GainNode | null = null;
   /** When the next chunk starts, in the context's time */
   let playAt = 0;
@@ -41,7 +72,9 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
   function ensure(): { ctx: AudioContext; out: GainNode } | null {
     if (context && gain) return { ctx: context, out: gain };
     try {
-      context = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
+      const open = shared && shared.state !== 'closed' ? shared : null;
+      owned = open === null;
+      context = open ?? new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
       gain = context.createGain();
       // Above 100% the peaks would clip: a fast limiter holds them just under full scale
       const limiter = context.createDynamicsCompressor();
@@ -128,8 +161,14 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
   function close(): void {
     stop();
     const ctx = context;
+    const out = gain;
     context = null;
     gain = null;
+    // The shared output stays open for the other players: only this player's part goes
+    if (!owned) {
+      out?.disconnect();
+      return;
+    }
     if (ctx)
       void ctx.close().catch((err: unknown) => logError('Closing the audio output failed', err));
   }

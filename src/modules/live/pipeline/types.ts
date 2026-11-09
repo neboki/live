@@ -35,7 +35,24 @@ export interface PipelineDeps {
   now?: () => number;
 }
 
+/** The other person in a two-way conversation */
+export interface Partner {
+  /** English name of their language, e.g. "English" */
+  language: string;
+  /** ISO 639-1 code, e.g. "en" */
+  code: string;
+  /** Read at each sentence: false when that person asked not to get translations */
+  toUser: () => boolean;
+  toPartner: () => boolean;
+}
+
 export interface PipelineOptions {
+  /**
+   * A two-way conversation: the user speaks the target language, the other person this
+   * one. Each sentence is translated into the other's language; who said it is told by
+   * the language the transcriber hears (see conversation.ts).
+   */
+  partner?: Partner;
   apiKey: string;
   /** Azure OpenAI resource URL; absent means OpenAI itself */
   endpoint?: string;

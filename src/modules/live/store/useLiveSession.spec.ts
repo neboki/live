@@ -58,6 +58,7 @@ vi.mock('@/shared/audio/audioCapture', () => ({
     stop: fakes.captureStop,
     recover: fakes.captureRecover,
     canControlOriginal: () => fakes.sharedTab.value,
+    hasHeadset: () => false,
     setOriginalVolume: fakes.setOriginalVolume,
     canSyncOriginal: () => fakes.canSync.value,
     syncOriginal: fakes.syncOriginal,

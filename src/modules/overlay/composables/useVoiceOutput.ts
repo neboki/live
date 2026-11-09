@@ -17,7 +17,16 @@ const NOTICE_TTL_MS = 8000;
  * is done. Playback stops and the queue empties when voice is turned off, the bar is
  * paused, the session stops (`live` turns false), the engine changes or the scope ends.
  */
-export function useVoiceOutput(lang: () => string, live: () => boolean = () => true): void {
+export function useVoiceOutput(
+  /** The language to read the line in, given who said it */
+  lang: (speaker: number | null) => string,
+  live: () => boolean = () => true,
+  /**
+   * Whether a line said by `speaker` is read aloud; the "voice" option decides when
+   * absent. A conversation reads only what goes to the person who wants to hear it.
+   */
+  wants?: (speaker: number | null) => boolean,
+): void {
   const store = useOverlayStore();
   const settings = useSettingsStore();
   const record = useSessionRecord();
@@ -45,6 +54,7 @@ export function useVoiceOutput(lang: () => string, live: () => boolean = () => t
     engine: activeEngine,
     fallback: browser,
     onError: (key) => store.setNotice(key, NOTICE_TTL_MS),
+    onBusy: (busy) => (store.voiceBusy = busy),
   });
 
   function stopAll(): void {
@@ -52,17 +62,22 @@ export function useVoiceOutput(lang: () => string, live: () => boolean = () => t
     openAi.stop();
   }
 
+  function voiceOn(): boolean {
+    const speaker = store.translation.speaker ?? null;
+    return wants ? wants(speaker) : store.options.voice;
+  }
+
   function canSpeak(): boolean {
-    return live() && store.options.voice && !store.paused && !store.selfVoiced;
+    return live() && voiceOn() && !store.paused && !store.selfVoiced;
   }
 
   /** Queues the text of the current line between `spokenChars` and `upTo`. */
   function speakUpTo(upTo: number): void {
-    const { id, text } = store.translation;
+    const { id, text, speaker } = store.translation;
     const piece = text.slice(spokenChars, upTo).trim();
     spokenId = id;
     spokenChars = upTo;
-    if (piece) speak(piece, lang());
+    if (piece) speak(piece, lang(speaker ?? null));
   }
 
   watch(

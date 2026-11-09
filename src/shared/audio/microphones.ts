@@ -27,6 +27,22 @@ export async function listMicrophones(): Promise<MicrophoneInfo[]> {
   }
 }
 
+/**
+ * Microphones that belong to headphones. With Bluetooth earbuds connected, phones tend to
+ * open the earbuds' own microphone, which hears the wearer and not the room, and switch
+ * the earbuds to call quality. A name is all the browser gives to tell them apart.
+ */
+const HEADSET_LABEL = /bluetooth|airpods|buds|headset|hands-?free|auricular|earphone|headphone/i;
+
+export function isHeadsetLabel(label: string): boolean {
+  return HEADSET_LABEL.test(label);
+}
+
+/** A microphone of the phone itself, when the default one is a headset's; null if none. */
+export function phoneMicAmong(microphones: MicrophoneInfo[]): MicrophoneInfo | null {
+  return microphones.find((mic) => mic.label && !isHeadsetLabel(mic.label)) ?? null;
+}
+
 /** Asks for the microphone once, so the list shows names. True when it was allowed. */
 export async function revealMicrophoneNames(): Promise<boolean> {
   if (!navigator.mediaDevices?.getUserMedia) return false;

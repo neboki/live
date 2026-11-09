@@ -8,6 +8,7 @@ import {
 } from '@/modules/overlay';
 import { useI18n } from 'vue-i18n';
 import { logError } from '@/shared/errors';
+import { PARTNER_SPEAKER, USER_SPEAKER } from '../../pipeline/conversation';
 import { useLiveSession } from '../../store/useLiveSession';
 
 /**
@@ -24,9 +25,21 @@ const overlay = useOverlayStore();
 const { t } = useI18n();
 useCaptionShortcuts();
 // Stopping silences the voice at once, even while the last line is still being translated
+// In a conversation each line is read to the other person, in their language, if they
+// asked to hear it; elsewhere the "voice" option decides
+const talking = (): boolean => session.mode === 'talk' && session.partner !== '';
 useVoiceOutput(
-  () => overlay.pair.to.toLowerCase(),
+  (speaker) => {
+    if (talking() && speaker === USER_SPEAKER) return session.partner;
+    return overlay.pair.to.toLowerCase();
+  },
   () => session.active,
+  (speaker) => {
+    if (!talking()) return overlay.options.voice;
+    if (speaker === USER_SPEAKER) return session.receive.partner === 'hear';
+    if (speaker === PARTNER_SPEAKER) return session.receive.user === 'hear';
+    return false;
+  },
 );
 
 /** From the error's Restart button: a click in the floating window counts for the page. */

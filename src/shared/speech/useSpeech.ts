@@ -16,6 +16,8 @@ export interface SpeechOptions {
   fallback?: TtsProvider;
   /** Receives an i18n key when the engine fails and the fallback takes over. */
   onError?: (userMessageKey: string) => void;
+  /** True while something is being read aloud, false once the queue is done or stopped */
+  onBusy?: (busy: boolean) => void;
 }
 
 interface QueueItem {
@@ -71,6 +73,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
   async function pump(): Promise<void> {
     if (playing) return;
     playing = true;
+    options.onBusy?.(true);
     const myRun = run;
     try {
       while (queue.length > 0 && myRun === run) {
@@ -84,6 +87,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
         playing = false;
         controller = null;
         current = null;
+        options.onBusy?.(false);
       }
     }
   }
@@ -109,6 +113,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
       logError('Stopping speech failed', err);
     } finally {
       current = null;
+      options.onBusy?.(false);
     }
   }
 

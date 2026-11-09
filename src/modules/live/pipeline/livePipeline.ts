@@ -2,7 +2,10 @@ import { isAbortError, logError, type AppError } from '@/shared/errors';
 import { createSpeakerClusters } from '@/shared/audio/speakerClusters';
 import { DRAIN_MS } from '@/shared/providers/openai/config';
 import type { FinalMeta, SttCallbacks, TextContext, Usage } from '@/shared/providers/types';
+import type { Voiceprint } from '@/shared/audio/voiceprint';
+import { routeOf, speakerOf } from './conversation';
 import { routeError } from './errorRoute';
+import { introducedName } from './speakerNames';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
 import {
   activityOf,
@@ -92,12 +95,18 @@ export function createLivePipeline({
   }
 
   async function translate(run: Run, sentence: Sentence): Promise<void> {
-    const { targetLanguage, targetCode } = run.options;
+    const { targetLanguage, targetCode, partner } = run.options;
     if (targetLanguage === null) {
       showAsHeard(run, sentence, '');
       return;
     }
-    if (isSaidIn(sentence, targetCode, targetLanguage)) {
+    // A conversation translates each way; a direction its listener turned off is not
+    const into = partner ? routeOf(sentence.speaker, targetLanguage, partner) : targetLanguage;
+    if (into === null) {
+      showAsHeard(run, sentence, '');
+      return;
+    }
+    if (!partner && isSaidIn(sentence, targetCode, targetLanguage)) {
       showAsHeard(run, sentence, sentence.text);
       return;
     }
@@ -108,7 +117,12 @@ export function createLivePipeline({
     overlay.startTranslation('', sentence.speaker);
     try {
       const { previous } = sentence;
-      const request = { ...context(run, 'translation'), text: sentence.text, previous };
+      const request = {
+        ...context(run, 'translation'),
+        targetLanguage: into,
+        text: sentence.text,
+        previous,
+      };
       await llm.translate(request, (chunk) => {
         if (!isLive(run)) return;
         if (first) overlay.setLatency(now() - sentence.heardAt);
@@ -166,11 +180,32 @@ export function createLivePipeline({
     handleError,
   });
 
+  /** In a conversation the language says who spoke; otherwise the voice, when asked for. */
+  function speakerFor(
+    run: Run,
+    language: string | undefined,
+    voice: Voiceprint | null,
+  ): number | null {
+    const { partner, targetCode, targetLanguage } = run.options;
+    if (partner && targetCode && targetLanguage) {
+      return speakerOf(language, { code: targetCode, language: targetLanguage }, partner);
+    }
+    return overlay.options.speakers ? run.speakers.assign(voice) : null;
+  }
+
+  /** "Soy Ana": the voice that said it is Ana, unless the user already named it. */
+  function nameSpeaker(speaker: number | null, text: string): void {
+    if (speaker === null || overlay.speakerNames[speaker]) return;
+    const name = introducedName(text);
+    if (name) overlay.setSpeakerName(speaker, name);
+  }
+
   function onFinal(run: Run, text: string, meta?: FinalMeta): void {
     if (!isLive(run) || run.drainEnded) return;
     const language = meta?.language;
-    const speaker = overlay.options.speakers ? run.speakers.assign(meta?.voice ?? null) : null;
+    const speaker = speakerFor(run, language, meta?.voice ?? null);
     if (language) overlay.setDetectedLanguage(language);
+    nameSpeaker(speaker, text);
     const previous = run.lines.slice(-PREVIOUS_LINES);
     overlay.setSource(text, false);
     run.lines = [...run.lines, text].slice(-MAX_LINES);

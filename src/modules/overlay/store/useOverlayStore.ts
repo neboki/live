@@ -63,6 +63,8 @@ export const useOverlayStore = defineStore('overlay', () => {
   const canSyncVideo = ref(false);
   /** The translator speaks by itself (interpreter mode): nothing else reads the captions aloud */
   const selfVoiced = ref(false);
+  /** A translation is being read aloud right now */
+  const voiceBusy = ref(false);
   /** i18n key of a transient, non-fatal message (rate limit, reconnecting…) */
   const notice = ref<string | null>(null);
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -266,6 +268,7 @@ export const useOverlayStore = defineStore('overlay', () => {
     canHearOriginal,
     canSyncVideo,
     selfVoiced,
+    voiceBusy,
     originalVolume,
     notice,
     pair,

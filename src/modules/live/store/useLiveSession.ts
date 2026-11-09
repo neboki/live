@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useFloatingWindow, useOverlayStore } from '@/modules/overlay';
 import { costUsd, hasUnpricedUsage, usdToEur, useSessionRecord } from '@/modules/session';
 import { useSettingsStore } from '@/modules/settings';
 import { createAudioCapture } from '@/shared/audio/audioCapture';
+import { unlockAudio } from '@/shared/audio/unlockAudio';
 import { endedMessageKey, needsShare, startingMessageKey, type AudioSource } from '@/shared/audio';
 import { logError, type AppError } from '@/shared/errors';
 import { DEMO_API, TIER_MODELS } from '@/shared/providers/openai/config';
@@ -12,6 +13,7 @@ import { verifyApiKey } from '@/shared/providers/openai/llm/chat';
 import { openAiLlm } from '@/shared/providers/openai/llm/openAiLlm';
 import { openAiRealtimeStt } from '@/shared/providers/openai/realtime/realtimeStt';
 import { createSessionPipeline } from '../pipeline/sessionPipeline';
+import type { ModelRole } from '../pipeline/types';
 import { languageName } from '../utils/language';
 import { createAwayWatch } from '../watchers/awayWatch';
 import { createTabSilenceWatch } from '../watchers/tabSilenceWatch';
@@ -35,7 +37,29 @@ const DEMO_ENDED_KEY = 'errors.demoEnded';
 export interface StartOptions {
   /** The free demo: no key needed, the cheapest models, a few minutes. Default: as last time */
   demo?: boolean;
+  /** What the session is for; 'listen' by default */
+  mode?: LiveMode;
+  /** Conversation: the other person's language (ISO 639-1) */
+  partner?: string;
+  /** Translating a voice note: the audio the app plays, listened to instead of a microphone */
+  stream?: MediaStream;
+  /**
+   * Speak the translation as people talk (the interpreter model) rather than read each
+   * sentence aloud once it is translated. Ignored in a conversation, which goes both ways.
+   */
+  interpret?: boolean;
 }
+
+/**
+ * listen: others talk, the user reads or hears them in their language.
+ * talk: two people, two languages, the screen split between them.
+ * present: the user talks, the room reads (big screen) or hears them in its language.
+ * audio: a voice note or recording, subtitled while it plays.
+ */
+export type LiveMode = 'listen' | 'talk' | 'present' | 'audio';
+
+/** What each person in a conversation gets of the other's words */
+export type Receive = 'read' | 'hear' | 'none';
 
 /**
  * A live session: captures a shared tab, the microphone or both, and turns it into
@@ -88,6 +112,16 @@ export const useLiveSession = defineStore('live', () => {
   /** What the running (or last) session listens to */
   const source = ref<AudioSource>(settings.audioSource);
   const startingKey = computed(() => startingMessageKey(settings.audioSource));
+  /** What the running (or last) session is for */
+  const mode = ref<LiveMode>('listen');
+  /** Conversation: the other person's language (ISO 639-1), '' outside one */
+  const partner = ref('');
+  /** Conversation: what the user and the other person get of each other's words */
+  const receive = reactive<{ user: Receive; partner: Receive }>({ user: 'read', partner: 'read' });
+  /** Headphones were found as the microphone opened: the voice won't echo into it */
+  const headset = ref(false);
+  /** The running session speaks as people talk (interpreter) */
+  const interpreting = ref(false);
   /** Bumped by every start and stop, so a start that was overtaken knows it */
   let startToken = 0;
   let recording = false;
@@ -181,23 +215,52 @@ export const useLiveSession = defineStore('live', () => {
     return true;
   }
 
+  /** The app is reading aloud with no headphones to keep its voice out of the microphone */
+  function hearsItself(): boolean {
+    return overlay.voiceBusy && !headset.value && !source.value.includes('tab');
+  }
+
+  /**
+   * The demo server only takes the cheapest models; the user's choice is for their key.
+   * Asked to speak as people talk, the interpreter does it; a conversation goes both
+   * ways, which the interpreter (one target language) cannot, so it reads aloud instead.
+   */
+  function modelsFor(): Partial<Record<ModelRole, string>> {
+    if (demo.value) return { ...TIER_MODELS.low };
+    const chosen = { ...settings.models };
+    const twoWay = partner.value !== '';
+    if (twoWay && settings.tier === 'interpreter') return { ...TIER_MODELS.low };
+    if (interpreting.value && !twoWay) return { ...TIER_MODELS.interpreter };
+    return chosen;
+  }
+
   async function connect(
     apiKey: string,
     endpoint: string | undefined,
     target: string,
   ): Promise<AppError | null> {
-    // The demo server only takes the cheapest models; the user's choice is for their key
-    const models = demo.value ? { ...TIER_MODELS.low } : { ...settings.models };
     recording = true;
     record.begin({ pair: { ...overlay.pair }, startedAt: Date.now(), glossary: overlay.glossary });
+    const other = partner.value;
     return pipeline.start({
       apiKey,
       endpoint,
       targetLanguage: languageName(target),
       targetCode: target,
-      models,
-      languages: [...settings.meeting.languages],
+      models: modelsFor(),
+      // A conversation tells the transcriber which two languages to expect
+      languages: other ? [target, other] : [...settings.meeting.languages],
       topic: settings.meeting.topic,
+      ...(other
+        ? {
+            partner: {
+              code: other,
+              language: languageName(other) ?? other,
+              toUser: () => receive.user !== 'none',
+              toPartner: () => receive.partner !== 'none',
+            },
+          }
+        : {}),
       onFatal: failWith,
       onNotice: (error) => overlay.setNotice(error.userMessageKey, NOTICE_TTL_MS),
     });
@@ -213,7 +276,13 @@ export const useLiveSession = defineStore('live', () => {
     options: StartOptions = {},
   ): Promise<boolean> {
     if (starting.value || active.value) return active.value;
-    if (!canFloat && needsShare(settings.audioSource)) {
+    // Phones only let a page make sound from a tap: the voice's output opens now
+    unlockAudio();
+    mode.value = options.mode ?? 'listen';
+    const listening = mode.value === 'listen';
+    // Only listening can take a shared tab; the other modes hear the room (or a voice note)
+    const wanted: AudioSource = listening ? settings.audioSource : 'mic';
+    if (!canFloat && needsShare(wanted) && !options.stream) {
       fail('errors.pipUnsupported');
       return false;
     }
@@ -221,7 +290,10 @@ export const useLiveSession = defineStore('live', () => {
     starting.value = true;
     demo.value = options.demo ?? demo.value;
     errorKey.value = null;
-    source.value = settings.audioSource;
+    source.value = wanted;
+    partner.value = mode.value === 'talk' ? (options.partner ?? '') : '';
+    interpreting.value = (options.interpret ?? false) && mode.value !== 'talk';
+    headset.value = false;
     // liveError stays until the restart succeeds, so the bar (and its PiP window) stay mounted
     try {
       // A previous run may still be draining: end it so it can't write into the new overlay
@@ -238,16 +310,23 @@ export const useLiveSession = defineStore('live', () => {
       const sharing = capture.start(
         {
           onChunk: (pcm) => {
-            pipeline.pushAudio(pcm);
+            // Reading aloud through the speaker, the microphone would hear the app itself:
+            // it hears silence until the voice is done
+            pipeline.pushAudio(hearsItself() ? new Int16Array(pcm.length) : pcm);
             away.chunk(pcm);
             silence.chunk(pcm);
           },
           onLevel: (level) => overlay.setLevel(level),
-          onEnded: (input) => fail(endedMessageKey(input)),
+          // A voice note that played to its end is done, not broken
+          onEnded: (input) => (options.stream ? stop() : fail(endedMessageKey(input))),
         },
-        { source: source.value, micDeviceId: settings.micDeviceId },
+        {
+          source: source.value,
+          micDeviceId: settings.micDeviceId,
+          ...(options.stream ? { stream: options.stream } : {}),
+        },
       );
-      const opening = wantsFloating.value ? floating.open() : Promise.resolve(null);
+      const opening = wantsFloating.value && listening ? floating.open() : Promise.resolve(null);
       // The demo asks its server for a key meanwhile; a key of the user's own is checked
       const access: Promise<DemoGrant | AppError | null> = demo.value
         ? requestDemo()
@@ -266,6 +345,7 @@ export const useLiveSession = defineStore('live', () => {
         return false;
       }
       overlay.canHearOriginal = capture.canControlOriginal();
+      headset.value = capture.hasHeadset();
       sync.started();
       liveError.value = null;
       active.value = true;
@@ -378,6 +458,11 @@ export const useLiveSession = defineStore('live', () => {
     demo,
     /** When the demo stops itself (epoch milliseconds), while one runs */
     demoEndsAt,
+    mode,
+    partner,
+    receive,
+    headset,
+    interpreting,
     start,
     stop,
     dismissError,

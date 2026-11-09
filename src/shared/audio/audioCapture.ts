@@ -25,6 +25,8 @@ export interface CaptureOptions {
   source?: AudioSource;
   /** Preferred microphone; the system default when empty */
   micDeviceId?: string;
+  /** Listen to this stream instead (audio the app plays itself); `source` is then ignored */
+  stream?: MediaStream;
 }
 
 export interface AudioCapture {
@@ -42,6 +44,8 @@ export interface AudioCapture {
   syncOriginal: (seconds: number) => DelayedPlayback | null;
   /** Back to the live sound of the shared tab */
   unsyncOriginal: () => void;
+  /** Headphones with a microphone were found when the microphone opened */
+  hasHeadset: () => boolean;
 }
 
 /** stop() ran while start() was waiting on a prompt: there is nothing to report. */
@@ -141,9 +145,15 @@ export function createAudioCapture(): AudioCapture {
     let ctx: AudioContext | null = null;
     try {
       const source = options.source ?? 'tab';
-      if (source !== 'mic') opened.push(await openTab());
-      if (overtaken()) throw new OvertakenError();
-      if (source !== 'tab') opened.push(await openMic(options.micDeviceId || undefined));
+      if (options.stream) {
+        // Audio the app plays itself (a voice note): already clean, like a shared tab
+        const audio = options.stream.getAudioTracks();
+        opened.push({ input: 'tab', stream: options.stream, audio, silencedTab: false });
+      } else {
+        if (source !== 'mic') opened.push(await openTab());
+        if (overtaken()) throw new OvertakenError();
+        if (source !== 'tab') opened.push(await openMic(options.micDeviceId || undefined));
+      }
       if (overtaken()) throw new OvertakenError();
 
       const graph = createSources(opened);
@@ -240,9 +250,14 @@ export function createAudioCapture(): AudioCapture {
     );
   }
 
+  function hasHeadset(): boolean {
+    return inputs.some((input) => input.headset === true);
+  }
+
   return {
     start,
     stop,
+    hasHeadset,
     recover,
     canControlOriginal,
     setOriginalVolume,

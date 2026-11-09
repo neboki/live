@@ -12,6 +12,7 @@ import {
   UnsupportedFeatureError,
   ValidationError,
 } from '@/shared/errors';
+import { isHeadsetLabel, listMicrophones, phoneMicAmong } from './microphones';
 import { isSilencedTab } from './originalMonitor';
 
 /** What a session listens to: a shared tab or screen, the microphone, or both mixed */
@@ -26,6 +27,8 @@ export interface OpenedInput {
   audio: MediaStreamTrack[];
   /** Chrome silenced the shared tab, so its audio may be played back at our volume */
   silencedTab: boolean;
+  /** Headphones with a microphone are connected (their name gave them away) */
+  headset?: boolean;
   /**
    * A silenced tab's picture, kept disabled (not captured) until it is shown behind
    * time with the captions. Any other share's video is already stopped.
@@ -204,5 +207,19 @@ export async function openMic(deviceId?: string): Promise<OpenedInput> {
     stream.getTracks().forEach((track) => track.stop());
     throw new NotFoundError('The microphone delivered no audio', 'errors.noMic');
   }
-  return { input: 'mic', stream, audio, silencedTab: false };
+  const headset = isHeadsetLabel(audio[0]?.label ?? '');
+  // The earbuds' own microphone hears the wearer, not the speaker: use the phone's instead
+  if (headset && !deviceId) {
+    const phoneMic = phoneMicAmong(await listMicrophones());
+    if (phoneMic) {
+      try {
+        const reopened = await openMic(phoneMic.deviceId);
+        stream.getTracks().forEach((track) => track.stop());
+        return { ...reopened, headset: true };
+      } catch (err) {
+        console.warn('[Neboki Live] Could not switch to the phone microphone', err);
+      }
+    }
+  }
+  return { input: 'mic', stream, audio, silencedTab: false, headset };
 }
