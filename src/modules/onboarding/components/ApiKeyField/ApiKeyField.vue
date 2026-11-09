@@ -157,10 +157,13 @@ const endpointStatus = computed<KeyStatus>(() => {
       color: var(--fg);
     }
 
-    &--on {
-      background: var(--panel);
+    // The chosen provider is filled with the accent: white on grey read as unchosen
+    &--on,
+    &--on:hover {
+      background: var(--accent-fill);
       box-shadow: var(--shadow-sm);
-      color: var(--fg);
+      color: #fff;
+      font-weight: 600;
     }
   }
 

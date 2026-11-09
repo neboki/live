@@ -397,8 +397,15 @@ onBeforeUnmount(() => clearTimeout(typedTimer));
       background: var(--hover);
     }
 
+    // The chosen language: tinted, in the accent and bold, with its tick
     &[aria-selected='true'] {
-      font-weight: 500;
+      background: var(--accent-selected);
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    &[aria-selected='true'].lang__option--active {
+      box-shadow: inset 0 0 0 1px var(--accent);
     }
 
     // "Don't translate" is not a language: a hairline sets it apart from the list
@@ -540,6 +547,11 @@ onBeforeUnmount(() => clearTimeout(typedTimer));
 
       &--active {
         background: var(--glass-hover);
+      }
+
+      &[aria-selected='true'] {
+        background: color-mix(in srgb, var(--glass-accent) 30%, transparent);
+        color: var(--glass-fg);
       }
 
       &--original {

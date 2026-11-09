@@ -316,10 +316,35 @@
       box-shadow: var(--shadow-focus);
     }
 
+    // The chosen one: a double accent edge, a tinted card and a tick, so it reads as
+    // chosen at a glance, without relying on the colour alone
     &--on,
     &--on:hover {
+      padding-right: 44px;
       border-color: var(--accent);
-      background: var(--accent-soft);
+      background: var(--accent-selected);
+      box-shadow: inset 0 0 0 1px var(--accent);
+
+      &::after {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent-fill);
+        color: #fff;
+        font: 700 13px/1 var(--font-ui);
+        content: '✓';
+      }
+    }
+
+    &--on:focus-within {
+      box-shadow:
+        inset 0 0 0 1px var(--accent),
+        var(--shadow-focus);
     }
 
     &--off {
@@ -435,7 +460,8 @@
     }
 
     &[aria-checked='true'] {
-      background: var(--glass-accent);
+      // Darkened so white text on it stays readable whatever colour the bar wears
+      background: color-mix(in srgb, var(--glass-accent) 75%, #000);
       color: #fff;
 
       small {
