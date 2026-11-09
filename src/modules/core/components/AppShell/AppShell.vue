@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useAccount, useCloudSave } from '@/modules/account';
 import { useLiveSession } from '@/modules/live';
 import {
   useSessionRecord,
@@ -37,6 +38,8 @@ const session = useLiveSession();
 const record = useSessionRecord();
 const viewer = useSessionViewer();
 const appPage = useAppPage();
+const account = useAccount();
+const cloudSave = useCloudSave();
 const { t, locale } = useI18n();
 const menuOpen = ref(false);
 const input = ref<HTMLInputElement | null>(null);
@@ -156,8 +159,11 @@ onMounted(() => {
   drawerQuery?.addEventListener('change', onDrawerChange);
   onDrawerChange();
   window.addEventListener('keydown', onKeydown);
+  void account.init();
+  cloudSave.start();
 });
 onBeforeUnmount(() => {
+  cloudSave.stop();
   clearInterval(ticker);
   drawerQuery?.removeEventListener('change', onDrawerChange);
   window.removeEventListener('keydown', onKeydown);
@@ -341,6 +347,57 @@ onBeforeUnmount(() => {
           </svg>
           <span class="shell__label">{{ t('nav.privacy') }}</span>
         </a>
+
+        <!-- Optional Google account: signed in, conversations can be kept in it -->
+        <template v-if="account.enabled && account.ready">
+          <button
+            v-if="account.user"
+            class="shell__item shell__item--quiet"
+            type="button"
+            :disabled="account.busy"
+            :aria-label="t('account.signOutAs', { name: account.user.name })"
+            :title="tip(t('account.signOutAs', { name: account.user.name }))"
+            @click="account.signOut"
+          >
+            <img
+              v-if="account.user.photoUrl"
+              class="shell__avatar"
+              :src="account.user.photoUrl"
+              alt=""
+              referrerpolicy="no-referrer"
+            />
+            <svg v-else viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="7.5" r="3" />
+              <path d="M4.5 16c1-3 3-4.5 5.5-4.5s4.5 1.5 5.5 4.5" />
+            </svg>
+            <span class="shell__text shell__label">
+              {{ account.user.name }}
+              <small>{{ t('account.signOut') }}</small>
+            </span>
+          </button>
+          <button
+            v-else
+            class="shell__item shell__item--quiet"
+            type="button"
+            :disabled="account.busy"
+            :title="tip(t('account.signIn'))"
+            @click="account.signIn"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="7.5" r="3" />
+              <path d="M4.5 16c1-3 3-4.5 5.5-4.5s4.5 1.5 5.5 4.5" />
+            </svg>
+            <span class="shell__label">{{ t('account.signIn') }}</span>
+          </button>
+          <!-- The settings page says it in its account card -->
+          <p
+            v-if="account.errorKey && page !== 'settings'"
+            class="shell__error shell__label"
+            role="alert"
+          >
+            {{ t(account.errorKey) }}
+          </p>
+        </template>
       </nav>
 
       <footer v-if="!compact" class="shell__foot">
@@ -641,6 +698,19 @@ $drawer-at: 900px;
       font: 400 11.5px var(--font-mono);
       font-variant-numeric: tabular-nums;
     }
+  }
+
+  &__avatar {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+  }
+
+  &__error {
+    margin: 2px 10px 0;
+    color: var(--danger);
+    font-size: 12px;
   }
 
   &__tag {

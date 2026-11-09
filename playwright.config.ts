@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCI = Boolean(process.env.CI);
+const PREVIEW = 'node node_modules/vite/bin/vite.js preview --port 4173 --strictPort';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -29,10 +30,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // CI builds in an earlier step, so only serve there
-    command: isCI
-      ? 'pnpm preview --port 4173 --strictPort'
-      : 'pnpm build && pnpm preview --port 4173 --strictPort',
+    // CI builds in an earlier step, so only serve there. Vite is started directly, not
+    // through pnpm: Playwright stops the process it started, and a vite left behind by a
+    // pnpm wrapper kept the run from ever finishing.
+    command: isCI ? PREVIEW : `pnpm build && ${PREVIEW}`,
     url: 'http://localhost:4173/',
     reuseExistingServer: !isCI,
   },

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Each person reaches only their own conversations, and only once signed in. A
+// conversation is one document plus its sentences in chunks (see
+// src/modules/account/utils/cloudSession.ts). Everything else is closed.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid}/sessions/{sessionId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+          'version', 'startedAt', 'endedAt', 'pair', 'glossary', 'summary', 'usage',
+          'lineCount', 'chunkSize', 'updatedAt'
+        ])
+        && request.resource.data.version is int
+        && request.resource.data.startedAt is int
+        && request.resource.data.lineCount is int
+        && request.resource.data.summary is list
+        && request.resource.data.usage is list
+        && request.resource.data.glossary is string
+        && request.resource.data.updatedAt == request.time;
+
+      match /chunks/{chunkId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['lines'])
+          && request.resource.data.lines is list
+          && request.resource.data.lines.size() <= 200;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

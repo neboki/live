@@ -7,10 +7,10 @@
       name="description"
       content="Live translated captions that float over any call, video or webinar."
     />
-    <!-- Only OpenAI and Azure OpenAI resources (the hosts endpoint.ts accepts) may be contacted; fonts are self-hosted. blob: media is the video-sync player (MediaSource URL). -->
+    <!-- Only OpenAI and Azure OpenAI resources (the hosts endpoint.ts accepts) may be contacted, plus Firebase for the optional Google account: Auth (apis.google.com script, the neboki-live.firebaseapp.com sign-in frame, identitytoolkit/securetoken), Firestore and the profile photo. Fonts are self-hosted. blob: media is the video-sync player (MediaSource URL). -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://api.openai.com wss://api.openai.com https://*.openai.azure.com wss://*.openai.azure.com https://*.cognitiveservices.azure.com wss://*.cognitiveservices.azure.com https://*.services.ai.azure.com wss://*.services.ai.azure.com; media-src 'self' blob:; worker-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'"
+      content="default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://api.openai.com wss://api.openai.com https://*.openai.azure.com wss://*.openai.azure.com https://*.cognitiveservices.azure.com wss://*.cognitiveservices.azure.com https://*.services.ai.azure.com wss://*.services.ai.azure.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; frame-src https://neboki-live.firebaseapp.com; media-src 'self' blob:; worker-src 'self'; img-src 'self' data: https://lh3.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'"
     />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Neboki Live" />

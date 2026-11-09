@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { ACCOUNTS_ENABLED, AccountCard } from '@/modules/account';
 import { ApiKeyField, AudioSourcePicker, PlacementPicker } from '@/modules/onboarding';
 import { SettingsMenu, useFloatingWindow } from '@/modules/overlay';
 import LanguageSelect from '../LanguageSelect/LanguageSelect.vue';
@@ -65,6 +66,15 @@ const canFloat = useFloatingWindow().isSupported;
         <section class="lg-card settings-view__card" aria-labelledby="settings-key">
           <h2 id="settings-key" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
           <ApiKeyField />
+        </section>
+
+        <section
+          v-if="ACCOUNTS_ENABLED"
+          class="lg-card settings-view__card"
+          aria-labelledby="settings-account"
+        >
+          <h2 id="settings-account" class="lg-card__title">{{ t('account.title') }}</h2>
+          <AccountCard />
         </section>
 
         <section class="lg-card settings-view__card" aria-labelledby="settings-backup">

@@ -9,6 +9,8 @@ const OPENAI_ORIGIN = 'https://api.openai.com';
 const EXPECTED_CONNECT_SRC = [
   "'self' https://api.openai.com wss://api.openai.com",
   'https://*.openai.azure.com wss://*.openai.azure.com https://*.cognitiveservices.azure.com wss://*.cognitiveservices.azure.com https://*.services.ai.azure.com wss://*.services.ai.azure.com',
+  // Firebase, for the optional Google account: Auth and Firestore
+  'https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com',
 ].join(' ');
 
 declare global {

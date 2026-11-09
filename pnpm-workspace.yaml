@@ -2,6 +2,8 @@ allowBuilds:
   lefthook: true
   '@parcel/watcher': false
   esbuild: true
+  '@firebase/util': false
+  protobufjs: false
 
 # Refuse to install on a Node.js older than package.json "engines"
 engineStrict: true

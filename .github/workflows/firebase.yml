@@ -43,6 +43,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The app under /app/ and the landing page at the root
       - run: pnpm build:web
+        env:
+          # Firebase web app "Neboki Live": public by design (Auth and rules guard data)
+          VITE_FIREBASE_API_KEY: AIzaSyAYXdL4M6zVEfGPnz3D_EJ4GfQLD6gzHPQ
+          VITE_FIREBASE_AUTH_DOMAIN: neboki-live.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: neboki-live
+          VITE_FIREBASE_APP_ID: 1:907698541743:web:6ebc7e43cebe6928d9305a
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
