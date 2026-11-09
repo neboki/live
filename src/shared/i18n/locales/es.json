@@ -671,5 +671,60 @@
       "title": "Cambios en esta página",
       "text": "Si cambia la forma en que la app trata los datos, actualizaremos esta página y su fecha."
     }
+  },
+  "mobile": {
+    "setup": {
+      "title": "Un paso antes de empezar",
+      "text": "Pega tu clave de OpenAI. Se queda en este móvil y va directa a OpenAI."
+    },
+    "listen": {
+      "title": "Escuchar",
+      "hint": "Charlas, eventos, reuniones"
+    },
+    "talk": {
+      "title": "Conversar",
+      "hint": "Tú y otra persona, cada uno en su idioma"
+    },
+    "present": {
+      "title": "Presentar",
+      "hint": "Hablas tú; la sala te sigue en su idioma"
+    },
+    "audio": {
+      "title": "Traducir un audio",
+      "hint": "Elige un archivo de audio: suena con subtítulos",
+      "failed": "No se ha podido abrir este audio. Prueba con otro formato (mp3, m4a, ogg)."
+    },
+    "partnerLanguage": "La otra persona habla",
+    "roomLanguage": "Idioma de la sala",
+    "start": "Empezar",
+    "cancel": "Cancelar",
+    "stop": "Parar",
+    "voiceOn": "Voz: sí",
+    "voiceOff": "Voz: no",
+    "bigger": "Texto más grande",
+    "smaller": "Texto más pequeño",
+    "fullScreen": "Pantalla completa",
+    "headphonesTip": "Ponte auriculares para oír la traducción sin eco.",
+    "headsetFound": "Auriculares detectados: escucha el micrófono del móvil.",
+    "waiting": "Esperando a que alguien hable…",
+    "you": "Tú",
+    "them": "La otra persona",
+    "rename": "Poner nombre a esta voz",
+    "receive": {
+      "read": "Leer",
+      "hear": "Leer y oír",
+      "none": "No traducir"
+    },
+    "receiveLabel": "Cambiar lo que recibe esta persona ({who})",
+    "placeTip": "Deja el móvil entre los dos, boca arriba.",
+    "presentTip": "Ten el móvil cerca. Duplica su pantalla en un proyector para la sala.",
+    "moreSettings": "Más opciones",
+    "basics": {
+      "title": "Voz y texto",
+      "voice": "Leer la traducción en voz alta",
+      "voiceHint": "Con auriculares la oyes mientras hablan.",
+      "volume": "Volumen de la voz",
+      "textSize": "Tamaño del texto"
+    }
   }
 }

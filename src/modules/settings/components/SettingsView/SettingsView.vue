@@ -2,7 +2,8 @@
 import { useI18n } from 'vue-i18n';
 import { ACCOUNTS_ENABLED, AccountCard } from '@/modules/account';
 import { ApiKeyField, AudioSourcePicker, PlacementPicker } from '@/modules/onboarding';
-import { SettingsMenu, useFloatingWindow } from '@/modules/overlay';
+import { SettingsMenu, useFloatingWindow, useOverlayStore } from '@/modules/overlay';
+import { isPhoneLayout } from '@/shared/device';
 import LanguageSelect from '../LanguageSelect/LanguageSelect.vue';
 import SettingsBackup from '../SettingsBackup/SettingsBackup.vue';
 import UiLocaleSelect from '../UiLocaleSelect/UiLocaleSelect.vue';
@@ -15,6 +16,9 @@ import UiThemeSelect from '../UiThemeSelect/UiThemeSelect.vue';
  */
 const { t } = useI18n();
 const canFloat = useFloatingWindow().isSupported;
+const overlay = useOverlayStore();
+/** A phone shows the few settings it needs, and the rest folded under "More options" */
+const phone = isPhoneLayout(canFloat);
 </script>
 
 <template>
@@ -53,36 +57,82 @@ const canFloat = useFloatingWindow().isSupported;
           </div>
         </section>
 
-        <!-- The bar's menu: each of its groups becomes a card of this grid, right under
-             the languages -->
-        <SettingsMenu class="settings-view__menu" popped page />
-
-        <section class="lg-card settings-view__card" aria-labelledby="settings-listen">
-          <h2 id="settings-listen" class="lg-card__title">{{ t('settingsPage.listen') }}</h2>
-          <AudioSourcePicker />
-          <PlacementPicker :can-float="canFloat" />
-        </section>
-
-        <section class="lg-card settings-view__card" aria-labelledby="settings-key">
-          <h2 id="settings-key" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
-          <ApiKeyField />
+        <!-- A phone keeps only what it needs: voice and text size, then the key -->
+        <section v-if="phone" class="lg-card settings-view__card" aria-labelledby="settings-basics">
+          <h2 id="settings-basics" class="lg-card__title">{{ t('mobile.basics.title') }}</h2>
+          <label class="settings-view__switch" for="settings-voice">
+            <span class="settings-view__label">
+              {{ t('mobile.basics.voice') }}
+              <small>{{ t('mobile.basics.voiceHint') }}</small>
+            </span>
+            <input id="settings-voice" v-model="overlay.options.voice" type="checkbox" />
+          </label>
+          <label class="settings-view__slider" for="settings-volume">
+            <span class="settings-view__label">{{ t('mobile.basics.volume') }}</span>
+            <input
+              id="settings-volume"
+              v-model.number="overlay.voiceVolume"
+              type="range"
+              min="0"
+              max="2"
+              step="0.05"
+            />
+          </label>
+          <label class="settings-view__slider" for="settings-scale">
+            <span class="settings-view__label">{{ t('mobile.basics.textSize') }}</span>
+            <input
+              id="settings-scale"
+              v-model.number="overlay.scale"
+              type="range"
+              min="0.8"
+              max="1.8"
+              step="0.1"
+            />
+          </label>
         </section>
 
         <section
-          v-if="ACCOUNTS_ENABLED"
+          v-if="phone"
           class="lg-card settings-view__card"
-          aria-labelledby="settings-account"
+          aria-labelledby="settings-key-phone"
         >
-          <h2 id="settings-account" class="lg-card__title">{{ t('account.title') }}</h2>
-          <AccountCard />
+          <h2 id="settings-key-phone" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
+          <ApiKeyField />
         </section>
 
-        <section class="lg-card settings-view__card" aria-labelledby="settings-backup">
-          <h2 id="settings-backup" class="lg-card__title">
-            {{ t('settingsPage.backup.title') }}
-          </h2>
-          <SettingsBackup />
-        </section>
+        <component :is="phone ? 'details' : 'div'" class="settings-view__extra">
+          <summary v-if="phone" class="settings-view__more">{{ t('mobile.moreSettings') }}</summary>
+          <!-- The bar's menu: each of its groups becomes a card of this grid, right under
+               the languages -->
+          <SettingsMenu class="settings-view__menu" popped page />
+
+          <section class="lg-card settings-view__card" aria-labelledby="settings-listen">
+            <h2 id="settings-listen" class="lg-card__title">{{ t('settingsPage.listen') }}</h2>
+            <AudioSourcePicker />
+            <PlacementPicker v-if="!phone" :can-float="canFloat" />
+          </section>
+
+          <section v-if="!phone" class="lg-card settings-view__card" aria-labelledby="settings-key">
+            <h2 id="settings-key" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
+            <ApiKeyField />
+          </section>
+
+          <section
+            v-if="ACCOUNTS_ENABLED"
+            class="lg-card settings-view__card"
+            aria-labelledby="settings-account"
+          >
+            <h2 id="settings-account" class="lg-card__title">{{ t('account.title') }}</h2>
+            <AccountCard />
+          </section>
+
+          <section class="lg-card settings-view__card" aria-labelledby="settings-backup">
+            <h2 id="settings-backup" class="lg-card__title">
+              {{ t('settingsPage.backup.title') }}
+            </h2>
+            <SettingsBackup />
+          </section>
+        </component>
       </div>
     </div>
   </main>
@@ -122,6 +172,49 @@ $card-gap: 20px;
   // The menu's own box disappears: its groups sit in the grid like the other cards
   &__menu {
     display: contents;
+  }
+
+  // On a computer the wrapper of the extra cards is invisible; on a phone it folds them
+  div#{&}__extra {
+    display: contents;
+  }
+
+  &__more {
+    min-height: 52px;
+    margin-bottom: $card-gap;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--panel);
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__switch,
+  &__slider {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+
+    .settings-view__label {
+      font-size: 16px;
+    }
+
+    input[type='checkbox'] {
+      width: 28px;
+      height: 28px;
+      accent-color: var(--accent);
+    }
+
+    input[type='range'] {
+      flex: 1 1 140px;
+      accent-color: var(--accent);
+    }
   }
 
   &__grid :deep(.menu .menu__group) {

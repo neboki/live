@@ -5,3 +5,4 @@ export { default as OnboardingView } from './components/OnboardingView/Onboardin
 export { default as ApiKeyField } from './components/ApiKeyField/ApiKeyField.vue';
 export { default as AudioSourcePicker } from './components/AudioSourcePicker/AudioSourcePicker.vue';
 export { default as PlacementPicker } from './components/PlacementPicker/PlacementPicker.vue';
+export { default as MobileHome } from './components/MobileHome/MobileHome.vue';

@@ -26,24 +26,42 @@ async function pretendPhone(page: Page): Promise<void> {
   await page.routeWebSocket(/api\.openai\.com\/v1\/realtime/, () => undefined);
 }
 
-test('the live captions start in view after Start was pressed scrolled down', async ({ page }) => {
+test('a phone listens with one tap and shows big, labelled controls', async ({ page }) => {
   await pretendPhone(page);
   await page.goto('./');
   await page.locator('#lg-api-key').fill(VALID_KEY);
-  // On a phone the start page is long: Start is reached by scrolling
-  await page.locator('.start__cta').scrollIntoViewIfNeeded();
-  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  await page.locator('.start__cta').click();
+  await page.locator('.home__mode--main').click();
 
-  const bar = page.locator('.live .bar');
-  await expect(bar).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-  // Nothing sticky covers the top of the captions
-  const barTop = await bar.evaluate((el) => el.getBoundingClientRect().top);
-  const headBottom = await page
-    .locator('.live .lg-head')
-    .evaluate((el) => el.getBoundingClientRect().bottom);
-  expect(barTop).toBeGreaterThanOrEqual(headBottom);
+  const live = page.locator('.mlive');
+  await expect(live).toBeVisible();
+  const stop = live.getByRole('button', { name: /Stop|Parar/ });
+  await expect(stop).toBeVisible();
+  // Thumb-sized
+  expect((await stop.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(48);
+  const width = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    width,
+  );
+  await stop.click();
+  await expect(page.locator('.home')).toBeVisible();
+});
+
+test('a conversation splits the screen, the top half turned to the other person', async ({
+  page,
+}) => {
+  await pretendPhone(page);
+  await page.goto('./');
+  await page.locator('#lg-api-key').fill(VALID_KEY);
+  await page.locator('.home__mode').nth(1).click();
+  await page.locator('#home-partner').selectOption('fr');
+  await page.locator('.home__ask .lg-btn--primary').click();
+
+  await expect(page.locator('.talk__half')).toHaveCount(2);
+  const them = page.locator('.talk__half--them');
+  await expect(them).toHaveAttribute('lang', 'fr');
+  expect(await them.evaluate((el) => getComputedStyle(el).transform)).not.toBe('none');
+  // The other person's button names their language in it
+  await expect(them.locator('.talk__receive')).toContainText('Français');
 });
 
 test('the app can be installed: the manifest lists icons that load', async ({ page, request }) => {
@@ -64,14 +82,13 @@ test('the app can be installed: the manifest lists icons that load', async ({ pa
   }
 });
 
-test('the language list in the caption bar stays on screen', async ({ page }) => {
+test('the language list on the phone home stays on screen', async ({ page }) => {
   await pretendPhone(page);
   await page.goto('./');
   await page.locator('#lg-api-key').fill(VALID_KEY);
-  await page.locator('.start__cta').click();
 
-  await page.locator('.live .bar .lang__trigger').click();
-  const list = page.locator('.live .bar .lang__list');
+  await page.locator('.home .lang__trigger').click();
+  const list = page.locator('.home .lang__list');
   await expect(list).toBeVisible();
   // Measure once the opening animation has settled
   await expect(list).not.toHaveClass(/pop-enter/);

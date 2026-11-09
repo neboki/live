@@ -671,5 +671,60 @@
       "title": "Changes to this page",
       "text": "If the way the app handles data changes, we will update this page and its date."
     }
+  },
+  "mobile": {
+    "setup": {
+      "title": "One step before you start",
+      "text": "Paste your OpenAI key. It stays on this phone and goes straight to OpenAI."
+    },
+    "listen": {
+      "title": "Listen",
+      "hint": "Talks, events, meetings"
+    },
+    "talk": {
+      "title": "Talk",
+      "hint": "You and someone else, each in your own language"
+    },
+    "present": {
+      "title": "Present",
+      "hint": "You speak; the room follows in its language"
+    },
+    "audio": {
+      "title": "Translate a voice note",
+      "hint": "Pick an audio file: it plays with subtitles",
+      "failed": "This audio file could not be opened. Try another format (mp3, m4a, ogg)."
+    },
+    "partnerLanguage": "The other person speaks",
+    "roomLanguage": "Language of the room",
+    "start": "Start",
+    "cancel": "Cancel",
+    "stop": "Stop",
+    "voiceOn": "Voice: on",
+    "voiceOff": "Voice: off",
+    "bigger": "Bigger text",
+    "smaller": "Smaller text",
+    "fullScreen": "Full screen",
+    "headphonesTip": "Wear headphones to hear the translation without echo.",
+    "headsetFound": "Headphones found: the phone microphone listens.",
+    "waiting": "Waiting for someone to speak…",
+    "you": "You",
+    "them": "The other person",
+    "rename": "Name this voice",
+    "receive": {
+      "read": "Read",
+      "hear": "Read and hear",
+      "none": "No translation"
+    },
+    "receiveLabel": "Change what this person gets ({who})",
+    "placeTip": "Place the phone between you, face up.",
+    "presentTip": "Hold the phone close to you. Mirror its screen on a projector for the room.",
+    "moreSettings": "More options",
+    "basics": {
+      "title": "Voice and text",
+      "voice": "Read the translation aloud",
+      "voiceHint": "With headphones you hear it as people talk.",
+      "volume": "Voice volume",
+      "textSize": "Text size"
+    }
   }
 }

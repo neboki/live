@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import { CloudSessionActions } from '@/modules/account';
-import { LiveCaptions, LiveView, useLiveSession } from '@/modules/live';
-import { OnboardingView } from '@/modules/onboarding';
+import { LiveCaptions, LiveView, MobileLiveView, useLiveSession } from '@/modules/live';
+import { MobileHome, OnboardingView } from '@/modules/onboarding';
+import { useFloatingWindow } from '@/modules/overlay';
 import { PrivacyView } from '@/modules/privacy';
 import { SessionView, useSessionRecord, useSessionViewer } from '@/modules/session';
 import { SettingsView } from '@/modules/settings';
+import { isPhoneLayout } from '@/shared/device';
 import { useAppPage } from '../../store/useAppPage';
 import AppShell from '../AppShell/AppShell.vue';
 
+/** A phone gets big buttons and one task per screen; a computer, the full app */
+const phone = isPhoneLayout(useFloatingWindow().isSupported);
 const session = useLiveSession();
 const record = useSessionRecord();
 const viewer = useSessionViewer();
@@ -35,12 +39,14 @@ function toTop(): void {
 <template>
   <AppShell>
     <Transition name="page" mode="out-in" @before-enter="toTop">
-      <LiveView v-if="session.showLive" />
+      <MobileLiveView v-if="session.showLive && phone" />
+      <LiveView v-else-if="session.showLive" />
       <SessionView v-else-if="viewer.snapshot">
         <template v-if="viewer.source === 'cloud'" #actions><CloudSessionActions /></template>
       </SessionView>
       <PrivacyView v-else-if="appPage.privacyOpen" />
       <SettingsView v-else-if="appPage.settingsOpen" />
+      <MobileHome v-else-if="phone" @privacy="appPage.openPrivacy()" />
       <OnboardingView v-else @privacy="appPage.openPrivacy()" />
     </Transition>
   </AppShell>
