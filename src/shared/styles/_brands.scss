@@ -1,0 +1,4 @@
+// Brand palettes, laid over the Neboki tokens in global.scss. The root carries the brand
+// in data-brand (see shared/brand/brand.ts); Neboki is the base and needs no block.
+// A new brand redefines the same tokens in a light and a dark mixin, applied with
+// :root[data-brand='<id>'], under prefers-color-scheme: dark and with [data-theme='dark'].

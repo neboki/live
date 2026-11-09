@@ -1,0 +1,479 @@
+{
+  "brand": {
+    "name": "Neboki Live"
+  },
+  "start": {
+    "title": "Nueva sesión",
+    "keyHeading": "Tu clave de OpenAI",
+    "keyHeadingAzure": "Tu clave de Azure OpenAI",
+    "key": {
+      "label": "Clave de API de OpenAI",
+      "help": "Se queda en este navegador y va directa a OpenAI.",
+      "getOne": "Conseguir una clave",
+      "invalid": "No parece una clave de OpenAI. Empieza por «sk-».",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "remember": "Recordar en este dispositivo",
+      "azureHelp": "La clave de la página «Claves y punto de conexión» de tu recurso. Se queda en este navegador y va directa a tu recurso.",
+      "azureInvalid": "No parece una clave de Azure OpenAI.",
+      "provider": {
+        "label": "Dónde se ejecutan los modelos",
+        "openai": "OpenAI",
+        "azure": "Azure OpenAI"
+      },
+      "endpoint": {
+        "label": "Punto de conexión de Azure OpenAI",
+        "help": "El punto de conexión del recurso, en «Claves y punto de conexión». En los ajustes, los nombres de modelo deben ser los de tus implementaciones.",
+        "invalid": "No parece un punto de conexión de Azure OpenAI (https://<recurso>.openai.azure.com)."
+      }
+    },
+    "button": "Empezar",
+    "starting": "Elige qué compartir…",
+    "startingMic": "Activando el micrófono…",
+    "tabHint": "Elige la pestaña o pantalla de la llamada y marca «Compartir audio»: es lo único que oye @:{'brand.name'}.",
+    "micHint": "Permite el micrófono cuando el navegador lo pida.",
+    "mixedHint": "Elige la pestaña de la llamada y marca «Compartir audio»; después permite el micrófono.",
+    "home": "Inicio",
+    "source": {
+      "heading": "Qué escucha",
+      "micLabel": "Micrófono",
+      "micDefault": "El del sistema",
+      "micNumber": "Micrófono {n}",
+      "reveal": "Ver nombres",
+      "tab": {
+        "name": "Una pestaña",
+        "for": "Llamadas, vídeos y webinars en el ordenador",
+        "hint": "Comparte la pestaña o pantalla con la llamada o el vídeo. Lo que suena en tu sala no se oye."
+      },
+      "mic": {
+        "name": "Micrófono",
+        "for": "Reuniones en sala, entrevistas, conversaciones y eventos",
+        "hint": "Escucha lo que se dice a tu alrededor. Acerca el micrófono a quien habla o usa uno externo: cuanto más lejos, peor se entiende. Avisa a los presentes de que se está transcribiendo."
+      },
+      "mixed": {
+        "name": "Las dos",
+        "for": "Reuniones híbridas: gente en la llamada y en la sala",
+        "hint": "Mezcla la pestaña de la llamada con el micrófono de la sala. Usa auriculares para que el micrófono no recoja la llamada dos veces. Avisa a los presentes de que se está transcribiendo."
+      }
+    },
+    "where": {
+      "heading": "Dónde ver los subtítulos",
+      "floating": {
+        "name": "Ventana flotante",
+        "for": "Sobre la llamada y cualquier otra ventana, incluso fuera del navegador"
+      },
+      "page": {
+        "name": "En la aplicación",
+        "for": "Todo en esta pestaña: subtítulos, imagen sincronizada y ajustes"
+      },
+      "hint": {
+        "floating": "Los subtítulos se abren en una ventana flotante. Puedes traerlos a la aplicación en cualquier momento.",
+        "page": "Los subtítulos aparecen en esta página. Puedes hacerlos flotar sobre otras ventanas en cualquier momento."
+      },
+      "unavailable": "Este navegador no abre ventanas flotantes, así que los subtítulos se ven en esta página."
+    },
+    "install": {
+      "title": "Instala @:{'brand.name'} en el móvil",
+      "why": "Se abre desde la pantalla de inicio, a pantalla completa.",
+      "ios": "En Safari, toca Compartir y luego «Añadir a pantalla de inicio».",
+      "button": "Instalar",
+      "dismiss": "No mostrar más"
+    },
+    "demo": {
+      "or": "o, sin clave",
+      "button": "Pruébalo gratis 3 minutos",
+      "note": "Solo subtítulos traducidos, sin cuenta y sin clave. Habla, o pon un vídeo, y míralo en tu idioma."
+    }
+  },
+  "overlay": {
+    "region": "Subtítulos traducidos",
+    "listening": "Escuchando",
+    "listenMode": {
+      "title": "Qué escuchas",
+      "conversation": {
+        "label": "Conversación",
+        "hint": "Reunión o llamada"
+      },
+      "talk": {
+        "label": "Charla o vídeo",
+        "hint": "Clase, webinar, vídeo"
+      }
+    },
+    "paused": "En pausa",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "voiceOn": "Escuchar la traducción en voz alta",
+    "voiceOff": "Dejar de escuchar la traducción",
+    "original": "Audio original",
+    "originalOn": "Escuchar el audio original",
+    "originalOff": "Silenciar el audio original",
+    "minimize": "Hacer pequeña",
+    "expand": "Abrir",
+    "popOut": "Flotar sobre otras ventanas",
+    "popIn": "Volver a la página",
+    "waiting": "Esperando a que alguien hable…",
+    "latest": "Lo último",
+    "activity": {
+      "hearing": "Escuchando…",
+      "translating": "Traduciendo…"
+    },
+    "latency": "Retraso de la traducción",
+    "slow": "La traducción va con retraso; se pone al día juntando frases",
+    "resize": "Arrastra para cambiar el tamaño (o usa las flechas)",
+    "space": "Espacio",
+    "shortcut": "muestra u oculta la barra",
+    "shortcutExport": "exporta la conversación",
+    "hiddenHint": "Los subtítulos están ocultos. Para verlos de nuevo:",
+    "options": {
+      "title": "Opciones",
+      "source": {
+        "label": "Texto original",
+        "hint": "Lo que dicen, debajo de la traducción"
+      },
+      "voice": {
+        "label": "Escuchar la traducción",
+        "hint": "Una voz te la lee al oído"
+      },
+      "suggestions": {
+        "label": "Sugerencias de respuesta",
+        "hint": "Qué contestar, en tu idioma y en el suyo"
+      },
+      "questions": {
+        "label": "Preguntas que hacer",
+        "hint": "Ideas para preguntar o profundizar, en tu idioma y en el suyo"
+      },
+      "summary": {
+        "label": "Resumen en directo",
+        "hint": "Los puntos clave según avanza"
+      },
+      "speakers": {
+        "label": "Quién habla",
+        "hint": "Distingue las voces (experimental)"
+      }
+    },
+    "look": {
+      "title": "Apariencia",
+      "textSize": "Tamaño del texto",
+      "smaller": "Texto más pequeño",
+      "larger": "Texto más grande",
+      "theme": "Color",
+      "themes": {
+        "aurora": "Aurora",
+        "sunset": "Atardecer",
+        "ocean": "Océano",
+        "forest": "Bosque",
+        "graphite": "Grafito"
+      },
+      "opacity": "Opacidad del fondo",
+      "resizeHint": "Arrastra los bordes de la barra para cambiar su tamaño.",
+      "resetSize": "Tamaño original"
+    },
+    "glossary": {
+      "label": "Nombres y términos",
+      "hint": "Para que no los traduzca mal",
+      "placeholder": "Uno por línea: Acme, Kubernetes, Kenji Watanabe…",
+      "limit": "{max} términos como máximo"
+    },
+    "suggestions": {
+      "title": "Puedes responder",
+      "empty": "Aparecen cuando te hacen una pregunta."
+    },
+    "questions": {
+      "title": "Podrías preguntar",
+      "empty": "Aparecen cada pocas frases, según lo que se explica."
+    },
+    "summary": {
+      "title": "Resumen",
+      "empty": "Se va llenando según avanza."
+    },
+    "export": {
+      "label": "Exportar texto (.md)",
+      "done": "Exportada",
+      "file": "Descargar conversación"
+    },
+    "cost": {
+      "label": "≈ {cost} en esta sesión",
+      "hint": "Estimación según los tokens usados; lo que cuenta es tu factura de OpenAI.",
+      "limit": "Límite por sesión (€)",
+      "noLimit": "Sin límite",
+      "limitHint": "Al llegar a él la sesión se detiene. Se basa en la estimación.",
+      "unknown": "no disponible (un modelo no tiene precio conocido)",
+      "unknownShort": "sin precio",
+      "byModel": "Coste por modelo",
+      "rate": "≈ {rate}/h a este ritmo",
+      "billed": "Audio facturado: {sent} de {heard} oídos; el silencio se quedó en tu dispositivo.",
+      "nearLimit": "La sesión ha consumido el 80 % de su límite de gasto.",
+      "unpricedLimit": "Un modelo en uso no tiene precio conocido, así que la estimación y el límite de gasto no pueden contarlo."
+    },
+    "quality": {
+      "title": "Calidad",
+      "low": "Low cost",
+      "medium": "Medium",
+      "premium": "Premium",
+      "interpreter": "Intérprete",
+      "interpreterHint": "Traduce mientras hablan y con voz propia. Sin glosario.",
+      "perHour": "≈ {cost}/h",
+      "custom": "Modelos personalizados; elige un nivel para sustituirlos."
+    },
+    "models": {
+      "title": "Modelos",
+      "transcription": "Transcripción",
+      "translation": "Traducción",
+      "summary": "Resumen",
+      "suggestions": "Sugerencias",
+      "reset": "Restablecer valores"
+    },
+    "voice": {
+      "title": "Voz",
+      "engine": "Motor",
+      "browser": "Navegador",
+      "openai": "OpenAI (se cobra a tu clave)",
+      "model": "Modelo",
+      "voice": "Voz",
+      "free": "Gratis",
+      "recommended": "Recomendada",
+      "listen": "Escuchar {voice}",
+      "sample": "Hola, así sonarán las traducciones de tu reunión.",
+      "sampleFailed": "No se pudo reproducir la muestra. Revisa tu clave.",
+      "needsKey": "Pon tu clave de OpenAI para escuchar las voces",
+      "cost": "Las voces de OpenAI se cobran a tu clave (≈ 0,45 $/h); la del navegador es gratis.",
+      "interpreter": "En modo Intérprete la voz la pone el propio modelo de traducción."
+    },
+    "meeting": {
+      "label": "Sobre la reunión",
+      "hint": "Tema e idiomas, para transcribir mejor",
+      "topic": "Tema",
+      "topicPlaceholder": "Ej.: revisión técnica de aerogeneradores",
+      "languages": "Idiomas que se hablan (hasta {max})",
+      "note": "Se aplica al empezar la siguiente sesión. Sin idiomas, detecta cualquiera."
+    },
+    "forgetKey": "Olvidar clave y parar",
+    "speakers": {
+      "voice": "Voz {n}",
+      "rename": "Cambiar el nombre de esta voz"
+    },
+    "sound": {
+      "title": "Sonido",
+      "voice": "Voz traducida",
+      "original": "Audio original",
+      "screenShared": "El audio original solo se puede ajustar al compartir una pestaña; con la pantalla entera suena como siempre."
+    },
+    "startOver": {
+      "label": "Empezar de nuevo",
+      "hint": "Borra los subtítulos y las voces; la sesión sigue"
+    },
+    "sync": {
+      "label": "Imagen al ritmo de los subtítulos",
+      "hint": "Muestra la pestaña compartida en la app unos segundos por detrás, para que cada subtítulo caiga sobre su frase",
+      "on": "Ver la pestaña al ritmo de los subtítulos",
+      "off": "Volver a la pestaña en directo",
+      "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede"
+    },
+    "groups": {
+      "show": "Mostrar",
+      "accuracy": "Precisión"
+    },
+    "float": "Flotar"
+  },
+  "errors": {
+    "unexpected": "Algo ha fallado. Inténtalo de nuevo.",
+    "validation": "Revisa los datos introducidos.",
+    "unsupported": "Tu navegador no permite esta función.",
+    "pipUnsupported": "Este navegador no puede abrir la ventana flotante ni compartir pestañas. Elige «Micrófono»: los subtítulos se verán en esta página.",
+    "service": "El servicio de traducción no responde. Inténtalo de nuevo.",
+    "captureUnsupported": "Tu navegador no puede capturar audio. Usa Chrome o Edge en un ordenador.",
+    "shareCancelled": "Se canceló la compartición. Pulsa Empezar y elige una pestaña o pantalla.",
+    "noAudio": "No se compartió audio. Vuelve a intentarlo y marca «Compartir audio» en el diálogo.",
+    "audioEnded": "Se dejó de compartir, así que @:{'brand.name'} ya no oye nada.",
+    "captureFailed": "No se pudo capturar el audio. Inténtalo de nuevo.",
+    "invalidKey": "OpenAI ha rechazado la clave. Revísala e inténtalo de nuevo.",
+    "rateLimited": "OpenAI está limitando las peticiones ahora mismo. La traducción seguirá en un momento.",
+    "connectionFailed": "No se pudo conectar con OpenAI. Revisa tu conexión e inténtalo de nuevo.",
+    "connectionLost": "Se perdió la conexión con OpenAI. Pulsa Empezar para seguir.",
+    "interpreterAzure": "El modo Intérprete solo funciona con OpenAI, no con Azure. Elige otro nivel de calidad.",
+    "spendLimit": "La sesión ha llegado a tu límite de gasto y se ha detenido. Súbelo en los ajustes si quieres seguir.",
+    "noCredit": "Tu cuenta de OpenAI se ha quedado sin saldo. Añade saldo en la facturación de OpenAI y vuelve a empezar.",
+    "ttsFailed": "Ha fallado la voz de OpenAI, así que lee la voz del navegador.",
+    "invalidEndpoint": "El endpoint de Azure no es válido. Revísalo en la página de inicio.",
+    "modelNotFound": "OpenAI no tiene ningún modelo con ese nombre, o tu clave no puede usarlo. Revisa los nombres de modelo en los ajustes.",
+    "badSettings": "OpenAI ha rechazado los ajustes de la petición. Revisa los nombres de modelo en los ajustes o elige un nivel de calidad.",
+    "deploymentNotFound": "Azure no tiene ningún deployment con ese nombre. Revisa los nombres de modelo en los ajustes: deben coincidir con tus deployments.",
+    "sessionFile": "Ese archivo no es una conversación de @:{'brand.name'} o está dañado.",
+    "sessionFileVersion": "Esa conversación se guardó con una versión más nueva de @:{'brand.name'}. Actualiza la página e inténtalo de nuevo.",
+    "micUnsupported": "Tu navegador no puede usar el micrófono. Prueba con Chrome, Edge, Safari o Firefox actualizados.",
+    "micDenied": "No se dio permiso para el micrófono. Permítelo desde el icono de la barra de direcciones y vuelve a empezar.",
+    "noMic": "No se encontró ningún micrófono. Conecta uno y vuelve a empezar.",
+    "micBusy": "El micrófono está ocupado por otra aplicación o ha fallado. Ciérrala o elige otro micrófono.",
+    "micEnded": "El micrófono se desconectó, así que @:{'brand.name'} ya no oye nada.",
+    "awayResumed": "Al salir de la app dejó de oír, así que puede faltar lo que se dijo. Ya vuelve a escuchar.",
+    "awayPaused": "Al salir de la app el micrófono se pausó y no ha vuelto. Empieza de nuevo para seguir.",
+    "demoEnded": "Se acabó la demo de 3 minutos. Añade tu clave de OpenAI para seguir, desde ≈ 0,24 $ la hora.",
+    "demoQuota": "No quedan demos gratis por hoy. Añade tu clave de OpenAI para seguir.",
+    "demoUnavailable": "La demo gratis no está disponible ahora. Prueba más tarde o usa tu propia clave."
+  },
+  "live": {
+    "badge": "en directo",
+    "stop": "Parar",
+    "tabSilent": "No llega sonido de lo que compartes. Si es un vídeo, dale a play en su pestaña.",
+    "notice": {
+      "tab": "Escuchando el audio que compartes.",
+      "mic": "Escuchando el micrófono.",
+      "mixed": "Escuchando la pestaña que compartes y el micrófono."
+    },
+    "where": {
+      "floating": "La traducción aparece en la ventana flotante un segundo después de cada frase.",
+      "page": "La traducción aparece aquí un segundo después de cada frase."
+    },
+    "tip": "Consejo: la ventana flotante queda por encima de todas las demás, incluso fuera del navegador. Muévela desde su barra de título y cambia su tamaño desde los bordes.",
+    "pageTip": "Mantén esta pestaña a la vista: con un segundo monitor, o con la imagen al ritmo de los subtítulos, puedes seguir la llamada y leer a la vez. La pantalla se queda encendida mientras tanto.",
+    "micPageTip": "Deja el móvil o el portátil donde puedas leerlo de un vistazo: la pantalla se queda encendida mientras escuchas.",
+    "roomTip": "En una sala: deja el micrófono cerca de quien habla y lejos de ventiladores o proyectores. Recuerda avisar a los presentes de que se está transcribiendo.",
+    "reconnecting": "Se perdió la conexión. Reconectando…",
+    "error": {
+      "dismiss": "Cerrar",
+      "restart": "Reiniciar"
+    },
+    "floating": {
+      "open": {
+        "title": "Tus subtítulos están en la ventana flotante",
+        "text": "Queda por encima de todo: colócala donde no estorbe y vuelve a tu llamada. Tráelos aquí cuando quieras, o para la sesión desde cualquiera de los dos sitios."
+      },
+      "bring": "Traer a la página"
+    },
+    "options": {
+      "hint": "Las mismas opciones que en la ventana flotante: los cambios se ven allí al momento."
+    },
+    "sync": {
+      "title": "La pestaña compartida, al ritmo de los subtítulos",
+      "buffering": "Reteniendo la imagen… {seconds} s",
+      "lag": "{seconds} s por detrás del directo",
+      "pause": "Pausar",
+      "resume": "Reanudar",
+      "catchUp": "Ir al directo",
+      "delay": "Retraso",
+      "seconds": "{seconds} s",
+      "hint": "Mira el vídeo aquí, no en la pestaña original: el sonido sale de aquí unos segundos por detrás y cada subtítulo cae sobre su frase. Es una copia de la pestaña: los botones del reproductor original no responden, usa los de aquí. Atajos: espacio o K pausa, F pantalla completa, C subtítulos.",
+      "failed": "En este navegador no se puede reproducir la imagen con retraso.",
+      "live": "Directo",
+      "captions": "Subtítulos",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa",
+      "delayHint": "Cuánto se retrasa la imagen. Si los subtítulos llegan tarde a menudo, súbelo"
+    },
+    "side": {
+      "label": "Opciones",
+      "show": "Mostrar opciones y ayuda",
+      "hide": "Ocultar el panel",
+      "help": "Ayuda"
+    },
+    "demoStarted": "Demo gratis: 3 minutos de subtítulos traducidos. Añade tu clave para seguir."
+  },
+  "onboarding": {
+    "consent": {
+      "text": "Vas a traducir lo que dicen otras personas: asegúrate de que están de acuerdo. El audio y el texto se envían a OpenAI con tu clave.",
+      "link": "Qué se envía y adónde"
+    }
+  },
+  "session": {
+    "md": {
+      "title": "Sesión de @:{'brand.name'}",
+      "date": "Fecha",
+      "pair": "Idiomas",
+      "duration": "Duración",
+      "cost": "Coste estimado",
+      "transcript": "Transcripción",
+      "summary": "Resumen",
+      "glossary": "Nombres y términos"
+    },
+    "view": {
+      "back": "Inicio",
+      "ended": "Conversación terminada",
+      "fromFile": "Conversación guardada",
+      "download": "Descargar",
+      "markdown": "Texto (.md)",
+      "srt": "Subtítulos (.srt)",
+      "vtt": "Subtítulos (.vtt)",
+      "rate": "Por hora",
+      "audioBilled": "Audio facturado: {sent} de {heard} oídos; el silencio se quedó en tu dispositivo.",
+      "saved": "Descargada",
+      "downloadFailed": "No se pudo descargar.",
+      "lines": "Frases",
+      "search": "Buscar en la conversación",
+      "noMatch": "Ninguna frase coincide con la búsqueda.",
+      "noLines": "No se oyó ninguna frase.",
+      "speaker": "Voz {n}"
+    },
+    "shelf": {
+      "ended": "Última conversación",
+      "recent": "{time} · {duration} · {lines} frases",
+      "view": "Ver",
+      "open": "Abrir conversación guardada",
+      "opening": "Abriendo…",
+      "drop": "o suelta aquí el archivo"
+    }
+  },
+  "language": {
+    "label": "Traducir a",
+    "original": "Sin traducir (solo transcripción)",
+    "originalShort": "TXT"
+  },
+  "nav": {
+    "label": "Navegación",
+    "newSession": "Nueva sesión",
+    "live": "En directo",
+    "conversations": "Conversaciones",
+    "recent": "Última conversación",
+    "openFile": "Abrir archivo…",
+    "opening": "Abriendo…",
+    "privacy": "Privacidad",
+    "github": "GitHub",
+    "home": "Inicio de @:{'brand.name'}",
+    "menu": "Abrir el menú",
+    "closeMenu": "Cerrar el menú",
+    "uiLanguage": "Idioma de la interfaz",
+    "theme": {
+      "label": "Aspecto",
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "settings": "Ajustes",
+    "brand": {
+      "label": "Marca"
+    },
+    "expand": "Mostrar el menú",
+    "collapse": "Plegar el menú"
+  },
+  "settingsPage": {
+    "title": "Ajustes",
+    "intro": "Se guardan en este navegador y valen para la próxima sesión. Durante una sesión también los tienes en el menú de la barra, dentro o fuera de la ventana flotante.",
+    "general": {
+      "title": "Idioma y aspecto",
+      "translateHint": "Idioma al que se traducen los subtítulos y la voz. También se cambia desde la barra durante la sesión.",
+      "uiLanguageHint": "Idioma de los menús y botones de la aplicación.",
+      "themeHint": "Claro, oscuro o el que use tu sistema.",
+      "translate": "Idioma de los subtítulos"
+    },
+    "listen": "Al empezar una sesión",
+    "key": "Conexión",
+    "backup": {
+      "title": "Copia de seguridad",
+      "hint": "Guarda tus ajustes en un archivo para llevarlos a otro navegador o recuperarlos después. La clave nunca se incluye.",
+      "export": "Guardar ajustes",
+      "import": "Restaurar desde archivo…",
+      "reset": "Restablecer todo",
+      "resetConfirm": "Pulsa otra vez para restablecer",
+      "exported": "Ajustes guardados en tu carpeta de descargas.",
+      "exportFailed": "El navegador no dejó guardar el archivo. Inténtalo de nuevo.",
+      "restored": "Ajustes restaurados. Recargando…",
+      "resetDone": "Ajustes restablecidos. Recargando…",
+      "errors": {
+        "tooLarge": "Ese archivo es demasiado grande para ser una copia de ajustes.",
+        "unreadable": "No se pudo leer ese archivo.",
+        "notOurs": "Ese archivo no es una copia de ajustes de @:{'brand.name'}.",
+        "newer": "Esa copia es de una versión más nueva. Actualiza la página e inténtalo de nuevo.",
+        "empty": "Esa copia no contiene ningún ajuste."
+      }
+    }
+  }
+}

@@ -1,0 +1,479 @@
+{
+  "brand": {
+    "name": "Neboki Live"
+  },
+  "start": {
+    "title": "New session",
+    "keyHeading": "Your OpenAI key",
+    "keyHeadingAzure": "Your Azure OpenAI key",
+    "key": {
+      "label": "OpenAI API key",
+      "help": "Stays in this browser and goes straight to OpenAI.",
+      "getOne": "Get a key",
+      "invalid": "That doesn't look like an OpenAI key. It starts with “sk-”.",
+      "show": "Show",
+      "hide": "Hide",
+      "remember": "Remember on this device",
+      "azureHelp": "The key from your resource’s “Keys and Endpoint” page. Stays in this browser and goes straight to your resource.",
+      "azureInvalid": "That doesn't look like an Azure OpenAI key.",
+      "provider": {
+        "label": "Where the models run",
+        "openai": "OpenAI",
+        "azure": "Azure OpenAI"
+      },
+      "endpoint": {
+        "label": "Azure OpenAI endpoint",
+        "help": "The resource endpoint from “Keys and Endpoint”. In the settings, the model names must be your deployment names.",
+        "invalid": "That doesn't look like an Azure OpenAI endpoint (https://<resource>.openai.azure.com)."
+      }
+    },
+    "button": "Start",
+    "starting": "Choose what to share…",
+    "startingMic": "Turning on the microphone…",
+    "tabHint": "Pick the tab or screen with the call and tick “Share audio” — that’s all @:{'brand.name'} hears.",
+    "micHint": "Allow the microphone when the browser asks.",
+    "mixedHint": "Pick the call’s tab and tick “Share audio”, then allow the microphone.",
+    "home": "Home",
+    "source": {
+      "heading": "What it listens to",
+      "micLabel": "Microphone",
+      "micDefault": "System default",
+      "micNumber": "Microphone {n}",
+      "reveal": "Show names",
+      "tab": {
+        "name": "A tab",
+        "for": "Calls, videos and webinars on your computer",
+        "hint": "Share the tab or screen with the call or video. What is said in your room is not heard."
+      },
+      "mic": {
+        "name": "Microphone",
+        "for": "Meeting rooms, interviews, conversations and events",
+        "hint": "Listens to what is said around you. Keep the microphone close to whoever speaks, or use an external one: the further away, the worse it understands. Let the people present know they are being transcribed."
+      },
+      "mixed": {
+        "name": "Both",
+        "for": "Hybrid meetings: people on the call and in the room",
+        "hint": "Mixes the call’s tab with the room’s microphone. Wear headphones so the microphone doesn’t pick up the call twice. Let the people present know they are being transcribed."
+      }
+    },
+    "where": {
+      "heading": "Where to see the captions",
+      "floating": {
+        "name": "Floating window",
+        "for": "Above the call and every other window, even outside the browser"
+      },
+      "page": {
+        "name": "In the app",
+        "for": "Everything in this tab: captions, synced picture and settings"
+      },
+      "hint": {
+        "floating": "The captions open in a floating window. You can bring them into the app at any time.",
+        "page": "The captions show on this page. You can float them above other windows at any time."
+      },
+      "unavailable": "This browser can’t open floating windows, so the captions show on this page."
+    },
+    "install": {
+      "title": "Install @:{'brand.name'} on your phone",
+      "why": "It opens from your home screen, full screen.",
+      "ios": "In Safari, tap Share, then “Add to Home Screen”.",
+      "button": "Install",
+      "dismiss": "Don't show again"
+    },
+    "demo": {
+      "or": "or, without a key",
+      "button": "Try it free for 3 minutes",
+      "note": "Translated captions only, no account and no key. Speak, or play a video, and watch it in your language."
+    }
+  },
+  "overlay": {
+    "region": "Translated captions",
+    "listening": "Listening",
+    "listenMode": {
+      "title": "Listening to",
+      "conversation": {
+        "label": "Conversation",
+        "hint": "Meeting or call"
+      },
+      "talk": {
+        "label": "Talk or video",
+        "hint": "Class, webinar, video"
+      }
+    },
+    "paused": "Paused",
+    "pause": "Pause",
+    "resume": "Resume",
+    "voiceOn": "Hear the translation out loud",
+    "voiceOff": "Stop hearing the translation",
+    "original": "Original audio",
+    "originalOn": "Hear the original audio",
+    "originalOff": "Mute the original audio",
+    "minimize": "Make smaller",
+    "expand": "Expand",
+    "popOut": "Float above other windows",
+    "popIn": "Back to the page",
+    "waiting": "Waiting for someone to speak…",
+    "latest": "Latest",
+    "activity": {
+      "hearing": "Listening…",
+      "translating": "Translating…"
+    },
+    "latency": "Translation delay",
+    "slow": "The translation is running behind; it catches up by joining sentences",
+    "resize": "Drag to resize (or use the arrow keys)",
+    "space": "Space",
+    "shortcut": "shows or hides the bar",
+    "shortcutExport": "exports the conversation",
+    "hiddenHint": "The captions are hidden. To show them again:",
+    "options": {
+      "title": "Options",
+      "source": {
+        "label": "Original text",
+        "hint": "What they say, under the translation"
+      },
+      "voice": {
+        "label": "Hear the translation",
+        "hint": "A voice reads it to you"
+      },
+      "suggestions": {
+        "label": "Reply suggestions",
+        "hint": "What to answer, in your language and theirs"
+      },
+      "questions": {
+        "label": "Questions to ask",
+        "hint": "Ideas to ask about or dig into, in your language and theirs"
+      },
+      "summary": {
+        "label": "Live summary",
+        "hint": "Key points as it goes on"
+      },
+      "speakers": {
+        "label": "Who is speaking",
+        "hint": "Tells voices apart (experimental)"
+      }
+    },
+    "look": {
+      "title": "Appearance",
+      "textSize": "Text size",
+      "smaller": "Smaller text",
+      "larger": "Larger text",
+      "theme": "Colour",
+      "themes": {
+        "aurora": "Aurora",
+        "sunset": "Sunset",
+        "ocean": "Ocean",
+        "forest": "Forest",
+        "graphite": "Graphite"
+      },
+      "opacity": "Background opacity",
+      "resizeHint": "Drag the edges of the bar to resize it.",
+      "resetSize": "Original size"
+    },
+    "glossary": {
+      "label": "Names and terms",
+      "hint": "So they aren't mistranslated",
+      "placeholder": "One per line: Acme, Kubernetes, Kenji Watanabe…",
+      "limit": "{max} terms max"
+    },
+    "suggestions": {
+      "title": "You could reply",
+      "empty": "They appear when you're asked a question."
+    },
+    "questions": {
+      "title": "You could ask",
+      "empty": "They appear every few sentences, from what is explained."
+    },
+    "summary": {
+      "title": "Summary",
+      "empty": "Fills up as it goes on."
+    },
+    "export": {
+      "label": "Export text (.md)",
+      "done": "Exported",
+      "file": "Download conversation"
+    },
+    "cost": {
+      "label": "≈ {cost} this session",
+      "limit": "Limit per session (€)",
+      "noLimit": "No limit",
+      "limitHint": "The session stops when it gets there. Based on the estimate.",
+      "hint": "Estimate from token usage; your OpenAI bill is what counts.",
+      "unknown": "not available (a model has no known price)",
+      "unknownShort": "no price",
+      "byModel": "Cost by model",
+      "rate": "≈ {rate}/h at this pace",
+      "billed": "Audio billed: {sent} of {heard} heard; the silence stayed on your device.",
+      "nearLimit": "The session has used 80% of its spending limit.",
+      "unpricedLimit": "A model in use has no known price, so the estimate and the spending limit can't count it."
+    },
+    "quality": {
+      "title": "Quality",
+      "low": "Low cost",
+      "medium": "Medium",
+      "premium": "Premium",
+      "interpreter": "Interpreter",
+      "interpreterHint": "Translates while they speak, in its own voice. No glossary.",
+      "perHour": "≈ {cost}/h",
+      "custom": "Custom models in use; pick a level to replace them."
+    },
+    "models": {
+      "title": "Models",
+      "transcription": "Transcription",
+      "translation": "Translation",
+      "summary": "Summary",
+      "suggestions": "Suggestions",
+      "reset": "Reset to defaults"
+    },
+    "voice": {
+      "title": "Voice",
+      "engine": "Engine",
+      "browser": "Browser",
+      "openai": "OpenAI (billed to your key)",
+      "model": "Model",
+      "voice": "Voice",
+      "free": "Free",
+      "recommended": "Recommended",
+      "listen": "Listen to {voice}",
+      "sample": "Hello, this is how the translations of your meeting will sound.",
+      "sampleFailed": "The sample could not be played. Check your key.",
+      "needsKey": "Enter your OpenAI key to hear the voices",
+      "cost": "OpenAI voices are billed to your key (≈ $0.45/h); the browser voice is free.",
+      "interpreter": "In Interpreter mode the translation model speaks with its own voice."
+    },
+    "meeting": {
+      "label": "About the meeting",
+      "hint": "Topic and languages, for a better transcript",
+      "topic": "Topic",
+      "topicPlaceholder": "E.g. wind turbine technical review",
+      "languages": "Languages spoken (up to {max})",
+      "note": "Applies when the next session starts. With no languages, any is detected."
+    },
+    "forgetKey": "Forget key and stop",
+    "speakers": {
+      "voice": "Voice {n}",
+      "rename": "Rename this voice"
+    },
+    "sound": {
+      "title": "Sound",
+      "voice": "Translated voice",
+      "original": "Original audio",
+      "screenShared": "The original audio can only be adjusted when sharing a tab; with the whole screen it plays as usual."
+    },
+    "startOver": {
+      "label": "Start over",
+      "hint": "Clears the captions and voices; the session goes on"
+    },
+    "sync": {
+      "label": "Picture in step with the captions",
+      "hint": "Shows the shared tab in the app a few seconds behind, so each caption lands on its sentence",
+      "on": "Watch the tab in step with the captions",
+      "off": "Back to the live tab",
+      "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen"
+    },
+    "groups": {
+      "show": "Show",
+      "accuracy": "Accuracy"
+    },
+    "float": "Float"
+  },
+  "errors": {
+    "unexpected": "Something went wrong. Please try again.",
+    "validation": "Please check the data you entered.",
+    "unsupported": "Your browser doesn't support this feature.",
+    "pipUnsupported": "This browser can’t open the floating window or share tabs. Choose “Microphone”: the captions will show on this page.",
+    "service": "The translation service isn't responding. Please try again.",
+    "captureUnsupported": "Your browser can't capture audio. Use Chrome or Edge on a computer.",
+    "shareCancelled": "Sharing was cancelled. Press Start and choose a tab or screen.",
+    "noAudio": "No audio was shared. Try again and tick “Share audio” in the dialog.",
+    "audioEnded": "Sharing stopped, so @:{'brand.name'} can't hear anything any more.",
+    "captureFailed": "The audio couldn't be captured. Please try again.",
+    "invalidKey": "OpenAI rejected the key. Check it and try again.",
+    "rateLimited": "OpenAI is limiting requests right now. Translation will resume in a moment.",
+    "connectionFailed": "Couldn't connect to OpenAI. Check your connection and try again.",
+    "connectionLost": "The connection to OpenAI was lost. Press Start to continue.",
+    "interpreterAzure": "Interpreter mode works with OpenAI only, not Azure. Pick another quality level.",
+    "spendLimit": "The session reached your spending limit and stopped. Raise it in the settings to go on.",
+    "noCredit": "Your OpenAI account has no credit left. Add credit in your OpenAI billing settings and start again.",
+    "ttsFailed": "The OpenAI voice failed, so your browser's voice is reading instead.",
+    "invalidEndpoint": "That Azure endpoint isn't valid. Check it on the home page.",
+    "deploymentNotFound": "Azure has no deployment with that name. Check the model names in settings: they must match your deployments.",
+    "modelNotFound": "OpenAI has no model with that name, or your key can’t use it. Check the model names in settings.",
+    "badSettings": "OpenAI rejected the request settings. Check the model names in settings, or pick a quality level.",
+    "sessionFile": "That file is not a @:{'brand.name'} conversation, or it is damaged.",
+    "sessionFileVersion": "That conversation was saved by a newer @:{'brand.name'}. Reload the page and try again.",
+    "micUnsupported": "Your browser can’t use the microphone. Try an up-to-date Chrome, Edge, Safari or Firefox.",
+    "micDenied": "Microphone access was not allowed. Allow it from the icon in the address bar and start again.",
+    "noMic": "No microphone was found. Plug one in and start again.",
+    "micBusy": "The microphone is in use by another app or failed. Close that app or pick another microphone.",
+    "micEnded": "The microphone was disconnected, so @:{'brand.name'} can’t hear anything any more.",
+    "awayResumed": "It stopped hearing while you were out of the app, so some of what was said may be missing. It is listening again.",
+    "awayPaused": "The microphone paused when you left the app and has not come back. Start again to carry on.",
+    "demoEnded": "The 3-minute demo is over. Add your OpenAI key to keep going, from ≈ $0.24 an hour.",
+    "demoQuota": "No more free demos today. Add your OpenAI key to keep going.",
+    "demoUnavailable": "The free demo is not available right now. Try again later, or use your own key."
+  },
+  "live": {
+    "badge": "live",
+    "stop": "Stop",
+    "tabSilent": "No sound is coming from what you shared. If it is a video, press play in its tab.",
+    "notice": {
+      "tab": "Listening to the audio you shared.",
+      "mic": "Listening to the microphone.",
+      "mixed": "Listening to the tab you shared and the microphone."
+    },
+    "where": {
+      "floating": "Translations appear in the floating window about a second after each sentence.",
+      "page": "Translations appear here about a second after each sentence."
+    },
+    "tip": "Tip: the floating window stays on top of every other window, even outside the browser. Drag it by its title bar and resize it from its edges.",
+    "pageTip": "Keep this tab in view: a second monitor, or the picture in step with the captions, lets you follow the call and read at once. The screen stays on meanwhile.",
+    "micPageTip": "Leave the phone or laptop where you can read it at a glance: the screen stays on while you listen.",
+    "roomTip": "In a room: keep the microphone close to whoever speaks and away from fans or projectors. Remember to tell the people present that they are being transcribed.",
+    "reconnecting": "Connection lost. Reconnecting…",
+    "error": {
+      "dismiss": "Dismiss",
+      "restart": "Restart"
+    },
+    "floating": {
+      "open": {
+        "title": "Your captions are in the floating window",
+        "text": "It stays on top of everything: put it where it doesn’t get in the way and go back to your call. Bring the captions back here whenever you like, or stop the session from either place."
+      },
+      "bring": "Bring to the page"
+    },
+    "options": {
+      "hint": "The same options as in the floating window: changes show there at once."
+    },
+    "sync": {
+      "title": "The shared tab, in step with the captions",
+      "buffering": "Holding the picture back… {seconds} s",
+      "lag": "{seconds} s behind real time",
+      "pause": "Pause",
+      "resume": "Resume",
+      "catchUp": "Go live",
+      "delay": "Delay",
+      "seconds": "{seconds} s",
+      "hint": "Watch the video here, not in the original tab: its sound comes from here a few seconds behind, and each caption lands on its sentence. It is a copy of the tab: the original player’s buttons do not respond, use these. Shortcuts: Space or K pauses, F fullscreen, C captions.",
+      "failed": "The picture could not be played behind time in this browser.",
+      "live": "Live",
+      "captions": "Captions",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "delayHint": "How far the picture is held back. If captions often come late, raise it"
+    },
+    "side": {
+      "label": "Options",
+      "show": "Show options and help",
+      "hide": "Hide the panel",
+      "help": "Help"
+    },
+    "demoStarted": "Free demo: 3 minutes of translated captions. Add your own key to keep going."
+  },
+  "onboarding": {
+    "consent": {
+      "text": "You will translate other people's speech: make sure they agree. The audio and text are sent to OpenAI with your key.",
+      "link": "What is sent and where"
+    }
+  },
+  "session": {
+    "md": {
+      "title": "@:{'brand.name'} session",
+      "date": "Date",
+      "pair": "Languages",
+      "duration": "Duration",
+      "cost": "Estimated cost",
+      "transcript": "Transcript",
+      "summary": "Summary",
+      "glossary": "Names and terms"
+    },
+    "view": {
+      "back": "Home",
+      "ended": "Conversation ended",
+      "fromFile": "Saved conversation",
+      "download": "Download",
+      "markdown": "Text (.md)",
+      "srt": "Subtitles (.srt)",
+      "vtt": "Subtitles (.vtt)",
+      "rate": "Per hour",
+      "audioBilled": "Audio billed: {sent} of {heard} heard; the silence stayed on your device.",
+      "saved": "Downloaded",
+      "downloadFailed": "The download failed.",
+      "lines": "Sentences",
+      "search": "Search the conversation",
+      "noMatch": "No sentence matches the search.",
+      "noLines": "No sentence was heard.",
+      "speaker": "Voice {n}"
+    },
+    "shelf": {
+      "ended": "Last conversation",
+      "recent": "{time} · {duration} · {lines} sentences",
+      "view": "View",
+      "open": "Open a saved conversation",
+      "opening": "Opening…",
+      "drop": "or drop the file here"
+    }
+  },
+  "language": {
+    "label": "Translate into",
+    "original": "Don't translate (transcription only)",
+    "originalShort": "TXT"
+  },
+  "nav": {
+    "label": "Navigation",
+    "newSession": "New session",
+    "live": "Live",
+    "conversations": "Conversations",
+    "recent": "Last conversation",
+    "openFile": "Open file…",
+    "opening": "Opening…",
+    "privacy": "Privacy",
+    "github": "GitHub",
+    "home": "@:{'brand.name'} home",
+    "menu": "Open the menu",
+    "closeMenu": "Close the menu",
+    "uiLanguage": "Interface language",
+    "theme": {
+      "label": "Appearance",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "settings": "Settings",
+    "brand": {
+      "label": "Brand"
+    },
+    "expand": "Show the menu",
+    "collapse": "Fold the menu"
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "intro": "Saved in this browser and used for the next session. During a session the bar’s menu has them too, in the page or the floating window.",
+    "general": {
+      "title": "Language and look",
+      "translateHint": "The language captions and voice are translated into. The bar can change it during a session too.",
+      "uiLanguageHint": "The language of the app’s menus and buttons.",
+      "themeHint": "Light, dark or whatever your system uses.",
+      "translate": "Caption language"
+    },
+    "listen": "When a session starts",
+    "key": "Connection",
+    "backup": {
+      "title": "Backup",
+      "hint": "Save your settings to a file to take them to another browser or get them back later. The key is never included.",
+      "export": "Save settings",
+      "import": "Restore from file…",
+      "reset": "Reset everything",
+      "resetConfirm": "Click again to reset",
+      "exported": "Settings saved to your downloads folder.",
+      "exportFailed": "The browser did not let the file be saved. Try again.",
+      "restored": "Settings restored. Reloading…",
+      "resetDone": "Settings reset. Reloading…",
+      "errors": {
+        "tooLarge": "That file is too large to be a settings backup.",
+        "unreadable": "That file could not be read.",
+        "notOurs": "That file is not a @:{'brand.name'} settings backup.",
+        "newer": "That backup comes from a newer version. Reload the page and try again.",
+        "empty": "That backup holds no settings."
+      }
+    }
+  }
+}

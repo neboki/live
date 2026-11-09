@@ -1,0 +1,53 @@
+// Small card for secondary info (summary, suggestions): quieter than the captions,
+// fixed height, and its own scroll so it never grows the bar.
+@mixin card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px 0;
+  border: 1px solid var(--glass-line);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 3%);
+}
+
+@mixin head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--glass-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+@mixin count {
+  min-width: 16px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-hover);
+  font-size: 10px;
+  letter-spacing: 0;
+  line-height: 16px;
+  text-align: center;
+}
+
+@mixin body {
+  max-height: calc(104px * var(--scale));
+  padding: 0 4px 10px 0;
+  margin-right: -4px;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgb(255 255 255 / 18%) transparent;
+  scrollbar-width: thin;
+
+  // The edge fades instead of cutting a line in half
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 12px), transparent);
+}
+
+@mixin empty {
+  padding-bottom: 10px;
+  color: var(--glass-muted);
+  font-size: calc(12.5px * var(--scale));
+}

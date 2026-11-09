@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`toMarkdown > matches the snapshot 1`] = `
+[
+  "- **Languages:** EN → ES",
+  "- **Duration:** 01:02:05",
+  "- **Estimated cost:** ≈ €0.00",
+  "",
+  "## Summary",
+  "",
+  "- Numbers went up",
+  "",
+  "## Glossary",
+  "",
+  "- Acme",
+  "- Neboki Live",
+  "",
+  "## Transcript",
+  "",
+  "- 14:30:05 — Hello everyone. / Hola a todos.",
+  "- 14:30:12 — Q3 numbers are up. / Suben.",
+  "",
+]
+`;

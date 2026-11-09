@@ -1,0 +1,34 @@
+// Motion of the caption lines: words coming into focus, a finished sentence settling
+// into the history, the breathing strip of the sentence being said.
+
+// A finished sentence settles into the history instead of jumping there
+.settle-enter-active {
+  animation: settle 0.5s var(--ease-out);
+}
+
+@keyframes focus-in {
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes settle {
+  from {
+    color: #fff;
+    opacity: 0.6;
+    transform: translateY(0.6em);
+  }
+}
+
+@keyframes breathe {
+  from {
+    opacity: 0.55;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

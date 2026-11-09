@@ -1,0 +1,539 @@
+// Shared building blocks used by every page: the top bar, buttons, segmented controls and labels
+
+// Top bar: the product name on the left, page actions on the right, a thin coral edge underneath
+.lg-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-xs);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong) 50%, var(--accent));
+  }
+
+  &__inner {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    max-width: 1040px;
+    height: 48px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  &__name {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  &__mark {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-xs);
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  &__badge {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-left: auto;
+  }
+}
+
+// Page header inside the app frame: the page title on the left, its actions on the right,
+// across the whole width beside the sidebar
+.lg-head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  min-height: 60px;
+  padding: 10px clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+
+  // Below the phone bar, which is sticky too
+  @media (width < 900px) {
+    top: 52px;
+  }
+
+  &__title {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+  }
+}
+
+// Page body inside the app frame: fluid, with a cap only for very wide screens
+.lg-page {
+  width: 100%;
+  max-width: 1600px;
+  padding: clamp(16px, 3vw, 32px) clamp(16px, 3vw, 40px) 48px;
+}
+
+// The bar's controls (styled for its dark glass) shown on an app page: their glass
+// variables take the page's tokens, so they read as part of the page in either scheme
+.lg-glass-page {
+  --glass-rgb: var(--panel-rgb);
+  --glass-fg: var(--fg);
+  --glass-muted: var(--muted);
+  --glass-line: var(--line);
+  --glass-hover: var(--hover);
+  --glass-accent: var(--accent);
+  --glass-field: var(--bg);
+  --glass-track: var(--line-strong);
+  --glass-chip: var(--hover);
+  --glass-alpha: 1;
+  --level: 0;
+  --scale: 1;
+}
+
+// A titled panel on an app page
+.lg-card {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  padding: clamp(18px, 2vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-xs);
+
+  &__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+// Buttons: outlined pill by default, coral for the one main action, quiet for links in a row
+// For screen readers only (live regions, labels that the layout cannot show)
+.lg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lg-btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--fg);
+  font: 500 12.5px var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.18s ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  // The brand gradient, a top highlight, and a sheen that sweeps across on hover
+  &--primary {
+    position: relative;
+    overflow: hidden;
+    height: 38px;
+    padding: 0 22px;
+    border-color: transparent;
+    background: var(--brand-gradient);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 25%),
+      0 3px 14px var(--accent-glow);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    transition:
+      box-shadow 0.25s ease,
+      transform 0.35s var(--ease-spring);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 35%), transparent 65%);
+      transform: translateX(-100%);
+      pointer-events: none;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: transparent;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 25%),
+        0 8px 28px var(--accent-glow-strong);
+      color: #fff;
+      transform: translateY(-1px);
+
+      &::after {
+        transform: translateX(100%);
+        transition: transform 0.7s var(--ease-out);
+      }
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+  }
+
+  &--quiet {
+    border-color: transparent;
+    color: var(--muted);
+
+    &:hover:not(:disabled) {
+      border-color: transparent;
+      background: var(--hover);
+      color: var(--fg);
+    }
+  }
+}
+
+// Small uppercase label that names a group without competing with its content
+.lg-label {
+  color: var(--subtle);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+// Big choice cards over a native radio group (audio source, caption placement). The radio stays
+// for keyboard and screen readers, the card shows the choice. Columns come from --lg-choice-columns
+.lg-choice {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  // Reads as the title of the card it sits in
+  &__label {
+    margin-bottom: 6px;
+    padding: 0;
+    color: var(--fg);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  // Cards side by side; stacked on a phone
+  &__options {
+    display: grid;
+    grid-template-columns: repeat(var(--lg-choice-columns, 2), minmax(0, 1fr));
+    gap: 8px;
+
+    @media (width <= 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__option {
+    position: relative;
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    padding: 14px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel);
+    cursor: pointer;
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s;
+
+    &:hover {
+      border-color: var(--subtle);
+    }
+
+    &:focus-within {
+      box-shadow: var(--shadow-focus);
+    }
+
+    &--on,
+    &--on:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    &--off {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+  }
+
+  &__radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__icon {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 8px;
+    fill: none;
+    stroke: var(--muted);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+
+    // A phone stacks the cards: the icon would only add height
+    @media (width <= 480px) {
+      display: none;
+    }
+  }
+
+  &__icon-fill {
+    fill: var(--muted);
+    stroke: none;
+  }
+
+  &__option--on &__icon {
+    stroke: var(--accent);
+  }
+
+  &__option--on &__icon-fill {
+    fill: var(--accent);
+  }
+
+  &__name {
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__for {
+    color: var(--subtle);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  &__hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+}
+
+// Segmented radio group on glass (listening mode, quality tier): a title, two columns of options
+.lg-segment {
+  display: grid;
+  gap: 6px;
+  padding: 7px 8px;
+
+  &__title {
+    color: var(--glass-muted);
+    font: 600 10.5px var(--font-ui);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  &__options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--glass-chip);
+  }
+
+  &__option {
+    display: grid;
+    gap: 1px;
+    padding: 6px 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--glass-fg);
+    font: 500 12.5px var(--font-ui);
+    text-align: center;
+    cursor: pointer;
+    appearance: none;
+    transition: background 0.15s;
+
+    small {
+      color: var(--glass-muted);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    &:hover {
+      background: var(--glass-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--glass-accent);
+      outline-offset: 1px;
+    }
+
+    &[aria-checked='true'] {
+      background: var(--glass-accent);
+      color: #fff;
+
+      small {
+        color: rgb(255 255 255 / 80%);
+      }
+    }
+  }
+
+  &__hint {
+    color: var(--glass-muted);
+    font-size: 11.5px;
+  }
+}
+
+// A row on glass that opens a section under it (glossary, meeting): label, hint, turning chevron
+.lg-disclosure {
+  display: grid;
+
+  &__toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--glass-fg);
+    font: 400 13px var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+    appearance: none;
+    transition: background 0.15s;
+
+    &:hover {
+      background: var(--glass-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--glass-accent);
+      outline-offset: 1px;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+
+    small {
+      display: block;
+      color: var(--glass-muted);
+      font-size: 11.5px;
+    }
+  }
+
+  &__chevron {
+    color: var(--glass-muted);
+    font-size: 12px;
+    transition: transform 0.25s var(--ease-spring);
+  }
+
+  &__toggle[aria-expanded='true'] &__chevron {
+    transform: rotate(90deg);
+  }
+}
+
+// Icon and value with the native select invisible on top: native list, custom look (theme, brand)
+.lg-inline-select {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--subtle);
+  font-size: 12.5px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-within {
+    color: var(--fg);
+  }
+
+  &:focus-within &__value {
+    text-decoration: underline;
+  }
+
+  &__icon {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-linecap: round;
+    stroke-width: 1.4;
+  }
+
+  &__select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+}

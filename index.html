@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Live translated captions that float over any call, video or webinar."
+    />
+    <!-- Only OpenAI and Azure OpenAI resources (the hosts endpoint.ts accepts) may be contacted; fonts are self-hosted. blob: media is the video-sync player (MediaSource URL). -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://api.openai.com wss://api.openai.com https://*.openai.azure.com wss://*.openai.azure.com https://*.cognitiveservices.azure.com wss://*.cognitiveservices.azure.com https://*.services.ai.azure.com wss://*.services.ai.azure.com; media-src 'self' blob:; worker-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Neboki Live" />
+    <meta
+      property="og:description"
+      content="Live translated captions that float over any call, video or webinar."
+    />
+    <meta property="og:url" content="https://neboki-live.web.app/" />
+    <meta property="og:image" content="https://neboki-live.web.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link
+      rel="preload"
+      href="/fonts/Geist-Variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <title>Neboki Live</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>Neboki Live needs JavaScript: it runs entirely in your browser.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

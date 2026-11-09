@@ -1,0 +1,106 @@
+// Colour themes of the caption bar and its decorative glow, kept apart from the
+// bar's layout. Each theme sets the glass base and two tints as rgb triplets.
+@use 'sass:map';
+
+// Each theme: a dark glass base and two glows (rgb triplets) that tint it
+$themes: (
+  aurora: (
+    base: '14 13 30',
+    a: '139 92 246',
+    b: '34 211 238',
+  ),
+  sunset: (
+    base: '28 14 22',
+    a: '255 94 98',
+    b: '255 170 64',
+  ),
+  ocean: (
+    base: '9 18 32',
+    a: '59 130 246',
+    b: '20 214 186',
+  ),
+  forest: (
+    base: '10 22 18',
+    a: '16 185 129',
+    b: '190 242 100',
+  ),
+  graphite: (
+    base: '20 20 22',
+    a: '255 107 111',
+    b: '148 150 168',
+  ),
+);
+
+// The glass itself: the base colour lit by the two tints, all fading together
+@mixin surface {
+  background:
+    radial-gradient(
+      90% 150% at 0% 0%,
+      rgb(var(--tint-a) / calc(var(--glass-alpha) * 30%)),
+      transparent 62%
+    ),
+    radial-gradient(
+      90% 150% at 100% 100%,
+      rgb(var(--tint-b) / calc(var(--glass-alpha) * 22%)),
+      transparent 62%
+    ),
+    rgb(var(--glass-rgb) / var(--glass-alpha));
+}
+
+// One modifier class per theme: .bar--theme-aurora, .bar--theme-sunset…
+@mixin variants {
+  @each $name, $theme in $themes {
+    &--theme-#{$name} {
+      --glass-rgb: #{map.get($theme, base)};
+      --tint-a: #{map.get($theme, a)};
+      --tint-b: #{map.get($theme, b)};
+    }
+  }
+}
+
+// A slow drifting glow that brightens with the voice, and a hairline of the tints on top
+@mixin glow {
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      radial-gradient(40% 60% at 30% 100%, rgb(var(--tint-a) / 22%), transparent 70%),
+      radial-gradient(35% 55% at 75% 0%, rgb(var(--tint-b) / 16%), transparent 70%);
+    background-size: 200% 200%;
+    opacity: calc(0.35 + var(--level) * 0.65);
+    animation: drift 18s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  // A hairline of the theme's colours along the top edge
+  &::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: 18%;
+    left: 18%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--tint-a)),
+      rgb(var(--tint-b)),
+      transparent
+    );
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  @keyframes drift {
+    from {
+      background-position: 0% 50%;
+    }
+
+    to {
+      background-position: 100% 50%;
+    }
+  }
+}

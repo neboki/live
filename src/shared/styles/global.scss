@@ -1,0 +1,199 @@
+@use 'brands';
+@use 'motion';
+@use 'ui';
+
+// Self-hosted variable fonts (SIL OFL 1.1, from the `geist` package), so no third party sees the
+// visitor. Vite prefixes these public URLs with the base.
+@font-face {
+  font-family: Geist;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+}
+
+// Design tokens: neutral greys, white surfaces and a single coral accent
+:root {
+  --bg: #f3f4f6;
+  --fg: #111827;
+  --muted: #4b5563;
+  --subtle: #636b78;
+  --line: rgb(0 0 0 / 12%);
+  --line-soft: rgb(0 0 0 / 7%);
+  --line-strong: rgb(0 0 0 / 28%);
+  --panel: #fff;
+  --panel-rgb: 255 255 255;
+  --panel-2: #f9fafb;
+  --hover: #edf0f4;
+  --accent: #ff5a5f;
+  --accent-strong: #e54449;
+
+  // Coral for small text and links: the brand coral is under 4.5:1 on light surfaces
+  --accent-text: #cf343a;
+  --accent-soft: rgb(255 90 95 / 10%);
+  --accent-glow: rgb(255 90 95 / 12%);
+  --accent-glow-strong: rgb(255 90 95 / 30%);
+  --accent-warm: #ff8a4c;
+
+  // The brand signature: coral into amber, kept for things that are live or lead
+  --brand-gradient: linear-gradient(100deg, var(--accent), var(--accent-warm));
+  --success: #16a34a;
+  --danger: #dc2626;
+  --wall-a: #e5e7eb;
+  --wall-b: #d1d5db;
+  --glass-rgb: 20 20 22;
+  --glass-alpha: 0.82;
+  --glass-fg: #f3f4f6;
+  --glass-muted: rgb(243 244 246 / 55%);
+  --glass-line: rgb(255 255 255 / 8%);
+  --glass-hover: rgb(255 255 255 / 7%);
+  --glass-accent: #ff6b6f;
+
+  // Fields, switch tracks and segmented controls on the glass; a page panel re-tints them
+  --glass-field: rgb(0 0 0 / 30%);
+  --glass-track: rgb(255 255 255 / 18%);
+  --glass-chip: rgb(255 255 255 / 8%);
+  --font-ui: 'Geist', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', consolas, monospace;
+  --font-cjk:
+    'Yu Gothic UI', 'Hiragino Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK JP',
+    sans-serif;
+
+  // Corner scale: nested corners subtract the padding, e.g. calc(var(--radius) - 2px)
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 3px rgb(0 0 0 / 4%);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-lg: 0 8px 30px rgb(0 0 0 / 10%);
+  --shadow-focus: 0 0 0 3px var(--accent-glow);
+  --tracking-label: 0.07em;
+  --scale: 1;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: linear(0, 0.25 7%, 0.8 18%, 1.05 28%, 1.08 35%, 1.02 48%, 0.99 60%, 1);
+
+  color-scheme: light;
+}
+
+@mixin dark-tokens {
+  --bg: #0d0d0d;
+  --fg: #f0f2fb;
+  --muted: #a3a9bc;
+  --subtle: #8890a8;
+  --line: rgb(255 255 255 / 10%);
+  --line-soft: rgb(255 255 255 / 6%);
+  --line-strong: rgb(255 255 255 / 24%);
+  --panel: #181818;
+  --panel-rgb: 24 24 24;
+  --panel-2: #131313;
+  --hover: #242424;
+  --accent: #ff6b6f;
+  --accent-strong: #ff5a5f;
+  --accent-text: #ff6b6f;
+  --accent-soft: rgb(255 107 111 / 15%);
+  --accent-glow: rgb(255 107 111 / 22%);
+  --accent-glow-strong: rgb(255 107 111 / 45%);
+  --success: #4ade80;
+  --danger: #f87171;
+  --wall-a: #1a1a1a;
+  --wall-b: #111;
+  --shadow-xs: 0 1px 3px rgb(0 0 0 / 35%);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 40%), 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 8px 30px rgb(0 0 0 / 55%);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
+  }
+}
+
+:root[data-theme='dark'] {
+  @include dark-tokens;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// A plain link inside running text is underlined, so colour is not the only cue (WCAG 1.4.1)
+:where(p, span, li) > a:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+// Body of the Document Picture-in-Picture window that hosts the caption bar
+.pip-body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgb(var(--glass-rgb));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

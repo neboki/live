@@ -1,0 +1,52 @@
+// Round icon button of the caption bar: quiet by default, lit by the theme's tints
+// (--tint-a, --tint-b from bar-themes) on hover and when switched on.
+@mixin round {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 4%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 6%);
+  color: var(--glass-muted);
+  cursor: pointer;
+  appearance: none;
+  transition:
+    background 0.2s,
+    box-shadow 0.25s,
+    color 0.15s,
+    transform 0.35s var(--ease-spring);
+
+  // A finger needs a bigger target than a pointer
+  @media (pointer: coarse) {
+    width: 36px;
+    height: 36px;
+  }
+
+  // On hover the button lights up with the theme: a ring, a glow, a lift
+  &:hover {
+    background: radial-gradient(circle at 50% 30%, rgb(var(--tint-a) / 35%), transparent 75%);
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--tint-a) / 70%),
+      0 0 14px rgb(var(--tint-a) / 45%);
+    color: #fff;
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  &[aria-expanded='true'],
+  &[aria-pressed='true'] {
+    background: linear-gradient(135deg, rgb(var(--tint-a)), rgb(var(--tint-b)));
+    box-shadow: 0 4px 14px rgb(var(--tint-a) / 45%);
+    color: #fff;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--tint-b));
+    outline-offset: 2px;
+  }
+}

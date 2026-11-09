@@ -1,0 +1,31 @@
+// One colour per voice told apart, bright enough on every dark theme. They follow the
+// order voices are first heard in; a seventh voice wraps round to the first colour.
+@use 'sass:list';
+
+$speaker-colors: (
+  '255 138 101',
+  '94 210 255',
+  '255 210 90',
+  '196 148 255',
+  '140 230 140',
+  '255 130 190'
+);
+
+// .x--speaker-0 … .x--speaker-5 set --speaker (an rgb triplet) on the element
+@mixin variants {
+  @for $i from 1 through list.length($speaker-colors) {
+    &--speaker-#{$i - 1} {
+      --speaker: #{list.nth($speaker-colors, $i)};
+    }
+  }
+}
+
+// On the current sentence: its colour strip takes the voice's colour once one is set
+@mixin strip {
+  @include variants;
+
+  &[class*='--speaker-']::before {
+    background: rgb(var(--speaker));
+    box-shadow: 0 0 12px rgb(var(--speaker) / 60%);
+  }
+}

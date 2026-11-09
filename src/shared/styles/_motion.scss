@@ -1,0 +1,45 @@
+// Registered so the voice level animates smoothly
+@property --level {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+// Shared <Transition name="page">: each page root swaps its views with it
+.page-enter-active {
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s var(--ease-spring);
+}
+
+.page-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-leave-to {
+  opacity: 0;
+}
+
+// Shared <Transition name="pop">: panels and menus spring open
+.pop-enter-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.45s var(--ease-spring);
+}
+
+.pop-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.pop-enter-from,
+.pop-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+}

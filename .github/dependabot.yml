@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Runtime bumps are fix(deps) so they ship in a patch release; dev-only bumps are build(deps-dev)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    commit-message:
+      prefix: fix
+      prefix-development: build
+      include: scope
+
+  # Workflows pin actions to commit SHAs; Dependabot updates the SHA and its version comment
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+      include: scope
