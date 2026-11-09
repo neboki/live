@@ -4,12 +4,6 @@
   },
   "start": {
     "title": "Nueva sesión",
-    "hero": {
-      "title": "Entiende cualquier conversación, en cualquier idioma, en directo.",
-      "lead": "Subtítulos traducidos para llamadas, vídeos y reuniones en persona, un segundo después de cada frase. Sin servidor y sin cuenta: tu audio va directo a OpenAI con tu propia clave.",
-      "extras": "Además: qué responder y qué preguntar, resumen en directo, la traducción en voz alta y un glosario para nombres y términos.",
-      "trust": "Código abierto · Sin analítica · Tu clave se queda en este navegador · Desde ≈ {cost}/h en tu factura de OpenAI"
-    },
     "keyHeading": "Tu clave de OpenAI",
     "keyHeadingAzure": "Tu clave de Azure OpenAI",
     "key": {

@@ -4,12 +4,6 @@
   },
   "start": {
     "title": "New session",
-    "hero": {
-      "title": "Understand any conversation, in any language, live.",
-      "lead": "Translated captions for calls, videos and in-person meetings, about a second after each sentence. No server and no account: your audio goes straight to OpenAI with your own key.",
-      "extras": "Also: what to reply and what to ask, a live summary, the translation read aloud and a glossary for names and terms.",
-      "trust": "Open source · No analytics · Your key stays in this browser · From ≈ {cost}/h on your OpenAI bill"
-    },
     "keyHeading": "Your OpenAI key",
     "keyHeadingAzure": "Your Azure OpenAI key",
     "key": {

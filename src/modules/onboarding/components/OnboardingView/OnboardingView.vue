@@ -11,7 +11,6 @@ import ApiKeyField from '../ApiKeyField/ApiKeyField.vue';
 import AudioSourcePicker from '../AudioSourcePicker/AudioSourcePicker.vue';
 import InstallHint from '../InstallHint/InstallHint.vue';
 import PlacementPicker from '../PlacementPicker/PlacementPicker.vue';
-import StartHero from '../StartHero/StartHero.vue';
 
 /**
  * The app's start screen: language, what to listen to and where the captions go, OpenAI
@@ -55,7 +54,6 @@ async function startDemo(): Promise<void> {
     </header>
 
     <div class="start__content lg-page">
-      <StartHero class="start__hero" />
       <InstallHint class="start__install" />
       <section class="start__source lg-card">
         <LanguageSelect prominent />
@@ -137,7 +135,6 @@ async function startDemo(): Promise<void> {
   &__content {
     display: grid;
     grid-template-areas:
-      'hero'
       'install'
       'source'
       'go';
@@ -146,16 +143,11 @@ async function startDemo(): Promise<void> {
 
     @media (width >= 1200px) {
       grid-template-areas:
-        'hero hero'
         'install install'
         'source go';
       grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
       gap: 24px;
     }
-  }
-
-  &__hero {
-    grid-area: hero;
   }
 
   &__install {
