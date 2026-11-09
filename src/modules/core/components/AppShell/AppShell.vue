@@ -52,6 +52,8 @@ const { t, locale } = useI18n();
 const menuOpen = ref(false);
 const input = ref<HTMLInputElement | null>(null);
 const closeButton = ref<HTMLButtonElement | null>(null);
+/** A saved conversation is being dragged over the open button */
+const dragging = ref(false);
 const burger = ref<HTMLButtonElement | null>(null);
 /** The sidebar is a drawer: when closed it is off-screen and must be out of reach too */
 const isDrawer = ref(false);
@@ -154,6 +156,17 @@ function onPicked(event: Event): void {
   const file = target.files?.[0];
   // The same file can be picked again after closing it
   target.value = '';
+  openFile(file);
+}
+
+function onDrop(event: DragEvent): void {
+  dragging.value = false;
+  if (session.showLive || viewer.opening) return;
+  viewer.clearError();
+  openFile(event.dataTransfer?.files[0]);
+}
+
+function openFile(file: File | undefined): void {
   if (!file) return;
   menuOpen.value = false;
   appPage.settingsOpen = false;
@@ -352,20 +365,29 @@ onBeforeUnmount(() => {
           <span class="shell__text shell__label">{{ viewer.fileName }}</span>
         </button>
 
+        <!-- Picks a saved conversation, or takes one dropped on it -->
         <button
-          class="shell__item shell__item--quiet"
+          class="shell__item shell__item--quiet shell__item--drop"
+          :class="{ 'shell__item--dragging': dragging }"
           type="button"
           :disabled="session.showLive || viewer.opening"
           :title="tip(t('nav.openFile'))"
           @click="pick"
+          @dragover.prevent="dragging = true"
+          @dragleave="dragging = false"
+          @drop.prevent="onDrop"
         >
           <svg viewBox="0 0 20 20" aria-hidden="true">
             <path d="M3 5.5v10h14V7.5h-7L8.5 5.5z" />
           </svg>
-          <span class="shell__label">{{
-            viewer.opening ? t('nav.opening') : t('nav.openFile')
-          }}</span>
+          <span class="shell__text shell__label">
+            {{ viewer.opening ? t('nav.opening') : t('nav.openFile') }}
+            <small>{{ t('nav.dropFile') }}</small>
+          </span>
         </button>
+        <p v-if="viewer.errorKey" class="shell__error shell__label" role="alert">
+          {{ t(viewer.errorKey) }}
+        </p>
         <input
           ref="input"
           class="shell__input"
@@ -689,6 +711,23 @@ $drawer-at: 900px;
 
     &--quiet {
       color: var(--subtle);
+    }
+
+    // Also a drop zone: a dashed edge says a file can land on it
+    &--drop {
+      margin-top: 4px;
+      outline: 1px dashed var(--line-strong);
+      outline-offset: -1px;
+
+      small {
+        font-family: var(--font-ui);
+      }
+    }
+
+    &--dragging {
+      outline-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
     }
 
     // Settings sit apart from the conversations

@@ -19,5 +19,4 @@ export { SESSION_FILE_EXTENSION, parseSnapshot } from './utils/sessionFile';
 export { elapsed, sessionDuration } from './utils/toMarkdown';
 export { downloadText } from './utils/download';
 export { default as SessionView } from './components/SessionView/SessionView.vue';
-export { default as SessionShelf } from './components/SessionShelf/SessionShelf.vue';
 export type * from './types';

@@ -414,14 +414,6 @@
       "noMatch": "Ninguna frase coincide con la búsqueda.",
       "noLines": "No se oyó ninguna frase.",
       "speaker": "Voz {n}"
-    },
-    "shelf": {
-      "ended": "Última conversación",
-      "recent": "{time} · {duration} · {lines} frases",
-      "view": "Ver",
-      "open": "Abrir conversación guardada",
-      "opening": "Abriendo…",
-      "drop": "o suelta aquí el archivo"
     }
   },
   "language": {
@@ -466,7 +458,8 @@
     "live": "En directo",
     "conversations": "Conversaciones",
     "recent": "Última conversación",
-    "openFile": "Abrir archivo…",
+    "openFile": "Abrir conversación guardada",
+    "dropFile": "o suelta aquí el archivo",
     "opening": "Abriendo…",
     "privacy": "Privacidad y seguridad",
     "github": "GitHub",

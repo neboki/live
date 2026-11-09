@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLiveSession } from '@/modules/live';
 import { useFloatingWindow } from '@/modules/overlay';
-import { SessionShelf } from '@/modules/session';
 import { LanguageSelect, useSettingsStore } from '@/modules/settings';
 import { needsShare } from '@/shared/audio/audioSources';
 import { PRIVACY_PATH } from '@/shared/links';
@@ -16,7 +15,7 @@ import StartHero from '../StartHero/StartHero.vue';
 
 /**
  * The app's start screen: language, what to listen to and where the captions go, OpenAI
- * key and Start, plus the saved sessions. The bar's settings have a page of their own.
+ * key and Start. Saved conversations live in the sidebar; settings have a page of their own.
  */
 const settings = useSettingsStore();
 const session = useLiveSession();
@@ -110,11 +109,6 @@ async function startDemo(): Promise<void> {
           </a>
         </p>
       </section>
-
-      <section class="start__sessions lg-card">
-        <h2 class="lg-card__title">{{ t('nav.conversations') }}</h2>
-        <SessionShelf />
-      </section>
     </div>
   </main>
 </template>
@@ -146,8 +140,7 @@ async function startDemo(): Promise<void> {
       'hero'
       'install'
       'source'
-      'go'
-      'sessions';
+      'go';
     gap: 20px;
     align-items: start;
 
@@ -155,8 +148,7 @@ async function startDemo(): Promise<void> {
       grid-template-areas:
         'hero hero'
         'install install'
-        'source go'
-        'sessions sessions';
+        'source go';
       grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
       gap: 24px;
     }
@@ -176,10 +168,6 @@ async function startDemo(): Promise<void> {
 
   &__go {
     grid-area: go;
-  }
-
-  &__sessions {
-    grid-area: sessions;
   }
 
   &__field {

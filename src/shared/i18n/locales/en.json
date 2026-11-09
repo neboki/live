@@ -414,14 +414,6 @@
       "noMatch": "No sentence matches the search.",
       "noLines": "No sentence was heard.",
       "speaker": "Voice {n}"
-    },
-    "shelf": {
-      "ended": "Last conversation",
-      "recent": "{time} · {duration} · {lines} sentences",
-      "view": "View",
-      "open": "Open a saved conversation",
-      "opening": "Opening…",
-      "drop": "or drop the file here"
     }
   },
   "language": {
@@ -466,7 +458,8 @@
     "live": "Live",
     "conversations": "Conversations",
     "recent": "Last conversation",
-    "openFile": "Open file…",
+    "openFile": "Open a saved conversation",
+    "dropFile": "or drop the file here",
     "opening": "Opening…",
     "privacy": "Privacy & security",
     "github": "GitHub",
