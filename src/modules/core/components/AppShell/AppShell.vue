@@ -15,10 +15,10 @@ import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
 import { useAppPage } from '../../store/useAppPage';
 import BrandMark from '../BrandMark/BrandMark.vue';
 import { brand } from '@/shared/brand/brand';
-import { HOME_URL, PRIVACY_URL, REPO_URL } from '@/shared/links';
+import { HOME_URL, PRIVACY_PATH, REPO_URL } from '@/shared/links';
 
 /** Which page the main area shows, mirrored from App's own choice */
-type Page = 'live' | 'recent' | 'file' | 'settings' | 'start';
+type Page = 'live' | 'recent' | 'file' | 'privacy' | 'settings' | 'start';
 
 /** The picker suggests our files; a renamed .json still opens */
 const ACCEPT = `${SESSION_FILE_EXTENSION},.json,application/json`;
@@ -57,6 +57,7 @@ let ticker: ReturnType<typeof setInterval> | undefined;
 const page = computed<Page>(() => {
   if (session.showLive) return 'live';
   if (viewer.snapshot) return viewer.source;
+  if (appPage.privacyOpen) return 'privacy';
   if (appPage.settingsOpen) return 'settings';
   return 'start';
 });
@@ -86,11 +87,13 @@ function tip(label: string): string | undefined {
 function goStart(): void {
   viewer.close();
   appPage.settingsOpen = false;
+  appPage.privacyOpen = false;
   menuOpen.value = false;
 }
 
 function goRecent(): void {
   appPage.settingsOpen = false;
+  appPage.privacyOpen = false;
   viewer.showRecent();
   menuOpen.value = false;
 }
@@ -98,7 +101,17 @@ function goRecent(): void {
 // A conversation on screen would hide the settings page: close it first
 function goSettings(): void {
   viewer.close();
+  appPage.privacyOpen = false;
   appPage.settingsOpen = true;
+  menuOpen.value = false;
+}
+
+// A real link (it can open in a new tab), followed inside the app on a plain click
+function goPrivacy(event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+  event.preventDefault();
+  viewer.close();
+  appPage.openPrivacy();
   menuOpen.value = false;
 }
 
@@ -115,6 +128,7 @@ function onPicked(event: Event): void {
   if (!file) return;
   menuOpen.value = false;
   appPage.settingsOpen = false;
+  appPage.privacyOpen = false;
   viewer.openFile(file).catch((err: unknown) => logError('Opening a session failed', err));
 }
 
@@ -312,15 +326,27 @@ onBeforeUnmount(() => {
           </svg>
           <span class="shell__label">{{ t('nav.settings') }}</span>
         </button>
+
+        <a
+          class="shell__item"
+          :class="{ 'shell__item--on': page === 'privacy' }"
+          :href="PRIVACY_PATH"
+          :aria-current="page === 'privacy' ? 'page' : undefined"
+          :title="tip(t('nav.privacy'))"
+          @click="goPrivacy"
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 2.5 4 5v4.5c0 3.8 2.6 6.9 6 8 3.4-1.1 6-4.2 6-8V5z" />
+            <path d="m7.5 10 1.8 1.8 3.4-3.6" />
+          </svg>
+          <span class="shell__label">{{ t('nav.privacy') }}</span>
+        </a>
       </nav>
 
       <footer v-if="!compact" class="shell__foot">
         <UiLocaleSelect class="shell__locale" />
         <UiThemeSelect class="shell__locale" />
         <UiBrandSelect class="shell__locale" />
-        <a class="shell__link" :href="PRIVACY_URL" target="_blank" rel="noopener noreferrer">
-          {{ t('nav.privacy') }}
-        </a>
         <a class="shell__link" :href="REPO_URL" target="_blank" rel="noopener noreferrer">
           {{ t('nav.github') }}
         </a>

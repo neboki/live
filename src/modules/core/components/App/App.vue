@@ -2,6 +2,7 @@
 import { watch } from 'vue';
 import { LiveCaptions, LiveView, useLiveSession } from '@/modules/live';
 import { OnboardingView } from '@/modules/onboarding';
+import { PrivacyView } from '@/modules/privacy';
 import { SessionView, useSessionRecord, useSessionViewer } from '@/modules/session';
 import { SettingsView } from '@/modules/settings';
 import { useAppPage } from '../../store/useAppPage';
@@ -35,8 +36,9 @@ function toTop(): void {
     <Transition name="page" mode="out-in" @before-enter="toTop">
       <LiveView v-if="session.showLive" />
       <SessionView v-else-if="viewer.snapshot" />
+      <PrivacyView v-else-if="appPage.privacyOpen" />
       <SettingsView v-else-if="appPage.settingsOpen" />
-      <OnboardingView v-else />
+      <OnboardingView v-else @privacy="appPage.openPrivacy()" />
     </Transition>
   </AppShell>
   <LiveCaptions />

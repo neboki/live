@@ -6,7 +6,7 @@ import { useFloatingWindow } from '@/modules/overlay';
 import { SessionShelf } from '@/modules/session';
 import { LanguageSelect, useSettingsStore } from '@/modules/settings';
 import { needsShare } from '@/shared/audio/audioSources';
-import { PRIVACY_URL } from '@/shared/links';
+import { PRIVACY_PATH } from '@/shared/links';
 import { hasDemo } from '@/shared/providers/openai/demo';
 import ApiKeyField from '../ApiKeyField/ApiKeyField.vue';
 import AudioSourcePicker from '../AudioSourcePicker/AudioSourcePicker.vue';
@@ -20,6 +20,17 @@ import PlacementPicker from '../PlacementPicker/PlacementPicker.vue';
 const settings = useSettingsStore();
 const session = useLiveSession();
 const { t } = useI18n();
+const emit = defineEmits<{
+  /** The privacy page was asked for; the app decides which page shows */
+  privacy: [];
+}>();
+
+/** A real link (it can open in a new tab), followed inside the app on a plain click */
+function openPrivacy(event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+  event.preventDefault();
+  emit('privacy');
+}
 // Without the floating window the captions show in the page, which only suits the
 // microphone: a shared tab would be out of sight
 const canFloat = useFloatingWindow().isSupported;
@@ -92,7 +103,7 @@ async function startDemo(): Promise<void> {
 
         <p class="start__consent">
           {{ t('onboarding.consent.text') }}
-          <a :href="PRIVACY_URL" target="_blank" rel="noopener noreferrer">
+          <a :href="PRIVACY_PATH" @click="openPrivacy">
             {{ t('onboarding.consent.link') }}
           </a>
         </p>

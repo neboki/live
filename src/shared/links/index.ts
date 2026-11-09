@@ -1,1 +1,1 @@
-export { HOME_URL, PRIVACY_URL, REPO_URL } from './links';
+export { HOME_URL, PRIVACY_CONTACT, PRIVACY_PATH, REPO_URL } from './links';

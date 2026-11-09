@@ -425,7 +425,7 @@
     "recent": "Última conversación",
     "openFile": "Abrir archivo…",
     "opening": "Abriendo…",
-    "privacy": "Privacidad",
+    "privacy": "Privacidad y seguridad",
     "github": "GitHub",
     "home": "Inicio de @:{'brand.name'}",
     "menu": "Abrir el menú",
@@ -474,6 +474,174 @@
         "newer": "Esa copia es de una versión más nueva. Actualiza la página e inténtalo de nuevo.",
         "empty": "Esa copia no contiene ningún ajuste."
       }
+    }
+  },
+  "privacyPage": {
+    "title": "Privacidad y seguridad",
+    "intro": "Qué datos usa {brand}, adónde van, qué se queda en tu dispositivo y cómo se protegen.",
+    "updated": "Última actualización: {date}",
+    "contents": "En esta página",
+    "summary": {
+      "title": "En resumen",
+      "items": [
+        "{brand} funciona en tu navegador. No tenemos ningún servidor que reciba tu audio, tus textos ni tu clave.",
+        "El audio y el texto van directamente de tu navegador a OpenAI (o a tu recurso de Azure OpenAI), con tu propia clave y solo mientras hay una sesión en marcha.",
+        "Tu clave API se guarda solo en este navegador. Nosotros nunca la vemos ni la recibimos.",
+        "Sin cookies, sin analítica, sin publicidad y sin rastreo. La página no carga nada de terceros.",
+        "Las conversaciones viven en la memoria de la pestaña: al cerrarla desaparecen, salvo que tú las descargues.",
+        "Puedes borrarlo todo cuando quieras desde tu propio navegador."
+      ],
+      "demo": "Excepción: la demo gratuita usa una clave nuestra, y por eso parte del texto pasa por nuestro servidor. Lo explicamos más abajo.",
+      "account": "Iniciar sesión es opcional. Sin cuenta, todo se queda en este dispositivo."
+    },
+    "data": {
+      "title": "Qué se envía y adónde",
+      "intro": "Solo mientras una sesión está en marcha, y siempre cifrado (HTTPS y WSS).",
+      "cols": {
+        "what": "Qué",
+        "where": "Adónde",
+        "when": "Cuándo"
+      },
+      "rows": {
+        "audio": {
+          "what": "El audio de la pestaña, la pantalla o el micrófono que elijas (mono, 24 kHz)",
+          "where": "OpenAI Realtime API, para transcribir",
+          "when": "Mientras alguien habla, más unas décimas de segundo antes y después de cada frase. Los silencios entre frases no salen de tu dispositivo."
+        },
+        "interpreter": {
+          "what": "El audio, en el modo Intérprete",
+          "where": "OpenAI Realtime API, para traducir por voz",
+          "when": "Todo el audio de la sesión, silencios incluidos, porque el intérprete necesita llevar el ritmo. Solo disponible con OpenAI."
+        },
+        "hints": {
+          "what": "Tu glosario y las pistas de la reunión (tema e idiomas)",
+          "where": "OpenAI Realtime API",
+          "when": "Al empezar la sesión, para transcribir mejor nombres y términos."
+        },
+        "text": {
+          "what": "Cada frase transcrita, tu glosario y las líneas anteriores como contexto",
+          "where": "OpenAI Chat Completions, para traducir",
+          "when": "Con cada frase."
+        },
+        "extras": {
+          "what": "La transcripción reciente",
+          "where": "OpenAI Chat Completions",
+          "when": "Solo si activas el resumen o las sugerencias de respuesta."
+        },
+        "tts": {
+          "what": "El texto traducido",
+          "where": "OpenAI, síntesis de voz",
+          "when": "Solo si la voz usa el motor de OpenAI. Con la voz del navegador la genera tu sistema operativo y no se envía nada."
+        },
+        "key": {
+          "what": "Tu clave API",
+          "where": "Junto a cada petición anterior",
+          "when": "Siempre: identifica tu cuenta ante el proveedor."
+        }
+      },
+      "azure": "Si eliges Azure OpenAI, todo lo anterior va únicamente al punto de conexión de tu recurso de Azure, nunca a api.openai.com."
+    },
+    "device": {
+      "title": "Qué se queda en este dispositivo",
+      "intro": "En el almacenamiento local del navegador, solo en este dispositivo y sin enviarse a ningún sitio:",
+      "items": [
+        "Tu clave API, si dejas marcado «Recordar en este dispositivo». Si lo desmarcas, vive solo en memoria y desaparece al cerrar la pestaña.",
+        "El proveedor elegido y, con Azure, la dirección de tu recurso.",
+        "Tus preferencias: idiomas, modelos, calidad, voz, límite de gasto, tema, aspecto de los subtítulos y glosario.",
+        "Las pistas de la reunión que escribas (tema e idiomas). El tema es texto libre: escribe solo lo que no te importe guardar aquí.",
+        "Qué escuchar y qué micrófono (un identificador interno del navegador, no su nombre).",
+        "Pequeños detalles de la interfaz, como si el menú lateral está plegado."
+      ],
+      "account": "Si inicias sesión, Firebase guarda en este navegador la sesión de tu cuenta para no pedírtela cada vez.",
+      "wipe": "Para borrar la clave, vacía su campo en Ajustes o desmarca «Recordar en este dispositivo». Para borrarlo todo, elimina los datos de este sitio desde la configuración de tu navegador."
+    },
+    "never": {
+      "title": "Lo que no hacemos",
+      "items": [
+        "No usamos cookies ni ninguna otra técnica de seguimiento.",
+        "No hay analítica, telemetría ni publicidad.",
+        "No cargamos scripts, fuentes ni imágenes de terceros: todo se sirve desde nuestro propio dominio.",
+        "No guardamos tus conversaciones ni tu audio, y no entrenamos modelos con ellos.",
+        "No vendemos ni compartimos datos con nadie."
+      ]
+    },
+    "files": {
+      "title": "Conversaciones y archivos",
+      "items": [
+        "La conversación en curso y la última terminada se guardan solo en la memoria de la pestaña. No hay historial: al empezar otra o cerrar la pestaña, la anterior se pierde.",
+        "Al descargar una conversación (texto, subtítulos o archivo de conversación), el archivo se genera en tu navegador y se guarda en tu equipo. No pasa por ningún servidor.",
+        "Al abrir un archivo de conversación, lo lee tu navegador. No se sube a ningún sitio.",
+        "La copia de seguridad de los ajustes nunca incluye tu clave API ni el micrófono elegido.",
+        "Lo que descargas queda bajo tu control: trátalo con el mismo cuidado que la reunión de la que viene."
+      ]
+    },
+    "key": {
+      "title": "Tu clave API",
+      "items": [
+        "Se envía solo a OpenAI (api.openai.com) o, si eliges Azure, solo al punto de conexión de tu recurso. Una clave de Azure nunca se envía a OpenAI.",
+        "Viaja siempre cifrada. Con OpenAI nunca aparece en una dirección web: en el audio en directo va en el protocolo de la conexión, el método que OpenAI indica para navegadores.",
+        "Con Azure, el audio en directo lleva la clave en la dirección de la conexión, como indica Microsoft. Si esa conexión falla, el navegador podría mostrarla en su consola de desarrollo.",
+        "Los mensajes de error se limpian para que la clave no aparezca nunca en ellos.",
+        "Como cualquier clave que se usa en un navegador, el código de la página puede leerla. Por eso la página no carga código de terceros y su política de seguridad bloquea cualquier otro.",
+        "Recomendación: crea una clave solo para esta app, ponle un límite de gasto en tu cuenta y revócala si sospechas que alguien la ha visto."
+      ]
+    },
+    "security": {
+      "title": "Cómo se protege",
+      "items": [
+        "Todas las conexiones van cifradas: HTTPS para la página y las peticiones, WSS para el audio en directo.",
+        "Una política de seguridad de contenido (CSP) solo deja que la página se conecte a sí misma, a OpenAI y a los dominios de Azure OpenAI. El navegador bloquea cualquier otra conexión, y las pruebas automáticas fallan si esa lista cambia.",
+        "No hay scripts externos ni complementos, y los formularios no envían datos a ningún sitio.",
+        "El micrófono y la captura de pantalla los pide el propio navegador con su aviso. Puedes dejar de compartir en cualquier momento.",
+        "Para distinguir quién habla, la app calcula en tu dispositivo rasgos muy simples de cada voz (tono y timbre). No es un dato biométrico, no sale del navegador y se olvida al terminar la sesión.",
+        "El código pasa pruebas automáticas, incluidas las de seguridad de la página, antes de cada publicación."
+      ]
+    },
+    "account": {
+      "title": "Cuenta (opcional)",
+      "items": [
+        "Puedes usar la app sin cuenta. Si inicias sesión con Google, el acceso lo gestiona Firebase Authentication, un servicio de Google.",
+        "La app recibe tu nombre, tu correo, tu foto de perfil y un identificador de usuario, solo para mostrar quién ha iniciado sesión.",
+        "Al cerrar sesión, la cuenta deja de estar abierta en este navegador."
+      ]
+    },
+    "demo": {
+      "title": "Demo gratuita",
+      "items": [
+        "La demo usa una clave de {brand}, no la tuya, y solo muestra subtítulos traducidos durante tres minutos.",
+        "El audio va directamente de tu navegador a OpenAI, con una clave temporal que nuestro servidor pide para ti y que caduca enseguida.",
+        "El texto a traducir pasa por nuestro servidor (Google Cloud, en Europa), que lo reenvía a OpenAI sin guardarlo.",
+        "Para evitar abusos, el servidor cuenta cuántas demos empieza cada dirección IP al día. Ese recuento está solo en memoria y no se guarda en ninguna base de datos."
+      ]
+    },
+    "providers": {
+      "title": "Servicios que intervienen",
+      "intro": "Estos son los únicos servicios externos que tocan tus datos. Cada uno tiene su propia política:",
+      "openai": "OpenAI procesa el audio y el texto para transcribir, traducir y generar la voz, con tu clave y bajo tu cuenta. Según OpenAI, lo que se envía por su API no se usa para entrenar sus modelos salvo que tú lo autorices, y puede conservarse un tiempo limitado para detectar abusos.",
+      "azure": "Microsoft Azure OpenAI, solo si lo eliges: se rige por tu suscripción de Azure y por los términos de Microsoft.",
+      "google": "Google Firebase Hosting sirve la página. Como cualquier servidor web, recibe tu dirección IP y datos técnicos del navegador para poder entregarla.",
+      "link": "Ver su política"
+    },
+    "consent": {
+      "title": "Las personas a las que traduces",
+      "text": "La app procesa la voz de otras personas. Según dónde estéis, puede hacer falta su consentimiento, y algunas empresas prohíben enviar a terceros el contenido de sus reuniones. Avisa a los participantes y pide su permiso antes de empezar. Tú decides qué compartes y eres responsable del uso que hagas de la app."
+    },
+    "rights": {
+      "title": "Tu control sobre los datos",
+      "items": [
+        "Todo lo que guarda la app está en tu navegador: puedes consultarlo y borrarlo tú mismo cuando quieras.",
+        "{brand} no guarda en sus servidores tu audio, tus textos ni tu clave, así que no tenemos nada tuyo que consultar ni borrar.",
+        "Lo que se envía a OpenAI o a Azure queda bajo tu cuenta con ellos: su conservación y borrado se gestionan allí.",
+        "Para cualquier duda o para ejercer tus derechos de protección de datos, escríbenos."
+      ]
+    },
+    "contact": {
+      "title": "Contacto y avisos de seguridad",
+      "text": "Escríbenos a {email}. Si encuentras un fallo de seguridad, comunícalo en privado a esa dirección antes de hacerlo público; te responderemos en un plazo de 7 días."
+    },
+    "changes": {
+      "title": "Cambios en esta página",
+      "text": "Si cambia la forma en que la app trata los datos, actualizaremos esta página y su fecha."
     }
   }
 }

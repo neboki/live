@@ -1,7 +1,11 @@
 # Privacy
 
-Neboki Live is a static web page. There is **no Neboki Live server, no account, no analytics and
-no telemetry**. Everything below happens between your browser and OpenAI, using your own API key.
+The app shows this to its users at `/privacy` (the Privacy & security page, `src/modules/privacy`).
+Keep both in step when a data flow changes.
+
+Neboki Live is a static web page. There is **no Neboki Live server for your data, no analytics and
+no telemetry**; signing in is optional. Everything below happens between your browser and OpenAI,
+using your own API key (the free demo, when a build offers it, is the one exception: see the page).
 
 ## What is sent to OpenAI
 
@@ -11,8 +15,9 @@ only to the Azure resource endpoint you entered (same requests under `/openai/v1
 
 | What                                                                          | Where                                                                 | When                                                                                                                                        |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Audio of the tab or screen you share (mono PCM16, 24 kHz)                     | Realtime API, over an encrypted WebSocket (`wss://`)                  | While someone speaks, plus about 0.3 s before and 0.5 s after each sentence; silence between sentences stays on your device and is not sent |
-| Glossary terms, as transcription hints                                        | Realtime API                                                          | When the session starts                                                                                                                     |
+| Audio of the tab, screen or microphone you choose (mono PCM16, 24 kHz)        | Realtime API, over an encrypted WebSocket (`wss://`)                  | While someone speaks, plus about 0.3 s before and 0.5 s after each sentence; silence between sentences stays on your device and is not sent |
+| Glossary terms and meeting hints (topic, languages), as transcription hints   | Realtime API                                                          | When the session starts                                                                                                                     |
+| Interpreter mode: all the audio, silence included                             | Realtime translations API (OpenAI only)                               | For the whole session                                                                                                                       |
 | Each transcribed sentence, your glossary and the previous few lines (context) | Chat Completions (`https://`)                                         | For every sentence to translate                                                                                                             |
 | The recent transcript                                                         | Chat Completions                                                      | Only if the summary or reply suggestions are on                                                                                             |
 | The translated text                                                           | Text-to-speech (`/v1/audio/speech`)                                   | Only if voice output uses the OpenAI engine                                                                                                 |
@@ -69,4 +74,5 @@ page itself, to `api.openai.com` and to Azure OpenAI hosts (`*.openai.azure.com`
 
 ## Questions
 
-Open an issue, or report security problems privately as described in [SECURITY.md](../SECURITY.md).
+Write to neboki@neboki.com, or report security problems privately as described in
+[SECURITY.md](../SECURITY.md).

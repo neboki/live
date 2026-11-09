@@ -425,7 +425,7 @@
     "recent": "Last conversation",
     "openFile": "Open file…",
     "opening": "Opening…",
-    "privacy": "Privacy",
+    "privacy": "Privacy & security",
     "github": "GitHub",
     "home": "@:{'brand.name'} home",
     "menu": "Open the menu",
@@ -474,6 +474,174 @@
         "newer": "That backup comes from a newer version. Reload the page and try again.",
         "empty": "That backup holds no settings."
       }
+    }
+  },
+  "privacyPage": {
+    "title": "Privacy & security",
+    "intro": "What data {brand} uses, where it goes, what stays on your device and how it is protected.",
+    "updated": "Last updated: {date}",
+    "contents": "On this page",
+    "summary": {
+      "title": "In short",
+      "items": [
+        "{brand} runs in your browser. We have no server that receives your audio, your text or your key.",
+        "Audio and text go straight from your browser to OpenAI (or your Azure OpenAI resource), with your own key, and only while a session is running.",
+        "Your API key is stored only in this browser. We never see it or receive it.",
+        "No cookies, no analytics, no ads and no tracking. The page loads nothing from third parties.",
+        "Conversations live in the tab's memory: they are gone when you close it, unless you download them.",
+        "You can delete everything at any time from your own browser."
+      ],
+      "demo": "One exception: the free demo uses our own key, so part of the text goes through our server. Details below.",
+      "account": "Signing in is optional. Without an account, everything stays on this device."
+    },
+    "data": {
+      "title": "What is sent, and where",
+      "intro": "Only while a session is running, and always encrypted (HTTPS and WSS).",
+      "cols": {
+        "what": "What",
+        "where": "Where",
+        "when": "When"
+      },
+      "rows": {
+        "audio": {
+          "what": "Audio of the tab, screen or microphone you choose (mono, 24 kHz)",
+          "where": "OpenAI Realtime API, to transcribe",
+          "when": "While someone speaks, plus a fraction of a second before and after each sentence. Silence between sentences never leaves your device."
+        },
+        "interpreter": {
+          "what": "The audio, in Interpreter mode",
+          "where": "OpenAI Realtime API, to translate by voice",
+          "when": "All the session's audio, silence included, because the interpreter has to keep time. OpenAI only."
+        },
+        "hints": {
+          "what": "Your glossary and the meeting hints (topic and languages)",
+          "where": "OpenAI Realtime API",
+          "when": "When the session starts, to transcribe names and terms better."
+        },
+        "text": {
+          "what": "Each transcribed sentence, your glossary and the previous lines as context",
+          "where": "OpenAI Chat Completions, to translate",
+          "when": "For every sentence."
+        },
+        "extras": {
+          "what": "The recent transcript",
+          "where": "OpenAI Chat Completions",
+          "when": "Only if you turn on the summary or reply suggestions."
+        },
+        "tts": {
+          "what": "The translated text",
+          "where": "OpenAI text-to-speech",
+          "when": "Only if the voice uses the OpenAI engine. With the browser voice, your operating system speaks and nothing is sent."
+        },
+        "key": {
+          "what": "Your API key",
+          "where": "With every request above",
+          "when": "Always: it identifies your account to the provider."
+        }
+      },
+      "azure": "If you choose Azure OpenAI, all of the above goes only to your Azure resource's endpoint, never to api.openai.com."
+    },
+    "device": {
+      "title": "What stays on this device",
+      "intro": "In the browser's local storage, on this device only, and never sent anywhere:",
+      "items": [
+        "Your API key, if “Remember on this device” stays ticked. Untick it and the key lives in memory only, gone when you close the tab.",
+        "The provider you chose and, for Azure, your resource's address.",
+        "Your preferences: languages, models, quality, voice, spending limit, theme, caption look and glossary.",
+        "The meeting hints you type (topic and languages). The topic is free text: only write there what you are happy to keep here.",
+        "What to listen to and which microphone (an internal browser id, not its name).",
+        "Small interface details, such as whether the sidebar is folded."
+      ],
+      "account": "If you sign in, Firebase keeps your account's session in this browser so you don't have to sign in every time.",
+      "wipe": "To delete the key, empty its field in Settings or untick “Remember on this device”. To delete everything, clear this site's data in your browser settings."
+    },
+    "never": {
+      "title": "What we don't do",
+      "items": [
+        "We use no cookies and no other tracking technique.",
+        "There are no analytics, no telemetry and no ads.",
+        "We load no third-party scripts, fonts or images: everything is served from our own domain.",
+        "We don't keep your conversations or your audio, and we don't train models on them.",
+        "We don't sell or share data with anyone."
+      ]
+    },
+    "files": {
+      "title": "Conversations and files",
+      "items": [
+        "The running conversation and the last finished one are kept only in the tab's memory. There is no history: start another one or close the tab, and the previous one is gone.",
+        "When you download a conversation (text, subtitles or conversation file), the file is made in your browser and saved on your computer. It goes through no server.",
+        "When you open a conversation file, your browser reads it. It is not uploaded anywhere.",
+        "The settings backup never includes your API key or the chosen microphone.",
+        "What you download is in your hands: treat it with the same care as the meeting it comes from."
+      ]
+    },
+    "key": {
+      "title": "Your API key",
+      "items": [
+        "It is sent only to OpenAI (api.openai.com) or, if you choose Azure, only to your resource's endpoint. An Azure key is never sent to OpenAI.",
+        "It always travels encrypted. With OpenAI it never appears in a web address: for live audio it goes in the connection's protocol, the method OpenAI documents for browsers.",
+        "With Azure, live audio carries the key in the connection's address, as Microsoft documents. If that connection fails, the browser may show it in its developer console.",
+        "Error messages are cleaned so the key never appears in them.",
+        "Like any key used in a browser, code running in the page can read it. That is why the page loads no third-party code and its security policy blocks any other.",
+        "Tip: create a key just for this app, give it a spending limit in your account, and revoke it if you think someone has seen it."
+      ]
+    },
+    "security": {
+      "title": "How it is protected",
+      "items": [
+        "Every connection is encrypted: HTTPS for the page and requests, WSS for live audio.",
+        "A Content Security Policy (CSP) only lets the page connect to itself, to OpenAI and to Azure OpenAI domains. The browser blocks any other connection, and the automated tests fail if that list changes.",
+        "There are no external scripts or plugins, and forms send data nowhere.",
+        "The browser itself asks for the microphone and screen capture, with its own prompt. You can stop sharing at any time.",
+        "To tell who is speaking, the app computes very simple traits of each voice (pitch and timbre) on your device. It is not biometric data, it never leaves the browser and it is forgotten when the session ends.",
+        "The code passes automated tests, including the page's security checks, before every release."
+      ]
+    },
+    "account": {
+      "title": "Account (optional)",
+      "items": [
+        "You can use the app without an account. If you sign in with Google, Firebase Authentication, a Google service, handles it.",
+        "The app receives your name, email, profile picture and a user id, only to show who is signed in.",
+        "Signing out closes the account in this browser."
+      ]
+    },
+    "demo": {
+      "title": "Free demo",
+      "items": [
+        "The demo uses a {brand} key, not yours, and only shows translated captions for three minutes.",
+        "Audio goes straight from your browser to OpenAI, with a temporary key our server requests for you and that expires quickly.",
+        "The text to translate goes through our server (Google Cloud, in Europe), which forwards it to OpenAI without keeping it.",
+        "To prevent abuse, the server counts how many demos each IP address starts per day. That count lives in memory only and is not saved in any database."
+      ]
+    },
+    "providers": {
+      "title": "Services involved",
+      "intro": "These are the only outside services that touch your data. Each has its own policy:",
+      "openai": "OpenAI processes the audio and text to transcribe, translate and speak, with your key and under your account. According to OpenAI, data sent through its API is not used to train its models unless you opt in, and may be kept for a limited time to detect abuse.",
+      "azure": "Microsoft Azure OpenAI, only if you choose it: governed by your Azure subscription and Microsoft's terms.",
+      "google": "Google Firebase Hosting serves the page. Like any web server, it receives your IP address and technical browser data in order to deliver it.",
+      "link": "Read their policy"
+    },
+    "consent": {
+      "title": "The people you translate",
+      "text": "The app processes other people's voices. Depending on where you are, their consent may be required, and some companies forbid sending meeting content to third parties. Tell the participants and ask for their permission before you start. You decide what you share and you are responsible for how you use the app."
+    },
+    "rights": {
+      "title": "Your control over your data",
+      "items": [
+        "Everything the app keeps is in your browser: you can look at it and delete it yourself at any time.",
+        "{brand} keeps no audio, text or key of yours on its servers, so we have nothing of yours to look up or delete.",
+        "What is sent to OpenAI or Azure falls under your account with them: its retention and deletion are managed there.",
+        "For any question, or to exercise your data protection rights, write to us."
+      ]
+    },
+    "contact": {
+      "title": "Contact and security reports",
+      "text": "Write to us at {email}. If you find a security flaw, please report it privately to that address before making it public; we will answer within 7 days."
+    },
+    "changes": {
+      "title": "Changes to this page",
+      "text": "If the way the app handles data changes, we will update this page and its date."
     }
   }
 }
