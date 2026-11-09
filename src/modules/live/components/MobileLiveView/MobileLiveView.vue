@@ -393,13 +393,14 @@ onBeforeUnmount(() => {
     cursor: pointer;
 
     &[aria-pressed='true'] {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+      border-color: var(--accent-fill);
+      background: var(--accent-fill);
+      color: #fff;
     }
 
     &--stop {
       border-color: transparent;
-      background: var(--danger);
+      background: var(--danger-fill);
       color: #fff;
     }
 

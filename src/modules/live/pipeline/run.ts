@@ -83,11 +83,14 @@ export interface Run {
 /**
  * The next thing to translate: the oldest sentence, joined with every one the same
  * speaker said since. When the translator falls behind, one request catches up with all of them
- * instead of making the user wait for each in turn (or dropping some).
+ * instead of making the user wait for each in turn (or dropping some). In a conversation
+ * (`joinUnknown` false) a sentence nobody could place is never joined: it may be the
+ * other person's, in the other language.
  */
-export function takeNext(queue: Sentence[]): Sentence | undefined {
+export function takeNext(queue: Sentence[], joinUnknown = true): Sentence | undefined {
   const first = queue.shift();
   if (!first || !queue.length) return first;
+  if (!joinUnknown && first.speaker === null) return first;
   // Only the same person's words are joined: a change of speaker starts a new line
   const turn = queue.findIndex((next) => next.speaker !== first.speaker);
   const absorbed = queue.splice(0, turn < 0 ? queue.length : turn);

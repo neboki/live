@@ -20,6 +20,13 @@ describe('takeNext', () => {
     expect(takeNext(queue)).toBeUndefined();
   });
 
+  it('in a conversation, never joins sentences nobody could place', () => {
+    const queue = [sentence(0, 'Hola', null), sentence(1, 'Hello', null)];
+    expect(takeNext(queue, false)).toMatchObject({ text: 'Hola' });
+    expect(takeNext(queue, false)).toMatchObject({ text: 'Hello' });
+    expect(takeNext(queue, false)).toBeUndefined();
+  });
+
   it('returns a lone sentence as it is', () => {
     const only = sentence(0, 'a', null);
     expect(takeNext([only])).toBe(only);

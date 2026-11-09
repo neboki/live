@@ -8,6 +8,7 @@ import { immersive, toggleImmersive } from '@/shared/device';
 import { useFitText } from '../../composables/fitText';
 import { useTextScale } from '../../composables/textScale';
 import { PARTNER_SPEAKER, sameLanguage, USER_SPEAKER } from '../../pipeline/conversation';
+import { guessLanguage } from '../../pipeline/textLanguage';
 import { type Receive, useLiveSession } from '../../store/useLiveSession';
 import FullscreenIcon from '../MobileLiveView/FullscreenIcon.vue';
 
@@ -60,12 +61,16 @@ function shownTo(line: SessionLine, who: number, code: string): Shown | null {
     // The other one spoke: only their words translated (a direction turned off has none)
     return line.translation ? { text: line.translation, own: false } : null;
   }
-  // Nobody known: the translator wrote into the user's language, or into the partner's
-  // when the sentence was already in the user's
-  if (isIn(line.language, code)) return { text: line.source, own: false };
-  const translatedInto = isIn(line.language, userCode.value) ? session.partner : userCode.value;
-  if (translatedInto === code && line.translation) return { text: line.translation, own: false };
-  return null;
+  // Nobody could tell who said it: each text goes to the half that reads its language.
+  // The translation is in the other language than what was said; unknown, the user's.
+  const pair = [userCode.value, session.partner];
+  const said = guessLanguage(line.source, pair) ?? line.language;
+  if (isIn(said, code)) return { text: line.source, own: false };
+  if (!line.translation) return null;
+  const into =
+    guessLanguage(line.translation, pair) ??
+    (isIn(said, userCode.value) ? session.partner : userCode.value);
+  return into === code ? { text: line.translation, own: false } : null;
 }
 
 function halfFor(who: number, code: string): Half {
@@ -150,6 +155,7 @@ function receiveText(half: Half): string {
       <button
         class="talk__receive"
         type="button"
+        :data-receive="receiveOf(half.who)"
         :aria-label="
           t('mobile.receiveLabel', {
             who: half.who === USER_SPEAKER ? t('mobile.you') : t('mobile.them'),
@@ -267,6 +273,19 @@ function receiveText(half: Half): string {
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+
+    // Each choice looks different: read is plain, hearing is filled, none is dashed and faint
+    &[data-receive='hear'] {
+      border-color: var(--accent-fill);
+      background: var(--accent-fill);
+      color: #fff;
+    }
+
+    &[data-receive='none'] {
+      border-style: dashed;
+      background: transparent;
+      color: var(--muted);
+    }
   }
 
   &__middle {
@@ -315,8 +334,9 @@ function receiveText(half: Half): string {
     cursor: pointer;
 
     &[aria-pressed='true'] {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+      border-color: var(--accent-fill);
+      background: var(--accent-fill);
+      color: #fff;
     }
   }
 
@@ -327,7 +347,7 @@ function receiveText(half: Half): string {
     padding: 0 14px;
     border: 0;
     border-radius: var(--radius-lg);
-    background: var(--danger);
+    background: var(--danger-fill);
     color: #fff;
     font-size: 17px;
     font-weight: 700;

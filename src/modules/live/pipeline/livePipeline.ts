@@ -3,7 +3,7 @@ import { createSpeakerClusters } from '@/shared/audio/speakerClusters';
 import { DRAIN_MS } from '@/shared/providers/openai/config';
 import type { FinalMeta, SttCallbacks, TextContext, Usage } from '@/shared/providers/types';
 import type { Voiceprint } from '@/shared/audio/voiceprint';
-import { routeOf, speakerOf } from './conversation';
+import { readLanguageTag, routeOf, speakerOf, speakerOfTag } from './conversation';
 import { routeError } from './errorRoute';
 import { introducedName } from './speakerNames';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
@@ -116,7 +116,24 @@ export function createLivePipeline({
     run.inFlight = inFlight;
     let first = true;
     let done = false;
-    overlay.startTranslation('', sentence.speaker);
+    // Nobody could tell who said it: the translator names the language before its
+    // translation, and the line goes on screen once that says who it was for
+    const placing = partner && sentence.speaker === null ? { raw: '', placed: false } : null;
+    /** The listener of the line turned translations off: it is not shown or kept */
+    let unwanted = false;
+    const place = (code: string | null): void => {
+      if (!placing || placing.placed) return;
+      placing.placed = true;
+      if (partner && targetCode) {
+        const user = { code: targetCode, language: targetLanguage };
+        sentence.speaker = speakerOfTag(code, user, partner);
+        if (code && !sentence.language) sentence.language = code;
+        unwanted =
+          sentence.speaker !== null && routeOf(sentence.speaker, targetLanguage, partner) === null;
+      }
+      overlay.startTranslation('', sentence.speaker);
+    };
+    if (!placing) overlay.startTranslation('', sentence.speaker);
     try {
       const { previous } = sentence;
       const request = {
@@ -127,15 +144,25 @@ export function createLivePipeline({
       };
       const onChunk = (chunk: string): void => {
         if (!isLive(run)) return;
+        let text = chunk;
+        if (placing && !placing.placed) {
+          placing.raw += chunk;
+          const tag = readLanguageTag(placing.raw);
+          if (!tag) return;
+          place(tag.code);
+          text = tag.rest;
+        }
+        if (unwanted || !text) return;
         if (first) overlay.setLatency(now() - sentence.heardAt);
         first = false;
-        inFlight.text += chunk;
-        overlay.appendTranslation(chunk);
+        inFlight.text += text;
+        overlay.appendTranslation(text);
         updateActivity(run);
       };
       // A stuck call would hold every sentence after it: it gets a deadline and,
       // when nothing came out of it yet, one more try
       for (let attempt = 1; ; attempt++) {
+        if (placing && !placing.placed) placing.raw = '';
         try {
           await watchTranslation(
             (signal, onDelta) => llm.translate({ ...request, signal }, onDelta),
@@ -150,6 +177,12 @@ export function createLivePipeline({
           logError('Translation retried', err);
         }
       }
+      // A whole answer that looked like the start of a tag: it was the translation
+      if (placing && !placing.placed && placing.raw.trim()) {
+        const raw = placing.raw;
+        place(null);
+        onChunk(raw);
+      }
       done = true;
       if (isLive(run) && run.noticeShown) {
         run.noticeShown = false;
@@ -161,6 +194,8 @@ export function createLivePipeline({
       if (run.inFlight === inFlight) run.inFlight = null;
       updateActivity(run);
       if (isLive(run)) {
+        // A failed call never said who it was for: its line still takes its place
+        if (placing && !placing.placed) place(null);
         // A cut-off translation is never marked done, so it is not read aloud
         if (done) overlay.finishTranslation();
         recordLine(run, sentence, inFlight.text.trim());
@@ -171,7 +206,12 @@ export function createLivePipeline({
   async function pump(run: Run): Promise<void> {
     run.translating = true;
     try {
-      for (let next = takeNext(run.queue); next && isLive(run); next = takeNext(run.queue)) {
+      const joinUnknown = !run.options.partner;
+      for (
+        let next = takeNext(run.queue, joinUnknown);
+        next && isLive(run);
+        next = takeNext(run.queue, joinUnknown)
+      ) {
         await translate(run, next);
       }
     } finally {
@@ -204,10 +244,11 @@ export function createLivePipeline({
     run: Run,
     language: string | undefined,
     voice: Voiceprint | null,
+    text: string,
   ): number | null {
     const { partner, targetCode, targetLanguage } = run.options;
     if (partner && targetCode && targetLanguage) {
-      return speakerOf(language, { code: targetCode, language: targetLanguage }, partner);
+      return speakerOf(language, { code: targetCode, language: targetLanguage }, partner, text);
     }
     return overlay.options.speakers ? run.speakers.assign(voice) : null;
   }
@@ -222,7 +263,7 @@ export function createLivePipeline({
   function onFinal(run: Run, text: string, meta?: FinalMeta): void {
     if (!isLive(run) || run.drainEnded) return;
     const language = meta?.language;
-    const speaker = speakerFor(run, language, meta?.voice ?? null);
+    const speaker = speakerFor(run, language, meta?.voice ?? null, text);
     if (language) overlay.setDetectedLanguage(language);
     nameSpeaker(speaker, text);
     const previous = run.lines.slice(-PREVIOUS_LINES);
