@@ -7,3 +7,8 @@ allowBuilds:
 
 # Refuse to install on a Node.js older than package.json "engines"
 engineStrict: true
+
+# Security fixes for transitive dependencies (pnpm audit in CI)
+overrides:
+  # GHSA-m9gg-hp2v-232j, through firebase > @firebase/firestore (its Node.js transport only)
+  '@grpc/grpc-js@<1.13.6': ^1.13.7
