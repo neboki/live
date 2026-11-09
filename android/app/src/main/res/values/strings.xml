@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Neboki Live</string>
+    <string name="title_activity_main">Neboki Live</string>
+    <string name="package_name">com.neboki.live</string>
+    <string name="custom_url_scheme">com.neboki.live</string>
+</resources>

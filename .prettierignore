@@ -5,3 +5,6 @@ CHANGELOG.md
 playwright-report/
 test-results/
 functions/lib/
+android/app/build/
+android/app/src/main/assets/
+android/build/

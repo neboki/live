@@ -27,10 +27,12 @@
     "test:e2e": "playwright test",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "lint:commits": "commitlint --from origin/main --to HEAD",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "build:mobile": "vite build --mode mobile && cap sync android"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@capacitor/cli": "8.5.3",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@eslint/js": "^10.0.1",
@@ -60,6 +62,8 @@
     "vue-tsc": "^3.3.13"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
     "firebase": "^13.2.0",
     "pinia": "^4.1.0",
     "vue": "^3.5.44",
