@@ -8,4 +8,5 @@ export { useCloudHistory, HISTORY_LIMIT } from './store/useCloudHistory';
 export type { CloudHistoryItem } from './utils/cloudSession';
 export { ACCOUNTS_ENABLED } from './firebase';
 export { default as AccountCard } from './components/AccountCard/AccountCard.vue';
+export { default as AccountMenu } from './components/AccountMenu/AccountMenu.vue';
 export { default as CloudSessionActions } from './components/CloudSessionActions/CloudSessionActions.vue';
