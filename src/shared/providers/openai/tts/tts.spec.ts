@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PcmPlayer } from '@/shared/audio/pcmPlayer';
 import { createOpenAiTts } from './tts';
 
-const config = { apiKey: 'test-key', model: 'gpt-4o-mini-tts', voice: 'alloy' };
+const config = { apiKey: 'sk-test', model: 'gpt-4o-mini-tts', voice: 'alloy' };
 
 interface FakePlayer extends PcmPlayer {
   played: Int16Array[];
@@ -69,7 +69,7 @@ describe('createOpenAiTts', () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://api.openai.com/v1/audio/speech');
     expect(init.method).toBe('POST');
-    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer test-key');
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-test');
     expect(JSON.parse(init.body as string)).toEqual({
       model: 'gpt-4o-mini-tts',
       voice: 'alloy',

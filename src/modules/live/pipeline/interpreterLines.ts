@@ -2,6 +2,7 @@
 // caption line closes and which part of the original text belongs to it.
 
 import type { InterpreterSession } from '@/shared/providers/types';
+import { createSpeechTiming, type SpeechTiming } from './interpreterTiming';
 import { createRun, type Run } from './run';
 import type { PipelineOptions } from './types';
 
@@ -15,13 +16,17 @@ export interface Turn {
   open: boolean;
   /** now() when the original text of the current line started */
   heardAt: number | null;
-  /** Epoch milliseconds of the same moment, for the record */
+  /** Epoch milliseconds when its words were spoken (see ./interpreterTiming), for the record */
   heardOn: number | null;
   closeTimer: ReturnType<typeof setTimeout> | null;
   /** Milliseconds of silence heard in a row */
   quietMs: number;
   /** Long silence: audio is kept here, newest last, instead of being sent (and billed) */
   holding: Int16Array[] | null;
+  /** When speech starts and how late the text runs behind it */
+  timing: SpeechTiming;
+  /** When the words after the latest sentence end were spoken: the next line's start */
+  restOn: number | null;
 }
 
 export interface SourceSplit {
@@ -53,6 +58,8 @@ export function createTurn(options: PipelineOptions): Turn {
     closeTimer: null,
     quietMs: 0,
     holding: null,
+    timing: createSpeechTiming(),
+    restOn: null,
   };
 }
 

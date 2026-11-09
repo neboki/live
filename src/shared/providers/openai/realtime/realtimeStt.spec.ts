@@ -330,11 +330,12 @@ describe('transcripts', () => {
   it('tells each final when its own sentence began, even with several on their way', async () => {
     const cb = callbacks();
     const { session, ws } = await connect(cb);
-    const firstBegan = Date.now();
+    // Each sentence began when its first chunk did: 200 ms before it was captured
+    const firstBegan = Date.now() - 200;
     session.append(chunk(200));
     session.append(chunk(600, 0));
     await vi.advanceTimersByTimeAsync(FLUSH_MS + 3000);
-    const secondBegan = Date.now();
+    const secondBegan = Date.now() - 200;
     session.append(chunk(200));
     session.append(chunk(600, 0));
     await vi.advanceTimersByTimeAsync(FLUSH_MS);

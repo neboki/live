@@ -13,6 +13,7 @@ import {
   INTERPRETER_RESUME_PREROLL_MS,
 } from '@/shared/providers/openai/config';
 import { CLOSE_AFTER_END_MS } from './interpreterLines';
+import { DEFAULT_TEXT_LAG_MS } from './interpreterTiming';
 import { createInterpreterPipeline } from './interpreterPipeline';
 import { fakeLlm, fakeRecord } from './livePipeline.fakes';
 import { createSessionPipeline, usesInterpreter, withoutInterpreter } from './sessionPipeline';
@@ -100,9 +101,9 @@ describe('createInterpreterPipeline', () => {
     expect(record.addLine).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'Hello there.', translation: 'Hola a todos.' }),
     );
-    // The line began when its first words were heard, so synced captions land on it
+    // The line began when its first words were said: its text came about a second later
     const line = record.addLine.mock.calls[0]?.[0];
-    expect((line?.at ?? 0) - (line?.from ?? 0)).toBe(CLOSE_AFTER_END_MS);
+    expect((line?.at ?? 0) - (line?.from ?? 0)).toBe(CLOSE_AFTER_END_MS + DEFAULT_TEXT_LAG_MS);
     expect(overlay.source).toEqual({ text: 'How', partial: true });
   });
 

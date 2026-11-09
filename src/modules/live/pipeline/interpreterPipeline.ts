@@ -15,7 +15,15 @@ import type {
 } from '@/shared/providers/types';
 import { routeError } from './errorRoute';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
-import { closeDelay, createTurn, joinText, splitSource, type Turn } from './interpreterLines';
+import {
+  closeDelay,
+  createTurn,
+  endsSentence,
+  joinText,
+  splitSource,
+  type Turn,
+} from './interpreterLines';
+import { hearChunk, spokenOn } from './interpreterTiming';
 import { type Run, textContext } from './run';
 import type { LivePipeline, PipelineDeps, PipelineOptions, TextRole } from './types';
 
@@ -96,7 +104,9 @@ export function createInterpreterPipeline({
     turn.source = split.done ? split.rest : '';
     const from = turn.heardOn;
     turn.heardAt = turn.source ? now() : null;
-    turn.heardOn = turn.source ? Date.now() : null;
+    // What is left began after the last sentence end, not now: its text came in since
+    turn.heardOn = turn.source ? (turn.restOn ?? Date.now() - turn.timing.lagMs) : null;
+    turn.restOn = null;
     if (!source && !turn.translation.trim()) return;
     if (!translating) overlay.startTranslation(source);
     overlay.finishTranslation();
@@ -124,9 +134,13 @@ export function createInterpreterPipeline({
 
   function onSource(turn: Turn, delta: string): void {
     if (current !== turn) return;
+    // Dated by when it was said, not by when its text arrived (seconds later)
+    const spoken = spokenOn(turn.timing);
     if (!turn.source) {
       turn.heardAt = now();
-      turn.heardOn = Date.now();
+      turn.heardOn = spoken;
+    } else if (endsSentence(turn.source)) {
+      turn.restOn = spoken;
     }
     turn.source = joinText(turn.source, delta);
     overlay.setSource(turn.source.trim(), true);
@@ -211,6 +225,7 @@ export function createInterpreterPipeline({
   function sendOrHold(turn: Turn, session: NonNullable<Turn['session']>, pcm: Int16Array): void {
     const ms = (pcm.length / INPUT_SAMPLE_RATE) * 1000;
     const speaking = rms(pcm) >= INTERPRETER_SPEECH_RMS;
+    hearChunk(turn.timing, speaking, ms);
     turn.quietMs = speaking ? 0 : turn.quietMs + ms;
     if (speaking && turn.holding) {
       turn.holding.forEach((held) => session.append(held));

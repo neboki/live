@@ -38,15 +38,20 @@ export function createAudioOutbox(): AudioOutbox {
   const gate = createSilenceGate(INPUT_SAMPLE_RATE);
   const meter = createVoiceprintMeter(INPUT_SAMPLE_RATE);
   let queue: Int16Array[] = [];
+  /** Epoch milliseconds when each queued chunk began, as captured (same order as `queue`) */
+  let queuedOn: number[] = [];
   let queuedSamples = 0;
   /** When the open sentence began, as the gate heard it; null while idle */
   let sentenceStart: number | null = null;
 
   function add(pcm: Int16Array): void {
+    // The chunk has just been captured: it began its own length ago
+    queuedOn.push(Date.now() - Math.round((pcm.length * 1000) / INPUT_SAMPLE_RATE));
     queue.push(pcm);
     queuedSamples += pcm.length;
     while (queuedSamples > MAX_BUFFERED_SAMPLES && queue.length > 1) {
       queuedSamples -= queue.shift()?.length ?? 0;
+      queuedOn.shift();
     }
   }
 
@@ -61,10 +66,13 @@ export function createAudioOutbox(): AudioOutbox {
       batch.samples += merged.length;
       batch.events.push({ type: 'input_audio_buffer.append', audio: pcmToBase64(merged) });
     };
-    for (const pcm of queue) {
+    queue.forEach((pcm, index) => {
       const wasIdle = gate.isIdle();
       const step = gate.push(pcm);
-      if (wasIdle && (step.commit || !gate.isIdle())) sentenceStart = Date.now();
+      // When the speech was captured, not when this batch goes out (up to a flush later)
+      if (wasIdle && (step.commit || !gate.isIdle())) {
+        sentenceStart = queuedOn[index] ?? Date.now();
+      }
       outgoing.push(...step.audio);
       step.audio.forEach((sent) => meter.add(sent));
       // Audio first, then the commit: a commit can only refer to audio already sent
@@ -75,9 +83,10 @@ export function createAudioOutbox(): AudioOutbox {
         batch.starts.push(sentenceStart ?? Date.now());
         sentenceStart = null;
       }
-    }
+    });
     sendOutgoing();
     queue = [];
+    queuedOn = [];
     queuedSamples = 0;
     return batch;
   }
