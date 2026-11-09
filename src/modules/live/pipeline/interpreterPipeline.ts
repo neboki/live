@@ -295,5 +295,14 @@ export function createInterpreterPipeline({
     current.run.asked = [];
   }
 
-  return { start, pushAudio, stop, abort, setTargetLanguage, resetConversation };
+  return {
+    start,
+    pushAudio,
+    stop,
+    abort,
+    setTargetLanguage,
+    resetConversation,
+    // It speaks and writes as people talk: there is no sentence to wait for
+    captionDueFrom: () => null,
+  };
 }

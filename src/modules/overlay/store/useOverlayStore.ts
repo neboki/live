@@ -44,6 +44,8 @@ export const useOverlayStore = defineStore('overlay', () => {
   const syncVideo = ref(saved.syncVideo);
   /** Seconds it is held behind real time: fixed, so picture and sound run smoothly */
   const syncDelay = ref(saved.syncDelay);
+  /** It holds its picture for a late caption, then goes on further behind */
+  const syncWait = ref(saved.syncWait);
   /** Where the captions go when a session starts: the page or the floating window */
   const placement = ref<CaptionPlacement>(saved.placement);
 
@@ -223,6 +225,7 @@ export const useOverlayStore = defineStore('overlay', () => {
       pipSize,
       syncVideo,
       syncDelay,
+      syncWait,
       placement,
     ],
     () => {
@@ -239,6 +242,7 @@ export const useOverlayStore = defineStore('overlay', () => {
         pipSize: pipSize.value,
         syncVideo: syncVideo.value,
         syncDelay: syncDelay.value,
+        syncWait: syncWait.value,
         placement: placement.value,
       };
       writeStorage(PREFS_STORAGE_KEY, JSON.stringify(prefs));
@@ -260,6 +264,7 @@ export const useOverlayStore = defineStore('overlay', () => {
     pipSize,
     syncVideo,
     syncDelay,
+    syncWait,
     placement,
     paused,
     minimized,

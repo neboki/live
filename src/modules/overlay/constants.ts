@@ -63,5 +63,6 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   pipSize: null,
   syncVideo: true,
   syncDelay: 10,
+  syncWait: true,
   placement: 'floating',
 };

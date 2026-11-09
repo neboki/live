@@ -273,7 +273,9 @@
       "hint": "Shows the shared tab in the app a few seconds behind, so each caption lands on its sentence",
       "on": "Watch the tab in step with the captions",
       "off": "Back to the live tab",
-      "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen"
+      "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen",
+      "waitLabel": "Wait for the captions",
+      "waitHint": "When a translation runs late, the video stops for a moment and goes on once it arrives. Best for recorded videos; on a live one it leaves you a little further behind"
     },
     "groups": {
       "show": "Show",
@@ -366,7 +368,8 @@
       "exitFullscreen": "Exit fullscreen",
       "delayHint": "How far the picture is held back. A caption only arrives once its whole sentence is heard and translated: long sentences need more",
       "late": "Captions late · use {seconds} s",
-      "lateHint": "Several recent captions arrived after their sentence began on screen. With {seconds} s they would have landed on time"
+      "lateHint": "Several recent captions arrived after their sentence began on screen. With {seconds} s they would have landed on time",
+      "waiting": "Waiting for the translation…"
     },
     "side": {
       "label": "Options",

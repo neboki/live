@@ -376,6 +376,43 @@ describe('delayedPlayback', () => {
     playback.stop();
   });
 
+  it('waits for a late caption apart from any pause, then goes on further behind', () => {
+    const { video, playback } = create(3);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    vi.advanceTimersByTime(PACE_MS);
+
+    playback.wait(true);
+    expect(playback.waiting()).toBe(true);
+    expect(playback.paused()).toBe(false);
+    expect(video.pause).toHaveBeenCalledTimes(1);
+    playback.wait(true);
+    expect(video.pause).toHaveBeenCalledTimes(1);
+    // The pacer leaves it held, however much is buffered meanwhile
+    buffer.hold(0, 14);
+    vi.advanceTimersByTime(PACE_MS * 4);
+    expect(video.currentTime).toBe(7);
+
+    // Paused by the user during the wait: the end of the wait does not play it
+    playback.pause();
+    playback.wait(false);
+    expect(playback.waiting()).toBe(false);
+    expect(video.play).toHaveBeenCalledTimes(1);
+    playback.resume();
+    expect(video.play).toHaveBeenCalledTimes(2);
+    // Further behind by choice now: no jump back to the delay
+    vi.advanceTimersByTime(PACE_MS * 4);
+    expect(video.currentTime).toBe(7);
+
+    // Catching up ends a wait too
+    playback.wait(true);
+    playback.catchUp();
+    expect(playback.waiting()).toBe(false);
+    expect(video.currentTime).toBe(11);
+    expect(video.play).toHaveBeenCalledTimes(3);
+    playback.stop();
+  });
+
   it('catches up when a long pause fills the buffer, and keeps the chunk', async () => {
     const { video, playback } = create(3);
     const buffer = opened();

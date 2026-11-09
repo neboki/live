@@ -273,7 +273,9 @@
       "hint": "Muestra la pestaña compartida en la app unos segundos por detrás, para que cada subtítulo caiga sobre su frase",
       "on": "Ver la pestaña al ritmo de los subtítulos",
       "off": "Volver a la pestaña en directo",
-      "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede"
+      "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede",
+      "waitLabel": "Esperar a los subtítulos",
+      "waitHint": "Si una traducción se retrasa, el vídeo se para un momento y sigue cuando llega. Ideal para vídeos grabados; en directo, te deja un poco más por detrás"
     },
     "groups": {
       "show": "Mostrar",
@@ -366,7 +368,8 @@
       "exitFullscreen": "Salir de pantalla completa",
       "delayHint": "Cuánto se retrasa la imagen. Un subtítulo solo llega cuando su frase entera se ha oído y traducido: las frases largas necesitan más",
       "late": "Subtítulos tarde · usar {seconds} s",
-      "lateHint": "Varios subtítulos recientes llegaron después de que su frase empezara en pantalla. Con {seconds} s habrían llegado a tiempo"
+      "lateHint": "Varios subtítulos recientes llegaron después de que su frase empezara en pantalla. Con {seconds} s habrían llegado a tiempo",
+      "waiting": "Esperando la traducción…"
     },
     "side": {
       "label": "Opciones",

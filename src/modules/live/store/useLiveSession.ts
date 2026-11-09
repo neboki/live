@@ -80,7 +80,12 @@ export const useLiveSession = defineStore('live', () => {
     overlay,
     record,
   });
-  const sync = createVideoSync({ capture, overlay, lines: () => record.lines });
+  const sync = createVideoSync({
+    capture,
+    overlay,
+    lines: () => record.lines,
+    captionDueFrom: () => pipeline.captionDueFrom(),
+  });
   const away = createAwayWatch({
     onBack: (heard) => {
       if (heard < HEARD_ENOUGH)
@@ -449,6 +454,8 @@ export const useLiveSession = defineStore('live', () => {
     syncDelaySeconds: sync.delaySeconds,
     syncLagSeconds: sync.lagSeconds,
     syncPaused: sync.paused,
+    /** The synced picture holds until a late caption arrives */
+    syncWaiting: sync.waiting,
     syncFailed: sync.failed,
     /** The captions the synced picture has reached */
     syncedLines: sync.reached,

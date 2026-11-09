@@ -10,6 +10,7 @@ import { createExtras, MAX_UNSUMMARIZED } from './extras';
 import { isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
 import {
   activityOf,
+  captionDueFrom,
   createRun,
   isSaidIn,
   keywordsFrom,
@@ -232,6 +233,7 @@ export function createLivePipeline({
     }
     const seq = run.nextSeq++;
     const heardOn = Date.now();
+    run.lastHeardOn = heardOn;
     // The transcriber says when this very sentence began; the gate only knows the latest
     const from = meta?.startedOn ?? run.speechStartedOn;
     const heard = {
@@ -354,5 +356,13 @@ export function createLivePipeline({
     current.asked = [];
   }
 
-  return { start, pushAudio, stop, abort, setTargetLanguage, resetConversation };
+  return {
+    start,
+    pushAudio,
+    stop,
+    abort,
+    setTargetLanguage,
+    resetConversation,
+    captionDueFrom: () => (current ? captionDueFrom(current) : null),
+  };
 }

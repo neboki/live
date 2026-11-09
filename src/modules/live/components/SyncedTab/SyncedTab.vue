@@ -30,6 +30,8 @@ const props = defineProps<{
   lagSeconds: number | null;
   /** Paused by the user */
   paused: boolean;
+  /** Held until a late caption arrives, then it goes on */
+  waiting?: boolean;
   /** The lines the picture has reached, oldest first */
   lines: readonly SessionLine[];
   /** The shared tab sends no sound: most likely its video is paused there */
@@ -145,6 +147,9 @@ watch(() => props.playback, show);
     </p>
     <p v-else-if="buffering" class="synced-tab__notice">
       {{ t('live.sync.buffering', { seconds: delaySeconds }) }}
+    </p>
+    <p v-else-if="waiting && !paused" class="synced-tab__notice" role="status">
+      {{ t('live.sync.waiting') }}
     </p>
     <span v-else-if="paused" class="synced-tab__big" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" /></svg>

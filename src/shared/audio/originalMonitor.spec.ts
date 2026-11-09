@@ -28,6 +28,8 @@ function fakePlayback(): DelayedPlayback {
     paused: () => false,
     pause: vi.fn(),
     resume: vi.fn(),
+    wait: vi.fn(),
+    waiting: () => false,
     catchUp: vi.fn(),
     setDelay: vi.fn(),
     setVolume: vi.fn(),

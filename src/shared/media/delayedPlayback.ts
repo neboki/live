@@ -8,7 +8,9 @@
 // smoothly. Only a real slip (a stall, a hidden tab) of more than a couple of seconds
 // is corrected, once, by a jump or by holding the picture. Choosing another delay moves
 // it straight there. The user can also pause it and go on from there, further behind,
-// until they ask to catch up.
+// until they ask to catch up. And it can wait for a caption that is late: the picture
+// holds where it is and goes on once the caption is there, further behind, as a video
+// does while it buffers.
 
 import { logError } from '@/shared/errors';
 
@@ -24,6 +26,10 @@ export interface DelayedPlayback {
   pause: () => void;
   /** Goes on from where it was paused: that much further behind, until catchUp() */
   resume: () => void;
+  /** Holds the picture for a late caption (true) or lets it go on (false); not a pause */
+  wait: (on: boolean) => void;
+  /** Held for a late caption */
+  waiting: () => boolean;
   /** Back to the wanted delay, skipping what was missed */
   catchUp: () => void;
   stop: () => void;
@@ -89,6 +95,8 @@ export function createDelayedPlayback(
   let playing = false;
   /** Paused by the user */
   let held = false;
+  /** Held for a late caption */
+  let waitingForCaption = false;
   /** Resumed after a pause: further behind than the delay, on purpose, until catchUp() */
   let behindByChoice = false;
   let stopped = false;
@@ -106,6 +114,7 @@ export function createDelayedPlayback(
   element.src = url;
 
   function play(): void {
+    if (held || waitingForCaption) return;
     element.play().catch((err: unknown) => logError('Delayed playback could not start', err));
   }
 
@@ -171,7 +180,7 @@ export function createDelayedPlayback(
   }
 
   function pace(): void {
-    if (stopped || !buffer || held) return;
+    if (stopped || !buffer || held || waitingForCaption) return;
     const end = bufferedEnd(buffer);
     if (end === null) return;
     const lag = end - element.currentTime;
@@ -257,10 +266,23 @@ export function createDelayedPlayback(
     if (playing) play();
   }
 
+  function wait(on: boolean): void {
+    if (stopped || on === waitingForCaption) return;
+    waitingForCaption = on;
+    if (on) {
+      element.pause();
+      return;
+    }
+    // Further behind now, on purpose: it stays there until catchUp(), never jumps ahead
+    behindByChoice = true;
+    if (playing) play();
+  }
+
   function catchUp(): void {
     if (stopped) return;
-    const wasHeld = held;
+    const wasHeld = held || waitingForCaption;
     held = false;
+    waitingForCaption = false;
     behindByChoice = false;
     if (!playing) return;
     const end = buffer ? bufferedEnd(buffer) : null;
@@ -294,6 +316,8 @@ export function createDelayedPlayback(
     setVolume,
     pause,
     resume,
+    wait,
+    waiting: () => waitingForCaption,
     catchUp,
     stop,
   };

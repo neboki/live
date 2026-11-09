@@ -74,6 +74,8 @@ export interface Run {
   sttActivity: SttActivity;
   /** Epoch milliseconds when the transcriber last heard speech begin */
   speechStartedOn: number | null;
+  /** Epoch milliseconds when the latest sentence was heard in full */
+  lastHeardOn: number | null;
   /** Voices heard so far in this run */
   speakers: SpeakerClusters;
 }
@@ -108,6 +110,21 @@ export function activityOf(run: Run): CaptionActivity | null {
   return run.sttActivity === 'transcribing' || waitingForText ? 'translating' : null;
 }
 
+/**
+ * Epoch milliseconds where the oldest speech without a caption yet began: a sentence
+ * waiting for its translation, or one still being said or transcribed. Null when every
+ * sentence heard has its caption. A picture shown behind time can wait there for it.
+ */
+export function captionDueFrom(run: Run): number | null {
+  const waiting = [...(run.inFlight ? [run.inFlight.sentence] : []), ...run.queue];
+  const starts = waiting.map((sentence) => sentence.from ?? sentence.heardOn);
+  if (run.sttActivity !== 'idle' && run.speechStartedOn !== null) {
+    // Still being said: it began when the speech did, or right after the last sentence
+    starts.push(Math.max(run.speechStartedOn, run.lastHeardOn ?? 0));
+  }
+  return starts.length ? Math.min(...starts) : null;
+}
+
 export function createRun(options: PipelineOptions): Run {
   return {
     options,
@@ -135,6 +152,7 @@ export function createRun(options: PipelineOptions): Run {
     noticeShown: false,
     sttActivity: 'idle',
     speechStartedOn: null,
+    lastHeardOn: null,
     speakers: createSpeakerClusters(),
   };
 }

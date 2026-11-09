@@ -163,6 +163,21 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         </span>
         <span class="menu__switch"></span>
       </button>
+      <!-- Only means something while the picture is synced -->
+      <button
+        v-if="store.syncVideo && !syncUnavailable"
+        class="menu__option"
+        type="button"
+        role="switch"
+        :aria-checked="store.syncWait"
+        @click="store.syncWait = !store.syncWait"
+      >
+        <span class="menu__text">
+          {{ t('overlay.sync.waitLabel') }}
+          <small>{{ t('overlay.sync.waitHint') }}</small>
+        </span>
+        <span class="menu__switch"></span>
+      </button>
     </section>
 
     <section class="menu__group menu__group--sound">

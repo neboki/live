@@ -83,4 +83,9 @@ export interface LivePipeline {
   setTargetLanguage: (language: string | null, code?: string) => void;
   /** Starts the conversation over: forgets the voices heard and the earlier lines */
   resetConversation: () => void;
+  /**
+   * Epoch milliseconds where the oldest speech still without a caption began; null
+   * when every sentence heard has one. The synced picture waits there for it.
+   */
+  captionDueFrom: () => number | null;
 }

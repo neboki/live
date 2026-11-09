@@ -78,6 +78,8 @@ export interface OverlayPrefs {
   syncVideo: boolean;
   /** Seconds the synced tab is held behind real time: one of SYNC_DELAY_CHOICES */
   syncDelay: number;
+  /** The synced tab holds its picture for a caption that is late, then goes on */
+  syncWait: boolean;
   /** Where the captions go when a session starts; the user can move them meanwhile */
   placement: CaptionPlacement;
 }

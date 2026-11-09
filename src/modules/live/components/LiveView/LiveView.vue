@@ -109,6 +109,7 @@ onBeforeUnmount(() => wakeLock.release());
           :delay-seconds="session.syncDelaySeconds ?? 0"
           :lag-seconds="session.syncLagSeconds"
           :paused="session.syncPaused"
+          :waiting="session.syncWaiting"
           :lines="session.syncedLines"
           :silent="session.tabSilent"
           @delay="overlay.syncDelay = $event"
