@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { playVoiceNote, prepareVoiceNote, useLiveSession } from '@/modules/live';
 import { useOverlayStore } from '@/modules/overlay';
@@ -51,9 +51,18 @@ function otherThan(code: string, remembered: string | null): string {
 const partner = ref(otherThan(mine.value, readStorage(PARTNER_KEY)));
 const room = ref(otherThan(mine.value, readStorage(ROOM_KEY)));
 const ready = computed(() => settings.keyLooksValid && !session.starting);
+/** The other side's languages: never the user's own, which would leave nothing to translate */
 const options = computed(() =>
-  TARGET_LANGUAGES.map((code) => ({ code, label: languageLabel(code, locale.value) })),
+  TARGET_LANGUAGES.filter((code) => code !== mine.value).map((code) => ({
+    code,
+    label: languageLabel(code, locale.value),
+  })),
 );
+// The user switched to the other side's language: the other side moves off it
+watch(mine, (code) => {
+  if (partner.value === code) partner.value = otherThan(code, null);
+  if (room.value === code) room.value = otherThan(code, null);
+});
 
 function openPrivacy(event: MouseEvent): void {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
