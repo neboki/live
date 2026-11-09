@@ -95,6 +95,8 @@ describe('createLivePipeline lifecycle', () => {
   });
 
   it('records what is left when the grace period runs out', async () => {
+    // Each call says one word and stalls: the watchdog frees the translator for the
+    // second sentence, which is cut off by the end of the grace period
     vi.useFakeTimers();
     const stt = fakeStt();
     const record = fakeRecord();
@@ -112,7 +114,7 @@ describe('createLivePipeline lifecycle', () => {
 
     expect(record.addLine.mock.calls.map(([line]) => [line.source, line.translation])).toEqual([
       ['One', 'Uno'],
-      ['Two', ''],
+      ['Two', 'Uno'],
     ]);
   });
 

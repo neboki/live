@@ -1,6 +1,13 @@
 import { type AppError, ExternalServiceError, logError } from '@/shared/errors';
 import type { SttActivity, SttCallbacks, SttOptions, SttProvider, SttSession } from '../../types';
-import { DRAIN_MS, FLUSH_MS, INPUT_SAMPLE_RATE, MAX_KEYWORDS, MODELS } from '../config';
+import {
+  DRAIN_MS,
+  FLUSH_MS,
+  INPUT_SAMPLE_RATE,
+  MAX_KEYWORDS,
+  MODELS,
+  SENTENCE_TIMEOUT_MS,
+} from '../config';
 import { errorFromCode, isConfigurationError, redactKey } from '../errors';
 import type { Voiceprint } from '@/shared/audio/voiceprint';
 import { COMMIT_EVENT, createAudioOutbox } from './realtimeAudio';
@@ -24,6 +31,8 @@ import { detach, openSocket, shut } from './realtimeSocket';
 interface PendingCommit {
   voice: Voiceprint | null;
   startedOn: number;
+  /** Date.now() when the commit went out, to give up on it in time */
+  sentOn: number;
 }
 
 function startSession(socket: WebSocket, options: SttOptions, callbacks: SttCallbacks): SttSession {
@@ -57,15 +66,39 @@ function startSession(socket: WebSocket, options: SttOptions, callbacks: SttCall
     flush();
   }
 
+  /**
+   * Gives up on what the server has lost: a commit never acknowledged, a sentence never
+   * finished. Either would keep "transcribing" on screen and hold back every later
+   * sentence. Checked with the audio, which keeps its pace in a background tab.
+   */
+  function expireStale(): void {
+    const now = Date.now();
+    let changed = false;
+    while (commits[0] && now - commits[0].sentOn >= SENTENCE_TIMEOUT_MS) {
+      commits.shift();
+      unacknowledged = Math.max(0, unacknowledged - 1);
+      changed = true;
+    }
+    const given = items.expire(SENTENCE_TIMEOUT_MS, now);
+    if (changed || given) {
+      logError(
+        'Transcription stalled',
+        new ExternalServiceError(`gave up on ${given} sentence(s) after ${SENTENCE_TIMEOUT_MS} ms`),
+      );
+      reportActivity();
+    }
+  }
+
   // Silence outside a sentence stays on the device; only what is sent counts for usage
   function flush(): void {
+    expireStale();
     if (!audio.hasQueued() || ws?.readyState !== WebSocket.OPEN) return;
     const batch = audio.take();
     unbilledSamples += batch.samples;
     for (const event of batch.events) send(event);
     unacknowledged += batch.events.filter((event) => event === COMMIT_EVENT).length;
     batch.voiceprints.forEach((voice, index) => {
-      commits.push({ voice, startedOn: batch.starts[index] ?? Date.now() });
+      commits.push({ voice, startedOn: batch.starts[index] ?? Date.now(), sentOn: Date.now() });
     });
     reportActivity();
   }
@@ -232,7 +265,7 @@ function startSession(socket: WebSocket, options: SttOptions, callbacks: SttCall
     flush();
     // The last sentence has no print of its own: it goes to whoever was speaking
     if (audio.finish()) {
-      commits.push({ voice: null, startedOn: Date.now() });
+      commits.push({ voice: null, startedOn: Date.now(), sentOn: Date.now() });
       send(COMMIT_EVENT);
     }
     socket.onclose = null;

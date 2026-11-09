@@ -100,6 +100,11 @@ export const INPUT_SAMPLE_RATE = TARGET_SAMPLE_RATE;
 export const FLUSH_MS = 100;
 /** Time to wait for the last transcript after stopping */
 export const DRAIN_MS = 1500;
+/**
+ * A closed sentence normally comes back transcribed in about a second. Past this, the
+ * server has lost it: it is shown with what it has, so the sentences after it go on.
+ */
+export const SENTENCE_TIMEOUT_MS = 8000;
 export const MAX_KEYWORDS = 50;
 
 /** Give up opening the transcription socket after this long */

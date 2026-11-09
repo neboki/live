@@ -7,6 +7,7 @@ import { routeOf, speakerOf } from './conversation';
 import { routeError } from './errorRoute';
 import { introducedName } from './speakerNames';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
+import { isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
 import {
   activityOf,
   createRun,
@@ -123,14 +124,31 @@ export function createLivePipeline({
         text: sentence.text,
         previous,
       };
-      await llm.translate(request, (chunk) => {
+      const onChunk = (chunk: string): void => {
         if (!isLive(run)) return;
         if (first) overlay.setLatency(now() - sentence.heardAt);
         first = false;
         inFlight.text += chunk;
         overlay.appendTranslation(chunk);
         updateActivity(run);
-      });
+      };
+      // A stuck call would hold every sentence after it: it gets a deadline and,
+      // when nothing came out of it yet, one more try
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await watchTranslation(
+            (signal, onDelta) => llm.translate({ ...request, signal }, onDelta),
+            run.controller.signal,
+            onChunk,
+          );
+          break;
+        } catch (err) {
+          const again =
+            attempt < TRANSLATE_ATTEMPTS && !inFlight.text && isLive(run) && isRetryable(err);
+          if (!again) throw err;
+          logError('Translation retried', err);
+        }
+      }
       done = true;
       if (isLive(run) && run.noticeShown) {
         run.noticeShown = false;
