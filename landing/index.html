@@ -11,7 +11,7 @@
     <title>Neboki Live · Live translated captions</title>
     <meta
       name="description"
-      content="Understand any conversation, in any language, live: translated captions for calls, videos and in-person meetings."
+      content="Understand any conversation, in any language, live: translated captions for calls, videos and in-person meetings, on your computer and on your phone."
     />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Neboki Live" />
@@ -22,158 +22,725 @@
     <meta property="og:url" content="https://neboki-live.web.app/" />
     <meta property="og:image" content="https://neboki-live.web.app/app/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#0f1115" />
+    <meta name="theme-color" content="#08090c" />
     <link rel="icon" href="/app/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
     <link rel="stylesheet" href="./landing.css" />
     <script type="module" src="./landing.ts"></script>
   </head>
   <body>
-    <header class="top">
-      <a class="brand" href="/">
-        <span class="brand__dot" aria-hidden="true"></span>
-        Neboki Live
-      </a>
-      <nav class="top__nav">
-        <button class="lang" type="button" data-lang-toggle aria-label="Español">ES</button>
-        <a class="top__link" href="https://github.com/neboki/live" rel="noopener">GitHub</a>
-        <a class="btn btn--small" href="/app/" data-t="open">Open the app</a>
-      </nav>
+    <a class="skip" href="#main" data-t="skip">Skip to content</a>
+
+    <header class="nav" data-nav>
+      <div class="nav__inner">
+        <a class="brand" href="/" aria-label="Neboki Live">
+          <span class="brand__mark" aria-hidden="true"><span></span></span>
+          <span>Neboki <b>Live</b></span>
+        </a>
+        <nav class="nav__links" aria-label="Sections">
+          <a href="#where" data-t="navWhere">Where it works</a>
+          <a href="#mobile" data-t="navMobile">Mobile</a>
+          <a href="#pricing" data-t="navPricing">Pricing</a>
+          <a href="#privacy" data-t="navPrivacy">Privacy</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <div class="nav__end">
+          <button class="lang" type="button" data-lang-toggle aria-label="Español">ES</button>
+          <a
+            class="nav__gh"
+            href="https://github.com/neboki/live"
+            rel="noopener"
+            aria-label="GitHub"
+          >
+            <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
+          </a>
+          <a class="btn btn--sm" href="/app/" data-t="open">Open the app</a>
+        </div>
+      </div>
     </header>
 
-    <main>
-      <section class="hero wrap">
-        <div class="hero__text">
-          <h1 data-t="title">Understand any conversation, in any language, live.</h1>
-          <p class="hero__lead" data-t="lead">
-            Translated captions for calls, videos and in-person meetings, about a second after each
-            sentence.
+    <main id="main">
+      <!-- ───────────── Hero ───────────── -->
+      <section class="hero">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="hero__grid" aria-hidden="true"></div>
+
+        <div class="wrap hero__inner">
+          <div class="hero__text">
+            <p class="pill">
+              <span class="pill__dot" aria-hidden="true"></span>
+              <span data-t="pill">Open source · Nothing in between you and the model</span>
+            </p>
+            <h1>
+              <span data-t="title1">Understand any conversation,</span>
+              <span class="grad" data-t="title2">in any language, live.</span>
+            </h1>
+            <p class="hero__lead" data-t="lead">
+              Translated captions that float over your calls, videos and meetings, about a second
+              after each sentence. On your computer and on your phone.
+            </p>
+            <div class="hero__actions">
+              <a class="btn btn--lg" href="/app/">
+                <span data-t="openFree">Start translating</span>
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+                  <path
+                    d="M4 10h11m-4-4 4 4-4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </a>
+              <a class="btn btn--ghost btn--lg" href="#how" data-t="seeHow">See how it works</a>
+            </div>
+            <ul class="hero__facts">
+              <li><b>≈ 1 s</b> <span data-t="factDelay">from voice to caption</span></li>
+              <li><b>20+</b> <span data-t="factLangs">languages</span></li>
+              <li>
+                <b data-price="0.24">$0.24</b> <span data-t="factCost">an hour, cheapest tier</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- The product, drawn: a call in a browser window, the floating captions over it,
+               and the phone version beside it -->
+          <div class="stage" aria-hidden="true">
+            <div class="win">
+              <div class="win__bar">
+                <span class="win__dots"><i></i><i></i><i></i></span>
+                <span class="win__url">meet · Weekly sync</span>
+              </div>
+              <div class="call">
+                <div class="tile tile--a" data-speaker="0"><span>JK</span><em>Jonas</em></div>
+                <div class="tile tile--b" data-speaker="1"><span>YS</span><em>Yuki</em></div>
+                <div class="tile tile--c" data-speaker="2"><span>CM</span><em>Camille</em></div>
+                <div class="tile tile--d" data-speaker="3"><span>GR</span><em>Giulia</em></div>
+              </div>
+              <div class="win__controls"><i></i><i></i><i class="hang"></i><i></i></div>
+            </div>
+
+            <div class="cap">
+              <div class="cap__bar">
+                <span class="cap__live" data-t="live">Live</span>
+                <span class="cap__pair" data-demo-pair>AUTO → EN</span>
+              </div>
+              <p class="cap__prev" data-demo-prev>Yes, from three o'clock works well for me.</p>
+              <p class="cap__src">
+                <span class="cap__who" data-demo-who>Yuki</span>
+                <span class="cap__lang" data-demo-lang>JA</span>
+                <span data-demo-src>来週までに見積もりを送ります。</span>
+              </p>
+              <p class="cap__now">
+                <span data-demo-now>I'll send the quote by next week.</span><i class="caret"></i>
+              </p>
+            </div>
+
+            <div class="phone phone--hero">
+              <div class="phone__screen talk">
+                <div class="talk__half talk__half--top">
+                  <small data-t="forCamille">For Camille</small>
+                  <p lang="fr">Bien sûr, on commence par le budget.</p>
+                </div>
+                <div class="talk__mid"><span class="rec"></span></div>
+                <div class="talk__half">
+                  <small>Camille</small>
+                  <p data-t="heroTalkBottom">Can we go over the timeline first?</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wrap marquee" aria-label="Works with">
+          <p class="marquee__label" data-t="worksWith">Works with whatever you are listening to</p>
+          <div class="marquee__track">
+            <ul>
+              <li>Zoom</li>
+              <li>Microsoft Teams</li>
+              <li>Google Meet</li>
+              <li>YouTube</li>
+              <li>Webex</li>
+              <li>Twitch</li>
+              <li>Slack huddles</li>
+              <li data-t="webinars">Webinars</li>
+              <li data-t="podcasts">Podcasts</li>
+              <li data-t="classes">Classes</li>
+            </ul>
+            <ul aria-hidden="true">
+              <li>Zoom</li>
+              <li>Microsoft Teams</li>
+              <li>Google Meet</li>
+              <li>YouTube</li>
+              <li>Webex</li>
+              <li>Twitch</li>
+              <li>Slack huddles</li>
+              <li data-t="webinars">Webinars</li>
+              <li data-t="podcasts">Podcasts</li>
+              <li data-t="classes">Classes</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Where ───────────── -->
+      <section class="section" id="where">
+        <div class="wrap">
+          <header class="head reveal">
+            <p class="eyebrow" data-t="whereEyebrow">One app, every situation</p>
+            <h2 data-t="whereTitle">On a call, in the room, or both at once</h2>
+            <p class="head__lead" data-t="whereLead">
+              Pick what to listen to: a browser tab, your microphone, or the two mixed. The rest is
+              automatic, including which language each person speaks.
+            </p>
+          </header>
+
+          <div class="uses">
+            <article class="use reveal">
+              <div class="use__art use__art--pc" aria-hidden="true">
+                <div class="mini-win"><i></i><i></i><i></i><i></i></div>
+                <div class="mini-cap">
+                  <b></b>
+                  <span></span>
+                </div>
+              </div>
+              <p class="use__tag" data-t="tagTab">Shared tab</p>
+              <h3 data-t="computerTitle">On your computer</h3>
+              <p data-t="computerText">
+                Zoom, Teams, Meet, YouTube, webinars. The captions float in a small window on top of
+                everything, so they stay with you whatever you open.
+              </p>
+            </article>
+
+            <article class="use reveal">
+              <div class="use__art use__art--room" aria-hidden="true">
+                <div class="table">
+                  <span class="person p1"></span>
+                  <span class="person p2"></span>
+                  <span class="person p3"></span>
+                  <div class="mini-phone">
+                    <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+                  </div>
+                </div>
+              </div>
+              <p class="use__tag" data-t="tagMic">Microphone</p>
+              <h3 data-t="roomTitle">In the room</h3>
+              <p data-t="roomText">
+                Meetings, interviews, classes, a doctor's visit. Put your phone or laptop on the
+                table and read along: it listens through the microphone.
+              </p>
+            </article>
+
+            <article class="use reveal">
+              <div class="use__art use__art--mix" aria-hidden="true">
+                <span class="mix mix--a" data-t="mixTab">Tab</span>
+                <span class="mix__plus">+</span>
+                <span class="mix mix--b" data-t="mixMic">Mic</span>
+                <span class="mix__eq">=</span>
+                <span class="mix mix--c" data-t="mixAll">Everyone</span>
+              </div>
+              <p class="use__tag" data-t="tagBoth">Tab + microphone</p>
+              <h3 data-t="hybridTitle">Both at once</h3>
+              <p data-t="hybridText">
+                Hybrid meetings: the people on the call and the people in the room, mixed into one
+                transcript.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Mobile ───────────── -->
+      <section class="section section--mobile" id="mobile">
+        <div class="wrap">
+          <header class="head head--center reveal">
+            <p class="eyebrow" data-t="mobileEyebrow">On your phone</p>
+            <h2 data-t="mobileTitle">A pocket interpreter, with three big buttons</h2>
+            <p class="head__lead" data-t="mobileLead">
+              Add it to your home screen and it opens like an app. No store, no download, no account
+              needed.
+            </p>
+          </header>
+
+          <div class="phones">
+            <figure class="phone-card reveal">
+              <div class="phone">
+                <div class="phone__screen listen">
+                  <div class="scr__top">
+                    <span class="rec"></span><span data-t="listenTitle">Listen</span>
+                  </div>
+                  <div class="line">
+                    <small>Mr Tanaka</small>
+                    <p data-t="listen1">Welcome to the plant. We start with the safety briefing.</p>
+                  </div>
+                  <div class="line">
+                    <small>Mr Tanaka</small>
+                    <p data-t="listen2">Helmets are mandatory past the yellow line.</p>
+                  </div>
+                  <div class="line line--now">
+                    <small data-t="voice2">Voice 2</small>
+                    <p data-t="listen3">Is there a break before lunch?</p>
+                  </div>
+                  <div class="scr__foot">
+                    <span class="chip chip--on" data-t="voiceOn">Voice: on</span>
+                    <span class="chip chip--stop" data-t="stop">Stop</span>
+                  </div>
+                </div>
+              </div>
+              <figcaption>
+                <b data-t="listenTitle">Listen</b>
+                <span data-t="listenText"
+                  >Talks, tours, events. Read the translation, or hear it in your headphones. It
+                  names each voice when people introduce themselves.</span
+                >
+              </figcaption>
+            </figure>
+
+            <figure class="phone-card phone-card--mid reveal">
+              <div class="phone">
+                <div class="phone__screen talk">
+                  <div class="talk__half talk__half--top">
+                    <small data-t="talkTopWho">For Ana</small>
+                    <p data-t="talkTop">Sale a las 22:40, desde el andén 3.</p>
+                  </div>
+                  <div class="talk__mid"><span class="rec"></span></div>
+                  <div class="talk__half">
+                    <small data-t="talkBottomWho">Ana</small>
+                    <p data-t="talkBottom">What time does the last train to Bilbao leave?</p>
+                  </div>
+                </div>
+              </div>
+              <figcaption>
+                <b data-t="talkTitle">Talk</b>
+                <span data-t="talkText"
+                  >Face to face, each in your own language. The screen splits in two and the top
+                  half turns around for the other person.</span
+                >
+              </figcaption>
+            </figure>
+
+            <figure class="phone-card reveal">
+              <div class="phone">
+                <div class="phone__screen present">
+                  <span class="present__lang">ES → EN</span>
+                  <p data-t="presentLine">Our second quarter closed 18% above plan.</p>
+                </div>
+              </div>
+              <figcaption>
+                <b data-t="presentTitle">Present</b>
+                <span data-t="presentText"
+                  >You speak, the room follows in its language: one huge line, ready for the
+                  projector.</span
+                >
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Features ───────────── -->
+      <section class="section" id="features">
+        <div class="wrap">
+          <header class="head reveal">
+            <p class="eyebrow" data-t="featEyebrow">More than captions</p>
+            <h2 data-t="getTitle">Everything you need to follow, and to join in</h2>
+          </header>
+
+          <div class="bento">
+            <article class="tile-f tile-f--wide reveal">
+              <div class="tile-f__art art-dual" aria-hidden="true">
+                <p class="art-dual__t" data-t="dualT">We can ship the first version in April.</p>
+                <p class="art-dual__o" lang="de">Wir können die erste Version im April liefern.</p>
+              </div>
+              <h3 data-t="get1Title">Read it, or hear it</h3>
+              <p data-t="get1">
+                The translation, with the original underneath if you want it. Or put on headphones
+                and an interpreter voice reads it to you.
+              </p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-wave" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <h3 data-t="voiceTitle">Interpreter mode</h3>
+              <p data-t="voiceText">Translates while they are still speaking, in its own voice.</p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-chips" aria-hidden="true">
+                <span
+                  ><b data-t="reply">Reply</b>
+                  <em data-t="replyText">April works for us too.</em></span
+                >
+                <span
+                  ><b data-t="ask">Ask</b> <em data-t="askText">Which features go first?</em></span
+                >
+              </div>
+              <h3 data-t="get2Title">Join in</h3>
+              <p data-t="get2">
+                What you could reply and what you could ask, in your language and in theirs.
+              </p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-sum" aria-hidden="true">
+                <p><i></i><span data-t="sum1">Launch moved to April</span></p>
+                <p><i></i><span data-t="sum2">Jonas sends the quote</span></p>
+                <p><i></i><span data-t="sum3">Budget signed off</span></p>
+              </div>
+              <h3 data-t="get3Title">Skip the notes</h3>
+              <p data-t="get3">
+                A summary that writes itself, and the whole conversation to export.
+              </p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-tags" aria-hidden="true">
+                <span>Neboki</span><span>Kubernetes</span><span>Q3 OKR</span
+                ><span>Dr. Uriarte</span>
+              </div>
+              <h3 data-t="get4Title">Get the names right</h3>
+              <p data-t="get4">A glossary of names and terms that must never be translated.</p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-meter" aria-hidden="true">
+                <div class="art-meter__row">
+                  <b data-price="0.07">$0.07</b><span data-t="meterOf">of a $3.00 limit</span>
+                </div>
+                <div class="art-meter__bar"><i></i></div>
+              </div>
+              <h3 data-t="get5Title">Keep the bill in check</h3>
+              <p data-t="get5">A live cost estimate, and a spending limit per session.</p>
+            </article>
+
+            <article class="tile-f reveal">
+              <div class="tile-f__art art-save" aria-hidden="true">
+                <span class="file">conversation.md</span>
+                <span class="file file--g" data-t="savedAccount">Saved to your account</span>
+              </div>
+              <h3 data-t="saveTitle">Keep what matters</h3>
+              <p data-t="saveText">
+                Export any conversation as text, or sign in with Google to keep your history, only
+                if you choose to.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── How ───────────── -->
+      <section class="section section--how" id="how">
+        <div class="wrap">
+          <header class="head head--center reveal">
+            <p class="eyebrow" data-t="howEyebrow">How it works</p>
+            <h2 data-t="howTitle">From sound to caption, in about a second</h2>
+          </header>
+
+          <ol class="flow reveal">
+            <li>
+              <span class="flow__ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm-7 9a7 7 0 0 0 14 0M12 19v2"
+                  />
+                </svg>
+              </span>
+              <b data-t="flow1">Listens</b>
+              <span data-t="flow1t">The tab, the mic, or both</span>
+            </li>
+            <li>
+              <span class="flow__ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 7h10M4 12h16M4 17h7" /></svg>
+              </span>
+              <b data-t="flow2">Cuts sentences</b>
+              <span data-t="flow2t">At each natural pause</span>
+            </li>
+            <li>
+              <span class="flow__ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4V5Z" /></svg>
+              </span>
+              <b data-t="flow3">Transcribes</b>
+              <span data-t="flow3t">And detects the language</span>
+            </li>
+            <li>
+              <span class="flow__ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 5h8M8 3v2m2 0c-1 4-4 7-6 8m2-4c1 2 3 3 5 4m2 6 4-9 4 9m-7-3h6" />
+                </svg>
+              </span>
+              <b data-t="flow4">Translates</b>
+              <span data-t="flow4t">With your glossary</span>
+            </li>
+            <li>
+              <span class="flow__ic flow__ic--hot" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 14h6m2 0h2" /></svg>
+              </span>
+              <b data-t="flow5">Shows it</b>
+              <span data-t="flow5t">On screen or in your ear</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ───────────── Privacy ───────────── -->
+      <section class="section" id="privacy">
+        <div class="wrap privacy">
+          <div class="privacy__text reveal">
+            <p class="eyebrow" data-t="trustEyebrow">Private by design</p>
+            <h2 data-t="trustTitle">Your browser talks to the model. Nobody else listens.</h2>
+            <ul class="checks">
+              <li>
+                <b data-t="trust1Title">No server in between.</b>
+                <span data-t="trust1"
+                  >The audio goes straight from your browser to OpenAI. Nothing passes through
+                  us.</span
+                >
+              </li>
+              <li>
+                <b data-t="trust2Title">Your key stays with you.</b>
+                <span data-t="trust2"
+                  >Kept in your browser, and only if you choose to remember it.</span
+                >
+              </li>
+              <li>
+                <b data-t="trust3Title">Open source, no analytics.</b>
+                <span data-t="trust3"
+                  >All the code is public, so anyone can check what it does.</span
+                >
+              </li>
+            </ul>
+          </div>
+
+          <div class="route reveal" aria-hidden="true">
+            <div class="node node--you">
+              <svg viewBox="0 0 24 24"><path d="M3 5h18v11H3zM8 20h8M12 16v4" /></svg>
+              <b data-t="nodeYou">Your browser</b>
+            </div>
+            <div class="route__line"><i></i><i></i><i></i></div>
+            <div class="node node--ai">
+              <svg viewBox="0 0 24 24"><path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z" /></svg>
+              <b>OpenAI</b>
+            </div>
+            <div class="node node--us">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 6h16v5H4zM4 13h16v5H4zM7 8.5h.01M7 15.5h.01" />
+              </svg>
+              <b data-t="nodeUs">Our servers</b>
+              <span class="node__x" data-t="nodeNot">Not in the path</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Pricing ───────────── -->
+      <section class="section section--pricing" id="pricing">
+        <div class="wrap">
+          <header class="head head--center reveal">
+            <p class="eyebrow" data-t="priceEyebrow">Pricing</p>
+            <h2 data-t="priceTitle">The app is free. You pay OpenAI cents per hour.</h2>
+            <p class="head__lead" data-t="priceLead">
+              Use your own OpenAI key. No subscription, no markup: your provider bills you directly,
+              at its own prices.
+            </p>
+          </header>
+
+          <div class="tiers" role="radiogroup" aria-label="Quality" data-tiers>
+            <button
+              class="tier reveal"
+              type="button"
+              role="radio"
+              aria-checked="true"
+              data-tier="0.24"
+            >
+              <span class="tier__name" data-t="tierLow">Low cost</span>
+              <span class="tier__price"
+                ><b data-price="0.24">$0.24</b> <span data-t="perHour">/ hour</span></span
+              >
+              <span class="tier__text" data-t="tierLowText"
+                >Sentence by sentence. For every day.</span
+              >
+            </button>
+            <button
+              class="tier reveal"
+              type="button"
+              role="radio"
+              aria-checked="false"
+              data-tier="0.79"
+            >
+              <span class="tier__name" data-t="tierMed">Medium</span>
+              <span class="tier__price"
+                ><b data-price="0.79">$0.79</b> <span data-t="perHour">/ hour</span></span
+              >
+              <span class="tier__text" data-t="tierMedText">Word by word, while they speak.</span>
+            </button>
+            <button
+              class="tier reveal"
+              type="button"
+              role="radio"
+              aria-checked="false"
+              data-tier="2.15"
+            >
+              <span class="tier__name" data-t="tierPrem">Premium</span>
+              <span class="tier__price"
+                ><b data-price="2.15">$2.15</b> <span data-t="perHour">/ hour</span></span
+              >
+              <span class="tier__text" data-t="tierPremText"
+                >The best translation, for what matters.</span
+              >
+            </button>
+            <button
+              class="tier tier--hot reveal"
+              type="button"
+              role="radio"
+              aria-checked="false"
+              data-tier="2.34"
+            >
+              <span class="tier__name" data-t="tierInt">Interpreter</span>
+              <span class="tier__price"
+                ><b data-price="2.34">$2.34</b> <span data-t="perHour">/ hour</span></span
+              >
+              <span class="tier__text" data-t="tierIntText">Translated aloud as they speak.</span>
+            </button>
+          </div>
+
+          <div class="calc reveal">
+            <label class="calc__label" for="hours">
+              <span data-t="calcHours">Hours of meetings a month</span>
+              <output for="hours" data-hours-out>20 h</output>
+            </label>
+            <input id="hours" type="range" min="1" max="100" value="20" data-hours />
+            <p class="calc__total">
+              <b data-total>$4.80</b>
+              <span data-t="calcPer">a month · no subscription</span>
+            </p>
+          </div>
+          <p class="fine" data-t="priceFine">
+            Estimates per hour of meeting with people speaking 65% of the time, at OpenAI standard
+            prices. Your OpenAI or Azure bill is the reference.
           </p>
-          <div class="hero__actions">
-            <a class="btn" href="/app/" data-t="open">Open the app</a>
+        </div>
+      </section>
+
+      <!-- ───────────── Steps ───────────── -->
+      <section class="section">
+        <div class="wrap">
+          <header class="head head--center reveal">
+            <p class="eyebrow" data-t="stepsEyebrow">Get started</p>
+            <h2 data-t="stepsTitle">Reading along in three steps</h2>
+          </header>
+          <ol class="steps">
+            <li class="reveal">
+              <span class="steps__n">1</span>
+              <h3 data-t="step1Title">Get a key</h3>
+              <p data-t="step1">An OpenAI API key, or your company's Azure OpenAI.</p>
+            </li>
+            <li class="reveal">
+              <span class="steps__n">2</span>
+              <h3 data-t="step2Title">Choose</h3>
+              <p data-t="step2">Your language, and what to listen to.</p>
+            </li>
+            <li class="reveal">
+              <span class="steps__n">3</span>
+              <h3 data-t="step3Title">Press Start</h3>
+              <p data-t="step3">And read along. That's it.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ───────────── FAQ ───────────── -->
+      <section class="section" id="faq">
+        <div class="wrap faq">
+          <header class="head reveal">
+            <p class="eyebrow">FAQ</p>
+            <h2 data-t="faqTitle">Questions, answered</h2>
+          </header>
+          <div class="faq__list">
+            <details class="reveal">
+              <summary data-t="q1">Do the other people need to install anything?</summary>
+              <p data-t="a1">
+                No. Only you open Neboki Live. It listens to the call or the room, and nobody else
+                needs to do anything.
+              </p>
+            </details>
+            <details class="reveal">
+              <summary data-t="q2">Which languages does it understand?</summary>
+              <p data-t="a2">
+                It detects the spoken language by itself, sentence by sentence, so people can mix
+                languages. It translates into more than 20, including English, Spanish, French,
+                German, Portuguese, Italian, Chinese, Japanese and Arabic.
+              </p>
+            </details>
+            <details class="reveal">
+              <summary data-t="q3">Does it work on iPhone and Android?</summary>
+              <p data-t="a3">
+                Yes, in the browser. On a phone it listens through the microphone; add it to your
+                home screen and it opens full screen, like an app.
+              </p>
+            </details>
+            <details class="reveal">
+              <summary data-t="q4">Is my conversation stored anywhere?</summary>
+              <p data-t="a4">
+                Only in your browser, unless you sign in and choose to save it to your account. The
+                audio goes to OpenAI to be transcribed and translated, under your own API terms.
+              </p>
+            </details>
+            <details class="reveal">
+              <summary data-t="q5">Why do I need my own OpenAI key?</summary>
+              <p data-t="a5">
+                It is what keeps the app free and private: you pay the model directly, at cost, and
+                no server of ours sits in the middle of your conversations.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Final CTA ───────────── -->
+      <section class="final">
+        <div class="wrap final__inner reveal">
+          <h2>
+            <span data-t="finalTitle1">What they say,</span>
+            <span class="grad" data-t="finalTitle2">in your language.</span>
+          </h2>
+          <p data-t="finalLead">Open it in your browser and start in under a minute.</p>
+          <div class="hero__actions hero__actions--center">
+            <a class="btn btn--lg btn--light" href="/app/" data-t="openFree">Start translating</a>
             <a
-              class="btn btn--ghost"
+              class="btn btn--ghost btn--lg"
               href="https://github.com/neboki/live"
               rel="noopener"
-              data-t="code"
-              >See the code</a
+              data-t="star"
+              >Star on GitHub</a
             >
           </div>
-          <p class="hero__note" data-t="note">
-            Free and open source · With your own OpenAI key · From ≈ $0.24 an hour
-          </p>
         </div>
-
-        <figure class="demo" aria-label="Example of a translated caption">
-          <div class="demo__bar">
-            <span class="demo__live" data-t="live">Live</span>
-            <span class="demo__pair">AUTO → EN</span>
-          </div>
-          <p class="demo__source" lang="es">¿Podemos mover la reunión al jueves por la tarde?</p>
-          <p class="demo__caption">Can we move the meeting to Thursday afternoon?</p>
-          <p class="demo__source" lang="de">Ja, ab drei Uhr passt es mir gut.</p>
-          <p class="demo__caption">Yes, from three o'clock works well for me.</p>
-        </figure>
-      </section>
-
-      <section class="wrap section">
-        <h2 data-t="whereTitle">Where it works</h2>
-        <div class="cards">
-          <article class="card">
-            <h3 data-t="computerTitle">On your computer</h3>
-            <p data-t="computerText">
-              Zoom, Teams, Meet, YouTube, webinars. The captions float in a window on top of
-              everything, or stay in the app.
-            </p>
-          </article>
-          <article class="card">
-            <h3 data-t="roomTitle">In the room</h3>
-            <p data-t="roomText">
-              Meetings, interviews, classes. Put your phone or laptop on the table and read along:
-              it listens through the microphone.
-            </p>
-          </article>
-          <article class="card">
-            <h3 data-t="hybridTitle">Both at once</h3>
-            <p data-t="hybridText">
-              The call and the room together: the shared tab and the microphone, mixed.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="wrap section">
-        <h2 data-t="getTitle">What you get</h2>
-        <ul class="list">
-          <li>
-            <strong data-t="get1Title">Follow along.</strong>
-            <span data-t="get1"
-              >The translation, with the original underneath if you want it, or read aloud.</span
-            >
-          </li>
-          <li>
-            <strong data-t="get2Title">Join in.</strong>
-            <span data-t="get2"
-              >What you could reply and what you could ask, in your language and theirs.</span
-            >
-          </li>
-          <li>
-            <strong data-t="get3Title">Skip the notes.</strong>
-            <span data-t="get3">A live summary, and the whole conversation to export.</span>
-          </li>
-          <li>
-            <strong data-t="get4Title">Get the names right.</strong>
-            <span data-t="get4">A glossary of names and terms that must not be translated.</span>
-          </li>
-          <li>
-            <strong data-t="get5Title">Keep the bill in check.</strong>
-            <span data-t="get5">A live cost estimate and a spending limit per session.</span>
-          </li>
-        </ul>
-      </section>
-
-      <section class="wrap section">
-        <h2 data-t="trustTitle">Why you can trust it</h2>
-        <div class="cards">
-          <article class="card">
-            <h3 data-t="trust1Title">No server in between</h3>
-            <p data-t="trust1">
-              Your browser sends the audio straight to OpenAI. Nothing passes through us.
-            </p>
-          </article>
-          <article class="card">
-            <h3 data-t="trust2Title">Your key stays with you</h3>
-            <p data-t="trust2">
-              It is kept in your browser, and only if you choose to remember it.
-            </p>
-          </article>
-          <article class="card">
-            <h3 data-t="trust3Title">Open source</h3>
-            <p data-t="trust3">
-              All the code is public, so anyone can check what it does. No analytics.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="wrap section">
-        <h2 data-t="stepsTitle">Start in three steps</h2>
-        <ol class="steps">
-          <li data-t="step1">Get an OpenAI API key (or use your company's Azure OpenAI).</li>
-          <li data-t="step2">Open the app, pick your language and what to listen to.</li>
-          <li data-t="step3">Press Start, and read along.</li>
-        </ol>
-        <a class="btn" href="/app/" data-t="open">Open the app</a>
       </section>
     </main>
 
-    <footer class="foot wrap">
-      <span>© Neboki · <span data-t="license">Open source under the AGPL-3.0 licence</span></span>
-      <nav class="foot__nav">
-        <a href="/app/" data-t="appLink">App</a>
-        <a href="/app/privacy" data-t="privacy">Privacy</a>
-        <a href="https://github.com/neboki/live" rel="noopener">GitHub</a>
-      </nav>
+    <footer class="foot">
+      <div class="wrap foot__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark" aria-hidden="true"><span></span></span>
+          <span>Neboki <b>Live</b></span>
+        </a>
+        <nav class="foot__nav" aria-label="Footer">
+          <a href="/app/" data-t="appLink">App</a>
+          <a href="/app/privacy" data-t="privacy">Privacy</a>
+          <a href="https://github.com/neboki/live" rel="noopener">GitHub</a>
+        </nav>
+        <p class="foot__legal">
+          © Neboki · <span data-t="license">Open source under the AGPL-3.0 licence</span>
+        </p>
+      </div>
     </footer>
   </body>
 </html>
