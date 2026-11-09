@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:web": "vite build --mode web && vite build --config vite.landing.config.ts",
     "preview": "vite preview",
     "clean": "node -e \"for (const dir of ['dist', 'coverage', 'test-results', 'playwright-report']) require('node:fs').rmSync(dir, { recursive: true, force: true })\"",
     "typecheck": "vue-tsc --build",

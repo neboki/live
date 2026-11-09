@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- A plain page: only its own files, no requests elsewhere -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <title>Neboki Live · Live translated captions</title>
+    <meta
+      name="description"
+      content="Understand any conversation, in any language, live: translated captions for calls, videos and in-person meetings."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Neboki Live" />
+    <meta
+      property="og:description"
+      content="Understand any conversation, in any language, live: translated captions for calls, videos and in-person meetings."
+    />
+    <meta property="og:url" content="https://neboki-live.web.app/" />
+    <meta property="og:image" content="https://neboki-live.web.app/app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0f1115" />
+    <link rel="icon" href="/app/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./landing.css" />
+    <script type="module" src="./landing.ts"></script>
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/">
+        <span class="brand__dot" aria-hidden="true"></span>
+        Neboki Live
+      </a>
+      <nav class="top__nav">
+        <button class="lang" type="button" data-lang-toggle aria-label="Español">ES</button>
+        <a class="top__link" href="https://github.com/neboki/live" rel="noopener">GitHub</a>
+        <a class="btn btn--small" href="/app/" data-t="open">Open the app</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero wrap">
+        <div class="hero__text">
+          <h1 data-t="title">Understand any conversation, in any language, live.</h1>
+          <p class="hero__lead" data-t="lead">
+            Translated captions for calls, videos and in-person meetings, about a second after each
+            sentence.
+          </p>
+          <div class="hero__actions">
+            <a class="btn" href="/app/" data-t="open">Open the app</a>
+            <a
+              class="btn btn--ghost"
+              href="https://github.com/neboki/live"
+              rel="noopener"
+              data-t="code"
+              >See the code</a
+            >
+          </div>
+          <p class="hero__note" data-t="note">
+            Free and open source · With your own OpenAI key · From ≈ $0.24 an hour
+          </p>
+        </div>
+
+        <figure class="demo" aria-label="Example of a translated caption">
+          <div class="demo__bar">
+            <span class="demo__live" data-t="live">Live</span>
+            <span class="demo__pair">AUTO → EN</span>
+          </div>
+          <p class="demo__source" lang="es">¿Podemos mover la reunión al jueves por la tarde?</p>
+          <p class="demo__caption">Can we move the meeting to Thursday afternoon?</p>
+          <p class="demo__source" lang="de">Ja, ab drei Uhr passt es mir gut.</p>
+          <p class="demo__caption">Yes, from three o'clock works well for me.</p>
+        </figure>
+      </section>
+
+      <section class="wrap section">
+        <h2 data-t="whereTitle">Where it works</h2>
+        <div class="cards">
+          <article class="card">
+            <h3 data-t="computerTitle">On your computer</h3>
+            <p data-t="computerText">
+              Zoom, Teams, Meet, YouTube, webinars. The captions float in a window on top of
+              everything, or stay in the app.
+            </p>
+          </article>
+          <article class="card">
+            <h3 data-t="roomTitle">In the room</h3>
+            <p data-t="roomText">
+              Meetings, interviews, classes. Put your phone or laptop on the table and read along:
+              it listens through the microphone.
+            </p>
+          </article>
+          <article class="card">
+            <h3 data-t="hybridTitle">Both at once</h3>
+            <p data-t="hybridText">
+              The call and the room together: the shared tab and the microphone, mixed.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="wrap section">
+        <h2 data-t="getTitle">What you get</h2>
+        <ul class="list">
+          <li>
+            <strong data-t="get1Title">Follow along.</strong>
+            <span data-t="get1"
+              >The translation, with the original underneath if you want it, or read aloud.</span
+            >
+          </li>
+          <li>
+            <strong data-t="get2Title">Join in.</strong>
+            <span data-t="get2"
+              >What you could reply and what you could ask, in your language and theirs.</span
+            >
+          </li>
+          <li>
+            <strong data-t="get3Title">Skip the notes.</strong>
+            <span data-t="get3">A live summary, and the whole conversation to export.</span>
+          </li>
+          <li>
+            <strong data-t="get4Title">Get the names right.</strong>
+            <span data-t="get4">A glossary of names and terms that must not be translated.</span>
+          </li>
+          <li>
+            <strong data-t="get5Title">Keep the bill in check.</strong>
+            <span data-t="get5">A live cost estimate and a spending limit per session.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="wrap section">
+        <h2 data-t="trustTitle">Why you can trust it</h2>
+        <div class="cards">
+          <article class="card">
+            <h3 data-t="trust1Title">No server in between</h3>
+            <p data-t="trust1">
+              Your browser sends the audio straight to OpenAI. Nothing passes through us.
+            </p>
+          </article>
+          <article class="card">
+            <h3 data-t="trust2Title">Your key stays with you</h3>
+            <p data-t="trust2">
+              It is kept in your browser, and only if you choose to remember it.
+            </p>
+          </article>
+          <article class="card">
+            <h3 data-t="trust3Title">Open source</h3>
+            <p data-t="trust3">
+              All the code is public, so anyone can check what it does. No analytics.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="wrap section">
+        <h2 data-t="stepsTitle">Start in three steps</h2>
+        <ol class="steps">
+          <li data-t="step1">Get an OpenAI API key (or use your company's Azure OpenAI).</li>
+          <li data-t="step2">Open the app, pick your language and what to listen to.</li>
+          <li data-t="step3">Press Start, and read along.</li>
+        </ol>
+        <a class="btn" href="/app/" data-t="open">Open the app</a>
+      </section>
+    </main>
+
+    <footer class="foot wrap">
+      <span>© Neboki · <span data-t="license">Open source under the AGPL-3.0 licence</span></span>
+      <nav class="foot__nav">
+        <a href="/app/" data-t="appLink">App</a>
+        <a href="/app/privacy" data-t="privacy">Privacy</a>
+        <a href="https://github.com/neboki/live" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </body>
+</html>

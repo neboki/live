@@ -5,13 +5,13 @@
     "ignore": ["firebase.json", "**/.*"],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/app/**",
+        "destination": "/app/index.html"
       }
     ],
     "headers": [
       {
-        "source": "/assets/**",
+        "source": "**/@(assets|landing-assets)/**",
         "headers": [
           {
             "key": "Cache-Control",
@@ -28,7 +28,17 @@
           }
         ]
       }
+    ],
+    "redirects": [
+      {
+        "regex": "^/privacy/?$",
+        "destination": "/app/privacy",
+        "type": 301
+      }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   },
   "functions": [
     {
