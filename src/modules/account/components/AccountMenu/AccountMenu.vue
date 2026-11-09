@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
     width: min(320px, calc(100vw - 24px));
     padding: 16px;
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     background: var(--panel);
     box-shadow: var(--shadow-lg);
   }
@@ -221,6 +221,8 @@ onBeforeUnmount(() => {
 
   &__manage,
   &__sign-in {
+    flex: none;
+    white-space: nowrap;
     padding: 8px 18px;
     border: 1px solid var(--line);
     border-radius: var(--radius-pill);
@@ -248,7 +250,7 @@ onBeforeUnmount(() => {
     margin-top: 4px;
     padding: 10px;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     background: var(--panel-2);
     color: var(--fg);
     font: 500 13.5px var(--font-ui);

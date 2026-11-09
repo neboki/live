@@ -234,7 +234,8 @@ onBeforeUnmount(() => {
       </button>
       <span class="shell__brand">
         <BrandMark />
-        {{ brand.name }}
+        <!-- Live, the bar needs the room: the mark alone says whose app it is -->
+        <span v-if="!session.showLive" class="shell__brand-name">{{ brand.name }}</span>
       </span>
       <span v-if="session.showLive" class="shell__live-pill"
         ><i class="shell__dot"></i>{{ t('live.badge') }}</span
@@ -477,6 +478,16 @@ $drawer-at: 900px;
     border-bottom: 1px solid var(--line);
     background: var(--panel);
 
+    .shell__brand {
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .shell__brand-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     @media (width >= $drawer-at) {
       display: none;
     }
@@ -552,6 +563,7 @@ $drawer-at: 900px;
 
   &__live-pill {
     display: inline-flex;
+    flex: none;
     gap: 6px;
     align-items: center;
     margin-left: auto;
@@ -563,6 +575,7 @@ $drawer-at: 900px;
     font-weight: 600;
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   // Sidebar
@@ -688,14 +701,13 @@ $drawer-at: 900px;
       stroke-width: 1.5;
     }
 
-    // The current page: a panel tile with a coral edge
+    // The current page: tinted, edged and in the accent, with a coral mark beside it
     &--on,
     &--on:hover:not(:disabled) {
-      background: var(--panel);
-      box-shadow:
-        0 0 0 1px var(--line),
-        var(--shadow-xs);
+      background: var(--accent-selected);
+      box-shadow: inset 0 0 0 1px var(--accent);
       color: var(--fg);
+      font-weight: 600;
 
       &::before {
         content: '';
