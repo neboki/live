@@ -16,6 +16,7 @@ import {
   sessionDuration,
 } from '@/modules/session';
 import { UiLocaleSelect, UiBrandSelect, UiThemeSelect } from '@/modules/settings';
+import { immersive } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
 import { useAppPage } from '../../store/useAppPage';
@@ -198,7 +199,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="shell" :class="{ 'shell--open': menuOpen, 'shell--compact': compact }">
     <!-- Phones: the sidebar is a drawer behind this bar -->
-    <header class="shell__mobile" :inert="isDrawer && menuOpen">
+    <header v-if="!immersive" class="shell__mobile" :inert="isDrawer && menuOpen">
       <button
         ref="burger"
         class="shell__burger"

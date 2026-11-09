@@ -7,7 +7,7 @@ export { useCaptionShortcuts } from './composables/useCaptionShortcuts';
 export { useVoiceOutput } from './composables/useVoiceOutput';
 export { useDismiss } from './composables/useDismiss';
 export { onRadioKeydown } from './composables/radioGroup';
-export { CAPTION_PLACEMENTS, SYNC_DELAY_CHOICES } from './constants';
+export { CAPTION_PLACEMENTS, SCALE_RANGE, SYNC_DELAY_CHOICES } from './constants';
 export { default as CaptionBar } from './components/CaptionBar/CaptionBar.vue';
 export { default as SettingsMenu } from './components/SettingsMenu/SettingsMenu.vue';
 export { default as SettingsPanel } from './components/SettingsPanel/SettingsPanel.vue';

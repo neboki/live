@@ -62,6 +62,15 @@ test('a conversation splits the screen, the top half turned to the other person'
   expect(await them.evaluate((el) => getComputedStyle(el).transform)).not.toBe('none');
   // The other person's button names their language in it
   await expect(them.locator('.talk__receive')).toContainText('Français');
+
+  // Full screen: the app bar goes and the halves take the whole height
+  await page.getByRole('button', { name: /Full screen|Pantalla completa/ }).click();
+  await expect(page.locator('.shell__mobile')).toHaveCount(0);
+  const height = await page.evaluate(() => window.innerHeight);
+  expect((await page.locator('.talk').boundingBox())?.height ?? 0).toBeGreaterThan(height - 2);
+  await page.screenshot({ path: 'test-results/talk-fullscreen.png' });
+  await page.getByRole('button', { name: /Leave full screen|Salir de pantalla completa/ }).click();
+  await expect(page.locator('.shell__mobile')).toBeVisible();
 });
 
 test('the app can be installed: the manifest lists icons that load', async ({ page, request }) => {

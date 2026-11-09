@@ -712,6 +712,7 @@
     "bigger": "Bigger text",
     "smaller": "Smaller text",
     "fullScreen": "Full screen",
+    "exitFullScreen": "Leave full screen",
     "headphonesTip": "Wear headphones to hear the translation without echo.",
     "headsetFound": "Headphones found: the phone microphone listens.",
     "waiting": "Waiting for someone to speak…",

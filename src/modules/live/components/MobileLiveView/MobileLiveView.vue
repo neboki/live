@@ -3,11 +3,14 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useOverlayStore } from '@/modules/overlay';
 import { useSessionRecord } from '@/modules/session';
-import { createScreenWakeLock } from '@/shared/device';
+import { createScreenWakeLock, exitImmersive, immersive, toggleImmersive } from '@/shared/device';
 import { logError } from '@/shared/errors';
+import { useFitText } from '../../composables/fitText';
+import { useTextScale } from '../../composables/textScale';
 import { stopVoiceNote } from '../../composables/voiceNote';
 import { useLiveSession } from '../../store/useLiveSession';
 import TalkView from '../TalkView/TalkView.vue';
+import FullscreenIcon from './FullscreenIcon.vue';
 
 /**
  * The live screen on a phone: big text and three controls. Listening (and a voice note)
@@ -22,9 +25,6 @@ interface Line {
 }
 
 const MAX_LINES = 30;
-const SCALE_STEP = 0.15;
-const SCALE_MIN = 0.8;
-const SCALE_MAX = 2;
 
 const session = useLiveSession();
 const overlay = useOverlayStore();
@@ -72,11 +72,13 @@ function saveName(): void {
   renaming.value = null;
 }
 
-function setScale(delta: number): void {
-  overlay.scale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, overlay.scale + delta));
-}
+// Presenting: the one line shrinks until it all shows, however long it runs
+const { bigger, smaller } = useTextScale();
+const stage = ref<HTMLElement | null>(null);
+useFitText(stage, () => [last.value?.text, overlay.scale, immersive.value, presenting.value]);
 
 function stop(): void {
+  exitImmersive();
   stopVoiceNote();
   session.stop();
 }
@@ -103,6 +105,7 @@ wakeLock.hold();
 onBeforeUnmount(() => {
   wakeLock.release();
   stopVoiceNote();
+  exitImmersive();
 });
 </script>
 
@@ -112,7 +115,7 @@ onBeforeUnmount(() => {
   <main
     v-else
     class="mlive"
-    :class="{ 'mlive--present': presenting }"
+    :class="{ 'mlive--present': presenting, 'mlive--full': immersive }"
     :style="{ '--text-scale': String(overlay.scale) }"
   >
     <p class="mlive__status" role="status">
@@ -136,7 +139,9 @@ onBeforeUnmount(() => {
 
     <!-- Presenting: one line, as big as the screen allows -->
     <section v-else-if="presenting" class="mlive__stage" aria-live="polite">
-      <p class="mlive__big">{{ last?.text || t('mobile.waiting') }}</p>
+      <div ref="stage" class="mlive__big">
+        <p>{{ last?.text || t('mobile.waiting') }}</p>
+      </div>
       <p v-if="heard" class="mlive__heard">{{ heard }}</p>
     </section>
 
@@ -184,21 +189,20 @@ onBeforeUnmount(() => {
       >
         {{ overlay.options.voice ? t('mobile.voiceOn') : t('mobile.voiceOff') }}
       </button>
-      <button
-        class="mlive__btn"
-        type="button"
-        :aria-label="t('mobile.smaller')"
-        @click="setScale(-SCALE_STEP)"
-      >
+      <button class="mlive__btn" type="button" :aria-label="t('mobile.smaller')" @click="smaller">
         A−
+      </button>
+      <button class="mlive__btn" type="button" :aria-label="t('mobile.bigger')" @click="bigger">
+        A+
       </button>
       <button
         class="mlive__btn"
         type="button"
-        :aria-label="t('mobile.bigger')"
-        @click="setScale(SCALE_STEP)"
+        :aria-label="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
+        :aria-pressed="immersive"
+        @click="toggleImmersive"
       >
-        A+
+        <FullscreenIcon :on="immersive" />
       </button>
       <button class="mlive__btn mlive__btn--stop" type="button" @click="stop">
         {{ t('mobile.stop') }}
@@ -214,10 +218,17 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   gap: 10px;
-  height: calc(100dvh - 64px);
+  height: calc(100dvh - 52px);
   padding: 10px 16px 14px;
   background: var(--bg);
   color: var(--fg);
+
+  // Nothing above it: the screen is all text, clear of notches and bars
+  &--full {
+    height: 100dvh;
+    padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
 
   &--present {
     background: #000;
@@ -310,17 +321,27 @@ onBeforeUnmount(() => {
 
   &__stage {
     display: grid;
-    align-content: center;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 18px;
     min-height: 0;
-    overflow: hidden;
   }
 
+  // The box keeps its size; the line inside shrinks (--fit) until all of it shows
   &__big {
-    margin: 0;
-    font-size: calc(34px * var(--text-scale));
+    --fit: 1;
+
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    font-size: calc(34px * var(--text-scale) * var(--fit));
     font-weight: 700;
     line-height: 1.2;
+    overflow-wrap: anywhere;
+
+    p {
+      margin: auto 0;
+    }
   }
 
   &__heard {
@@ -353,16 +374,21 @@ onBeforeUnmount(() => {
   }
 
   &__controls {
-    grid-template-columns: 1.4fr 0.7fr 0.7fr 1.2fr;
+    grid-template-columns: 1fr 48px 48px 48px 1fr;
+    gap: 8px;
   }
 
   &__btn {
+    display: grid;
+    place-items: center;
+    min-width: 0;
     min-height: 56px;
+    padding: 0 6px;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-lg);
     background: var(--panel);
     color: var(--fg);
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     cursor: pointer;
 
