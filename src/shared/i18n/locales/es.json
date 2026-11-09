@@ -364,7 +364,9 @@
       "captions": "Subtítulos",
       "fullscreen": "Pantalla completa",
       "exitFullscreen": "Salir de pantalla completa",
-      "delayHint": "Cuánto se retrasa la imagen. Si los subtítulos llegan tarde a menudo, súbelo"
+      "delayHint": "Cuánto se retrasa la imagen. Un subtítulo solo llega cuando su frase entera se ha oído y traducido: las frases largas necesitan más",
+      "late": "Subtítulos tarde · usar {seconds} s",
+      "lateHint": "Varios subtítulos recientes llegaron después de que su frase empezara en pantalla. Con {seconds} s habrían llegado a tiempo"
     },
     "side": {
       "label": "Opciones",

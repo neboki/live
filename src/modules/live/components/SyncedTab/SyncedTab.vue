@@ -5,6 +5,7 @@ import { SYNC_DELAY_CHOICES } from '@/modules/overlay';
 import type { SessionLine } from '@/modules/session';
 import type { DelayedPlayback } from '@/shared/media/delayedPlayback';
 import { usePlayerChrome } from '../../composables/usePlayerChrome';
+import { suggestedDelay } from '../../utils/sync';
 
 /** Lines on the picture at once: the current one, and the one before it */
 const SHOWN_LINES = 2;
@@ -63,6 +64,13 @@ const shown = computed(() => {
   const shownAt = now.value - props.lagSeconds * 1000;
   return props.lines.slice(-SHOWN_LINES).filter((line) => line.at + LINGER_MS >= shownAt);
 });
+
+/** A longer delay to offer while the captions keep landing late; null while on time */
+const suggestion = computed(() =>
+  props.lagSeconds === null || props.paused
+    ? null
+    : suggestedDelay(props.lines, props.delaySeconds, SYNC_DELAY_CHOICES),
+);
 
 function chooseDelay(event: Event): void {
   const seconds = Number((event.target as HTMLSelectElement).value);
@@ -194,6 +202,17 @@ watch(() => props.playback, show);
           </option>
         </select>
       </label>
+
+      <!-- Captions keep landing after their sentence: a longer delay, one click away -->
+      <button
+        v-if="suggestion !== null"
+        class="synced-tab__live synced-tab__suggest"
+        type="button"
+        :title="t('live.sync.lateHint', { seconds: suggestion })"
+        @click="emit('delay', suggestion)"
+      >
+        {{ t('live.sync.late', { seconds: suggestion }) }}
+      </button>
 
       <button
         class="synced-tab__btn synced-tab__cc"
@@ -503,6 +522,16 @@ watch(() => props.playback, show);
 
     &:hover {
       background: rgb(255 255 255 / 24%);
+    }
+  }
+
+  &__suggest {
+    margin-right: 6px;
+    background: rgb(255 159 10 / 85%);
+    color: #000;
+
+    &:hover {
+      background: rgb(255 159 10);
     }
   }
 

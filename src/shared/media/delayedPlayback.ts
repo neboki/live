@@ -93,6 +93,12 @@ export function createDelayedPlayback(
   let behindByChoice = false;
   let stopped = false;
   let reading: Promise<void> = Promise.resolve();
+  /**
+   * Real time (epoch seconds) of the recording's time zero: the smallest gap seen between
+   * the clock and the end of the buffer as each chunk lands, i.e. the freshest chunk. The
+   * end of the buffer is always a chunk behind real time; this tells by how much.
+   */
+  let timeZero: number | null = null;
   const pacer = setInterval(pace, PACE_MS);
 
   element.playsInline = true;
@@ -117,6 +123,19 @@ export function createDelayedPlayback(
     if (cutoff - start < KEEP_BEHIND_SECONDS / 2) return false;
     target.remove(start, cutoff);
     return true;
+  }
+
+  /** A chunk just landed: where the buffer ends now is about the present */
+  function markEdge(target: SourceBuffer): void {
+    const end = bufferedEnd(target);
+    if (end === null) return;
+    const zero = Date.now() / 1000 - end;
+    if (timeZero === null || zero < timeZero) timeZero = zero;
+  }
+
+  function onUpdateEnd(): void {
+    if (buffer) markEdge(buffer);
+    flush();
   }
 
   function flush(): void {
@@ -188,7 +207,7 @@ export function createDelayedPlayback(
       // Segments mode: the recording's own timestamps place each chunk, so sound and
       // picture stay as they were recorded (sequence mode re-times every append)
       buffer = mediaSource.addSourceBuffer(type);
-      buffer.addEventListener('updateend', flush);
+      buffer.addEventListener('updateend', onUpdateEnd);
       buffer.addEventListener('error', (event) =>
         logError('Delayed playback buffer failed', event),
       );
@@ -205,7 +224,10 @@ export function createDelayedPlayback(
   function lagSeconds(): number | null {
     if (!playing || !buffer) return null;
     const end = bufferedEnd(buffer);
-    return end === null ? null : Math.max(0, end - element.currentTime);
+    if (end === null) return null;
+    // Behind the end of the buffer, plus how far that end is behind real time
+    const edgeLag = timeZero === null ? 0 : Math.max(0, Date.now() / 1000 - timeZero - end);
+    return Math.max(0, end - element.currentTime + edgeLag);
   }
 
   /** Moves straight to the new delay: chosen by the user, so one jump, not a slow drift */

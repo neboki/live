@@ -364,7 +364,9 @@
       "captions": "Captions",
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit fullscreen",
-      "delayHint": "How far the picture is held back. If captions often come late, raise it"
+      "delayHint": "How far the picture is held back. A caption only arrives once its whole sentence is heard and translated: long sentences need more",
+      "late": "Captions late · use {seconds} s",
+      "lateHint": "Several recent captions arrived after their sentence began on screen. With {seconds} s they would have landed on time"
     },
     "side": {
       "label": "Options",

@@ -253,6 +253,22 @@ describe('delayedPlayback', () => {
     playback.stop();
   });
 
+  it('counts how far the end of the buffer is behind real time in the lag', () => {
+    const { playback } = create(3);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    buffer.settle(); // a chunk landed: the end of the buffer is now
+    vi.advanceTimersByTime(PACE_MS);
+    expect(playback.lagSeconds()).toBe(3 + PACE_MS / 1000);
+    // No chunk for a while: the picture is that much further behind real time
+    vi.advanceTimersByTime(PACE_MS);
+    expect(playback.lagSeconds()).toBeCloseTo(3 + (2 * PACE_MS) / 1000);
+    buffer.hold(0, 10 + (2 * PACE_MS) / 1000);
+    buffer.settle();
+    expect(playback.lagSeconds()).toBeCloseTo(3 + (2 * PACE_MS) / 1000);
+    playback.stop();
+  });
+
   it('plays at normal speed and leaves the delay alone, however the chunks jitter', () => {
     const { video, playback } = create(3);
     const buffer = opened();

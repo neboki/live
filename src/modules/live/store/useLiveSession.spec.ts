@@ -281,19 +281,19 @@ describe('useLiveSession', () => {
     await nextTick();
 
     expect(overlay.canSyncVideo).toBe(true);
-    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(5);
+    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(10);
     expect(session.syncedTab).toBe(playback);
-    expect(session.syncDelaySeconds).toBe(5);
+    expect(session.syncDelaySeconds).toBe(10);
 
     // The latency does not move it: the delay is the one chosen, and only that changes it
     const calls = fakes.syncOriginal.mock.calls.length;
     overlay.setLatency(4200);
     await nextTick();
     expect(fakes.syncOriginal).toHaveBeenCalledTimes(calls);
-    overlay.syncDelay = 8;
+    overlay.syncDelay = 15;
     await nextTick();
-    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(8);
-    expect(session.syncDelaySeconds).toBe(8);
+    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(15);
+    expect(session.syncDelaySeconds).toBe(15);
 
     overlay.syncVideo = false;
     await nextTick();

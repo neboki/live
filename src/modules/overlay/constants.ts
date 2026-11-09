@@ -41,7 +41,7 @@ export const VOICE_VOLUME_RANGE: Readonly<NumberRange> = { min: 0, max: 2, step:
  * Seconds the synced tab can be held behind real time. Fixed for the whole session, like
  * a live broadcast: longer leaves more room for a slow translation to land on time
  */
-export const SYNC_DELAY_CHOICES: readonly number[] = [3, 5, 8, 10];
+export const SYNC_DELAY_CHOICES: readonly number[] = [3, 5, 8, 10, 15, 20, 30];
 
 /** Limits for resizing the bar, in CSS pixels; `step` is what one arrow key press changes */
 export const BAR_WIDTH: Readonly<NumberRange> = { min: 380, max: 1400, step: 24 };
@@ -62,6 +62,6 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   size: { width: null, height: null },
   pipSize: null,
   syncVideo: true,
-  syncDelay: 5,
+  syncDelay: 10,
   placement: 'floating',
 };
