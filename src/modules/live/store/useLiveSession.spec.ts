@@ -8,6 +8,7 @@ import type { CaptureHandlers, CaptureOptions } from '@/shared/audio/audioCaptur
 import { AppError, ExternalServiceError, UnauthorizedError } from '@/shared/errors';
 import type { DelayedPlayback } from '@/shared/media/delayedPlayback';
 import type { SttCallbacks, SttOptions, SttSession, Usage } from '@/shared/providers/types';
+import { CALIBRATION_SECONDS } from '../utils/sync';
 import { useLiveSession } from './useLiveSession';
 
 const fakes = vi.hoisted(() => {
@@ -44,6 +45,7 @@ const fakes = vi.hoisted(() => {
       addUsage: vi.fn(),
       end: vi.fn(),
       usage: [] as Usage[],
+      lines: [],
     },
   };
 });
@@ -272,6 +274,7 @@ describe('useLiveSession', () => {
       waiting: () => false,
       catchUp: vi.fn(),
       setDelay: vi.fn(),
+      glideTo: vi.fn(),
       setVolume: vi.fn(),
       stop: vi.fn(),
     };
@@ -283,11 +286,13 @@ describe('useLiveSession', () => {
     await nextTick();
 
     expect(overlay.canSyncVideo).toBe(true);
-    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(10);
+    // Auto by default: held the longest while the first captions are timed
+    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(CALIBRATION_SECONDS);
     expect(session.syncedTab).toBe(playback);
-    expect(session.syncDelaySeconds).toBe(10);
+    expect(session.syncDelaySeconds).toBe(CALIBRATION_SECONDS);
+    expect(session.syncCalibrating).toBe(true);
 
-    // The latency does not move it: the delay is the one chosen, and only that changes it
+    // The latency does not move it: only the captions timed, or a delay chosen, change it
     const calls = fakes.syncOriginal.mock.calls.length;
     overlay.setLatency(4200);
     await nextTick();

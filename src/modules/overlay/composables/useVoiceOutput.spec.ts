@@ -37,7 +37,11 @@ vi.mock('@/shared/providers/openai/tts/tts', () => ({
     return { speak: vi.fn(), stop: openAiStop, close: openAiClose };
   },
 }));
-vi.mock('@/modules/session', () => ({ useSessionRecord: () => ({ addUsage: tts.addUsage }) }));
+const record = reactive({
+  addUsage: (usage: unknown) => tts.addUsage(usage),
+  lines: [] as { at: number; from?: number; source: string; translation: string }[],
+});
+vi.mock('@/modules/session', () => ({ useSessionRecord: () => record }));
 vi.mock('@/shared/speech/useSpeech', () => ({
   useSpeech: (options: unknown) => {
     speech.options = options;
@@ -177,5 +181,62 @@ describe('useVoiceOutput', () => {
   it('shows the ttsFailed notice when the engine fails', () => {
     captured().onError('errors.ttsFailed');
     expect(overlay.setNotice).toHaveBeenCalledWith('errors.ttsFailed', 8000);
+  });
+});
+
+describe('useVoiceOutput behind the picture', () => {
+  let scope: ReturnType<typeof effectScope>;
+  const picture = reactive({ on: true, lagSeconds: null as number | null, paused: false });
+  const clock = { now: 100_000 };
+
+  beforeEach(() => {
+    overlay.translation = { id: 0, text: '', done: false };
+    overlay.options.voice = true;
+    overlay.paused = false;
+    record.lines = [];
+    Object.assign(picture, { on: true, lagSeconds: null, paused: false });
+    vi.clearAllMocks();
+    scope = effectScope();
+    scope.run(() =>
+      useVoiceOutput(
+        () => 'es',
+        () => true,
+        undefined,
+        () => (picture.on ? { lagSeconds: picture.lagSeconds, paused: picture.paused } : null),
+        () => clock.now,
+      ),
+    );
+  });
+
+  afterEach(() => scope.stop());
+
+  it('reads each line when the picture reaches it, not as it is written', async () => {
+    await finishTranslation(1, 'Hola');
+    expect(speech.speak).not.toHaveBeenCalled();
+
+    record.lines.push({ at: 99_000, from: 97_000, source: 'Hello', translation: 'Hola' });
+    picture.lagSeconds = 4; // the picture is at 96 000
+    await nextTick();
+    expect(speech.speak).not.toHaveBeenCalled();
+
+    picture.lagSeconds = 3; // 97 000: the sentence begins on screen
+    await nextTick();
+    expect(speech.speak.mock.calls).toEqual([['Hola', 'es']]);
+    picture.lagSeconds = 2.5;
+    await nextTick();
+    expect(speech.speak).toHaveBeenCalledTimes(1);
+  });
+
+  it('goes quiet while the picture is paused, and back to live reading without it', async () => {
+    picture.lagSeconds = 3;
+    await nextTick();
+    picture.paused = true;
+    await nextTick();
+    expect(speech.stop).toHaveBeenCalled();
+
+    picture.on = false;
+    await nextTick();
+    await finishTranslation(2, 'Adiós');
+    expect(speech.speak.mock.calls).toEqual([['Adiós', 'es']]);
   });
 });

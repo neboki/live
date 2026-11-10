@@ -27,8 +27,8 @@ getDisplayMedia (shared tab / screen audio)
    keeps only the audio track and feeds it to the worklet. Cancelling, sharing no audio or ending
    the share become typed errors with a clear message. A shared tab's picture is kept (disabled)
    for the sync option: `src/modules/live/watchers/videoSync.ts` then plays the tab in the page
-   through `src/shared/media/delayedPlayback.ts` as many seconds behind as the captions' latency
-   needs, and lists the captions the picture has reached ([ADR 0008](adr/0008-video-sync.md)).
+   through `src/shared/media/delayedPlayback.ts` a fixed number of seconds behind, measured from the
+   first captions on "auto", and lists the captions (and reads the voice) the picture has reached ([ADR 0008](adr/0008-video-sync.md)).
 2. **Worklet** — `pcmCapture.worklet.ts` runs on the audio thread, downmixes and resamples to
    24 kHz PCM16 (the rate the Realtime API accepts) and posts chunks plus the RMS level.
 3. **VAD and silence gate** — `energyVad.ts` decides when a sentence ends and commits it on a pause.

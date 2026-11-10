@@ -44,6 +44,11 @@ export const NEAR_SPEND_LIMIT = 0.8;
  * a live broadcast: longer leaves more room for a slow translation to land on time
  */
 export const SYNC_DELAY_CHOICES: readonly number[] = [3, 5, 8, 10, 15, 20, 30];
+/**
+ * The delay chosen as "auto": worked out at the start of each session from how long its
+ * first captions take, then kept (see the live module's utils/sync)
+ */
+export const SYNC_DELAY_AUTO = 0;
 
 /** Limits for resizing the bar, in CSS pixels; `step` is what one arrow key press changes */
 export const BAR_WIDTH: Readonly<NumberRange> = { min: 380, max: 1400, step: 24 };
@@ -64,7 +69,7 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   size: { width: null, height: null },
   pipSize: null,
   syncVideo: true,
-  syncDelay: 10,
+  syncDelay: SYNC_DELAY_AUTO,
   syncWait: true,
   placement: 'floating',
 };

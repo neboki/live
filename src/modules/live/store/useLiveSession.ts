@@ -450,6 +450,8 @@ export const useLiveSession = defineStore('live', () => {
     /** The shared tab playing behind time in the page, while the sync option is on */
     syncedTab: sync.playback,
     syncDelaySeconds: sync.delaySeconds,
+    /** The synced delay is automatic and still being worked out from the first captions */
+    syncCalibrating: sync.calibrating,
     syncLagSeconds: sync.lagSeconds,
     syncPaused: sync.paused,
     /** The synced picture holds until a late caption arrives */

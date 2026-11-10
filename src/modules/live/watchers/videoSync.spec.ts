@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick, reactive } from 'vue';
 import type { SessionLine } from '@/modules/session';
 import { PACE_MS, type DelayedPlayback } from '@/shared/media/delayedPlayback';
+import { SYNC_DELAY_AUTO } from '@/modules/overlay';
+import { CALIBRATION_SECONDS } from '../utils/sync';
 import { createVideoSync, MAX_WAIT_MS, type VideoSyncDeps } from './videoSync';
 
 /** The delay the user chose */
@@ -26,6 +28,7 @@ function fakePlayback(): FakePlayback {
     }),
     waiting: () => playback.waitingForCaption,
     setDelay: vi.fn(),
+    glideTo: vi.fn(),
     setVolume: vi.fn(),
     pause: vi.fn(),
     resume: vi.fn(),
@@ -286,5 +289,67 @@ describe('createVideoSync', () => {
       expect(sync.waiting.value).toBe(false);
       sync.ended();
     });
+  });
+
+  it('on auto, holds the picture while the first captions are timed, then settles its delay', async () => {
+    const playback = fakePlayback();
+    const { deps, capture, overlay, lines, now } = setup(playback);
+    overlay.syncDelay = SYNC_DELAY_AUTO;
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    expect(capture.syncOriginal).toHaveBeenCalledWith(CALIBRATION_SECONDS);
+    expect(sync.calibrating.value).toBe(true);
+
+    // Each caption arrives 3 s after its sentence began
+    lines.push(line(102_000, 100_500));
+    now.value = 103_500;
+    vi.advanceTimersByTime(PACE_MS);
+    lines.push(line(104_000, 102_500));
+    now.value = 105_500;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.calibrating.value).toBe(true);
+    lines.push(line(106_000, 104_500));
+    now.value = 107_500;
+    vi.advanceTimersByTime(PACE_MS);
+
+    // 3 s + room = 4.5 s; 7.5 s are already held, so the picture starts there
+    expect(sync.calibrating.value).toBe(false);
+    expect(playback.setDelay).toHaveBeenLastCalledWith(7.5);
+    expect(sync.delaySeconds.value).toBe(7.5);
+
+    // Playing: it glides down to the settled delay, once, and stays there
+    playback.lag = 7.5;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(playback.glideTo).toHaveBeenCalledWith(4.5);
+    expect(sync.delaySeconds.value).toBe(4.5);
+    vi.advanceTimersByTime(PACE_MS * 4);
+    expect(playback.glideTo).toHaveBeenCalledTimes(1);
+    sync.ended();
+  });
+
+  it('on auto, keeps the longest hold when no caption comes, and settles once they do', async () => {
+    const playback = fakePlayback();
+    const { deps, overlay, lines, now } = setup(playback);
+    overlay.syncDelay = SYNC_DELAY_AUTO;
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    // Music, no speech: the picture starts after the whole calibration hold
+    now.value = 100_000 + CALIBRATION_SECONDS * 1000;
+    playback.lag = CALIBRATION_SECONDS;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.delaySeconds.value).toBe(CALIBRATION_SECONDS);
+    expect(sync.calibrating.value).toBe(true);
+
+    lines.push(line(121_000, 120_000), line(123_000, 122_000), line(125_000, 124_000));
+    now.value = 126_000;
+    vi.advanceTimersByTime(PACE_MS);
+    // Waits of 6, 4 and 2 s: 4 s + room = 5.5 s
+    expect(playback.glideTo).toHaveBeenCalledWith(5.5);
+    expect(sync.calibrating.value).toBe(false);
+    sync.ended();
   });
 });

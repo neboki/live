@@ -7,6 +7,7 @@ import { spokenUpTo } from '@/shared/speech/sentences';
 import type { TtsProvider } from '@/shared/speech/types';
 import { useSpeech } from '@/shared/speech/useSpeech';
 import { useOverlayStore } from '../store/useOverlayStore';
+import { dueLines, type PictureClock } from './pictureVoice';
 
 const NOTICE_TTL_MS = 8000;
 
@@ -16,6 +17,8 @@ const NOTICE_TTL_MS = 8000;
  * while the rest of the line is still being written, and reads what is left when the line
  * is done. Playback stops and the queue empties when voice is turned off, the bar is
  * paused, the session stops (`live` turns false), the engine changes or the scope ends.
+ * While the shared tab plays behind time (`picture`), each finished line is read instead
+ * when the picture reaches its sentence, so voice, picture and captions go together.
  */
 export function useVoiceOutput(
   /** The language to read the line in, given who said it */
@@ -26,6 +29,9 @@ export function useVoiceOutput(
    * absent. A conversation reads only what goes to the person who wants to hear it.
    */
   wants?: (speaker: number | null) => boolean,
+  /** The shared tab playing behind time; null while it is not */
+  picture: () => PictureClock | null = () => null,
+  now: () => number = () => Date.now(),
 ): void {
   const store = useOverlayStore();
   const settings = useSettingsStore();
@@ -45,6 +51,8 @@ export function useVoiceOutput(
   /** The line being read and how much of its text is already queued */
   let spokenId = 0;
   let spokenChars = 0;
+  /** With the picture behind time: the first line of the record it has not reached yet */
+  let nextLine = 0;
 
   function activeEngine(): TtsProvider {
     return settings.tts.engine === 'openai' && settings.apiKey ? openAi : browser;
@@ -62,13 +70,29 @@ export function useVoiceOutput(
     openAi.stop();
   }
 
-  function voiceOn(): boolean {
-    const speaker = store.translation.speaker ?? null;
+  function voiceOn(speaker: number | null): boolean {
     return wants ? wants(speaker) : store.options.voice;
   }
 
-  function canSpeak(): boolean {
-    return live() && voiceOn() && !store.paused && !store.selfVoiced;
+  function canSpeak(speaker: number | null = store.translation.speaker ?? null): boolean {
+    return live() && voiceOn(speaker) && !store.paused && !store.selfVoiced;
+  }
+
+  /** Reads the lines the picture behind time has just reached */
+  function speakReached(): void {
+    const clock = picture();
+    if (!clock || clock.lagSeconds === null || clock.paused) return;
+    const lines = record.lines;
+    const { due, next } = dueLines(
+      lines,
+      Math.min(nextLine, lines.length),
+      now() - clock.lagSeconds * 1000,
+    );
+    nextLine = next;
+    due.forEach((line) => {
+      const speaker = line.speaker ?? null;
+      if (canSpeak(speaker)) speak(line.translation.trim(), lang(speaker));
+    });
   }
 
   /** Queues the text of the current line between `spokenChars` and `upTo`. */
@@ -87,7 +111,8 @@ export function useVoiceOutput(
         spokenId = id;
         spokenChars = 0;
       }
-      if (!id || !canSpeak()) return;
+      // Behind time, lines are read when the picture gets to them (speakReached)
+      if (!id || picture() || !canSpeak()) return;
       speakUpTo(done ? text.length : spokenUpTo(text, spokenChars));
     },
   );
@@ -97,12 +122,28 @@ export function useVoiceOutput(
       if (!on) stopAll();
     },
   );
+  // The picture starts or stops playing behind time: what was queued belongs to the other
+  // clock, and only lines heard from now on are read on the picture's
+  watch(
+    () => picture() !== null,
+    () => {
+      stopAll();
+      nextLine = record.lines.length;
+    },
+  );
+  watch(() => [picture()?.lagSeconds, record.lines.length] as const, speakReached);
+  watch(
+    () => picture()?.paused === true,
+    (paused) => {
+      if (paused) stopAll();
+    },
+  );
   // Turned on mid-conversation: read the last finished sentence right away
   watch(
     () => store.options.voice,
     (on) => {
       const { id, done, text } = store.translation;
-      if (on && done && text.trim() && canSpeak()) {
+      if (on && done && text.trim() && !picture() && canSpeak()) {
         spokenId = id;
         spokenChars = 0;
         speakUpTo(text.length);

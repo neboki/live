@@ -14,6 +14,7 @@ import {
   OVERLAY_THEMES,
   PREFS_STORAGE_KEY,
   SCALE_RANGE,
+  SYNC_DELAY_AUTO,
   SYNC_DELAY_CHOICES,
   VOICE_VOLUME_RANGE,
   VOLUME_RANGE,
@@ -82,7 +83,8 @@ export function loadPrefs(): OverlayPrefs {
     prefs.pipSize = readPipSize(parsed.pipSize);
     if (typeof parsed.syncVideo === 'boolean') prefs.syncVideo = parsed.syncVideo;
     prefs.syncDelay =
-      SYNC_DELAY_CHOICES.find((seconds) => seconds === parsed.syncDelay) ?? prefs.syncDelay;
+      [SYNC_DELAY_AUTO, ...SYNC_DELAY_CHOICES].find((seconds) => seconds === parsed.syncDelay) ??
+      prefs.syncDelay;
     if (typeof parsed.syncWait === 'boolean') prefs.syncWait = parsed.syncWait;
     prefs.placement =
       CAPTION_PLACEMENTS.find((placement) => placement === parsed.placement) ?? prefs.placement;

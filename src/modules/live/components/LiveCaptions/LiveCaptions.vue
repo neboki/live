@@ -40,6 +40,9 @@ useVoiceOutput(
     if (speaker === PARTNER_SPEAKER) return session.receive.user === 'hear';
     return false;
   },
+  // The shared tab playing behind time: the voice waits for the picture, like the captions
+  () =>
+    session.syncedTab ? { lagSeconds: session.syncLagSeconds, paused: session.syncPaused } : null,
 );
 
 /** From the error's Restart button: a click in the floating window counts for the page. */

@@ -10,7 +10,8 @@
 // it straight there. The user can also pause it and go on from there, further behind,
 // until they ask to catch up. And it can wait for a caption that is late: the picture
 // holds where it is and goes on once the caption is there, further behind, as a video
-// does while it buffers.
+// does while it buffers. Lowered by glideTo() instead, it gets there by playing a little
+// faster for a while, so nothing is skipped: how a delay found by measuring settles in.
 
 import { logError } from '@/shared/errors';
 
@@ -21,6 +22,11 @@ export interface DelayedPlayback {
   /** Paused by the user (not by a buffer that is filling) */
   paused: () => boolean;
   setDelay: (seconds: number) => void;
+  /**
+   * Moves to a shorter delay by playing slightly faster until it is there, skipping
+   * nothing; a longer one is reached as setDelay() does, by holding the picture
+   */
+  glideTo: (seconds: number) => void;
   setVolume: (volume: number) => void;
   /** Holds the picture; the stream keeps being recorded behind it */
   pause: () => void;
@@ -51,6 +57,13 @@ const SEEK_MIN_SECONDS = 0.25;
 /** Media this far behind the playhead is dropped, so the buffer never fills up */
 export const KEEP_BEHIND_SECONDS = 20;
 const VIDEO_BITS_PER_SECOND = 2_500_000;
+/**
+ * Speed while gliding to a shorter delay: 8 % faster is hard to notice (the pitch is
+ * kept) and wins back a second every 12 or so
+ */
+export const GLIDE_RATE = 1.08;
+/** Gliding stops this close to the wanted delay */
+const GLIDE_DONE_SECONDS = 0.25;
 
 function supportedType(): string | null {
   if (typeof MediaRecorder === 'undefined' || typeof MediaSource === 'undefined') return null;
@@ -99,6 +112,8 @@ export function createDelayedPlayback(
   let waitingForCaption = false;
   /** Resumed after a pause: further behind than the delay, on purpose, until catchUp() */
   let behindByChoice = false;
+  /** Playing faster until the playhead is the (lowered) delay behind */
+  let gliding = false;
   let stopped = false;
   let reading: Promise<void> = Promise.resolve();
   /**
@@ -193,7 +208,30 @@ export function createDelayedPlayback(
       return;
     }
     if (behindByChoice) return;
+    if (gliding) {
+      glide(lag);
+      return;
+    }
     realign(end, SLIP_SECONDS);
+  }
+
+  function setRate(rate: number): void {
+    if (element.playbackRate !== rate) element.playbackRate = rate;
+  }
+
+  /** One step of a glide: faster while further behind than the delay, then normal again */
+  function glide(lag: number): void {
+    if (lag - delay > GLIDE_DONE_SECONDS) {
+      element.preservesPitch = true;
+      setRate(GLIDE_RATE);
+      return;
+    }
+    stopGlide();
+  }
+
+  function stopGlide(): void {
+    gliding = false;
+    setRate(1);
   }
 
   /**
@@ -243,10 +281,23 @@ export function createDelayedPlayback(
   function setDelay(seconds: number): void {
     const next = Math.max(0, seconds);
     if (next === delay) return;
+    stopGlide();
     delay = next;
     if (stopped || !buffer || !playing || held || behindByChoice) return;
     const end = bufferedEnd(buffer);
     if (end !== null) realign(end, SEEK_MIN_SECONDS);
+  }
+
+  function glideTo(seconds: number): void {
+    const next = Math.max(0, seconds);
+    // Still filling the buffer, or asked for more room: nothing to win back by speed
+    if (!playing || next >= delay) {
+      setDelay(next);
+      return;
+    }
+    delay = next;
+    if (stopped || held || behindByChoice) return;
+    gliding = true;
   }
 
   function setVolume(volume: number): void {
@@ -256,6 +307,7 @@ export function createDelayedPlayback(
   function pause(): void {
     if (stopped || held) return;
     held = true;
+    stopGlide();
     element.pause();
   }
 
@@ -270,6 +322,7 @@ export function createDelayedPlayback(
     if (stopped || on === waitingForCaption) return;
     waitingForCaption = on;
     if (on) {
+      stopGlide();
       element.pause();
       return;
     }
@@ -284,6 +337,7 @@ export function createDelayedPlayback(
     held = false;
     waitingForCaption = false;
     behindByChoice = false;
+    stopGlide();
     if (!playing) return;
     const end = buffer ? bufferedEnd(buffer) : null;
     if (end !== null) seekTo(end - delay);
@@ -313,6 +367,7 @@ export function createDelayedPlayback(
     lagSeconds,
     paused: () => held,
     setDelay,
+    glideTo,
     setVolume,
     pause,
     resume,

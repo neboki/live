@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { CaptionBar, SettingsPanel, useOverlayStore } from '@/modules/overlay';
+import { CaptionBar, SettingsPanel, SYNC_DELAY_AUTO, useOverlayStore } from '@/modules/overlay';
 import { createScreenWakeLock } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { useLiveSession } from '../../store/useLiveSession';
@@ -108,6 +108,8 @@ onBeforeUnmount(() => wakeLock.release());
           v-if="session.syncedTab"
           :playback="session.syncedTab"
           :delay-seconds="session.syncDelaySeconds ?? 0"
+          :auto="overlay.syncDelay === SYNC_DELAY_AUTO"
+          :calibrating="session.syncCalibrating"
           :lag-seconds="session.syncLagSeconds"
           :paused="session.syncPaused"
           :waiting="session.syncWaiting"

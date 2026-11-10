@@ -7,7 +7,13 @@ export { useCaptionShortcuts } from './composables/useCaptionShortcuts';
 export { useVoiceOutput } from './composables/useVoiceOutput';
 export { useDismiss } from './composables/useDismiss';
 export { onRadioKeydown } from './composables/radioGroup';
-export { CAPTION_PLACEMENTS, NEAR_SPEND_LIMIT, SCALE_RANGE, SYNC_DELAY_CHOICES } from './constants';
+export {
+  CAPTION_PLACEMENTS,
+  NEAR_SPEND_LIMIT,
+  SCALE_RANGE,
+  SYNC_DELAY_AUTO,
+  SYNC_DELAY_CHOICES,
+} from './constants';
 export { useQuickControls } from './composables/useQuickControls';
 export { default as CaptionBar } from './components/CaptionBar/CaptionBar.vue';
 export { default as ListeningBadge } from './components/ListeningBadge/ListeningBadge.vue';

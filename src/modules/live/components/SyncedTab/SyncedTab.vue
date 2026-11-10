@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { SYNC_DELAY_CHOICES } from '@/modules/overlay';
+import { SYNC_DELAY_AUTO, SYNC_DELAY_CHOICES } from '@/modules/overlay';
 import type { SessionLine } from '@/modules/session';
 import type { DelayedPlayback } from '@/shared/media/delayedPlayback';
 import { usePlayerChrome } from '../../composables/usePlayerChrome';
@@ -26,6 +26,10 @@ const props = defineProps<{
   playback: DelayedPlayback;
   /** Seconds the picture is held back */
   delaySeconds: number;
+  /** The delay is set automatically from the first captions */
+  auto?: boolean;
+  /** …and is still being worked out: the picture is held meanwhile */
+  calibrating?: boolean;
   /** Seconds the picture is behind real time; null while its buffer fills */
   lagSeconds: number | null;
   /** Paused by the user */
@@ -39,7 +43,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  /** The user chose another delay: it stays fixed at that from then on */
+  /** The user chose another delay (SYNC_DELAY_AUTO: automatic); it stays from then on */
   delay: [seconds: number];
 }>();
 
@@ -48,10 +52,16 @@ const root = ref<HTMLElement | null>(null);
 const frame = ref<HTMLElement | null>(null);
 const captionsOn = ref(true);
 const now = ref(Date.now());
+/** When the picture began to be held back: the countdown until it shows starts there */
+const shownOn = Date.now();
 const clock = window.setInterval(() => (now.value = Date.now()), CLOCK_MS);
 const { fullscreen, canFullscreen, awake, toggleFullscreen, wake } = usePlayerChrome(root);
 
 const buffering = computed(() => props.lagSeconds === null);
+/** Seconds left before the picture shows, while it is held */
+const remaining = computed(() =>
+  Math.max(1, Math.ceil(props.delaySeconds - (now.value - shownOn) / 1000)),
+);
 const lag = computed(() => (props.lagSeconds ?? props.delaySeconds).toFixed(1));
 const canCatchUp = computed(
   () =>
@@ -69,14 +79,14 @@ const shown = computed(() => {
 
 /** A longer delay to offer while the captions keep landing late; null while on time */
 const suggestion = computed(() =>
-  props.lagSeconds === null || props.paused
+  props.lagSeconds === null || props.paused || props.auto
     ? null
     : suggestedDelay(props.lines, props.delaySeconds, SYNC_DELAY_CHOICES),
 );
 
 function chooseDelay(event: Event): void {
   const seconds = Number((event.target as HTMLSelectElement).value);
-  if (SYNC_DELAY_CHOICES.includes(seconds)) emit('delay', seconds);
+  if (seconds === SYNC_DELAY_AUTO || SYNC_DELAY_CHOICES.includes(seconds)) emit('delay', seconds);
 }
 
 function togglePause(): void {
@@ -146,7 +156,7 @@ watch(() => props.playback, show);
       {{ t('live.tabSilent') }}
     </p>
     <p v-else-if="buffering" class="synced-tab__notice">
-      {{ t('live.sync.buffering', { seconds: delaySeconds }) }}
+      {{ t(calibrating ? 'live.sync.calibrating' : 'live.sync.buffering', { seconds: remaining }) }}
     </p>
     <p v-else-if="waiting && !paused" class="synced-tab__notice" role="status">
       {{ t('live.sync.waiting') }}
@@ -201,7 +211,14 @@ watch(() => props.playback, show);
 
       <label class="synced-tab__delay" :title="t('live.sync.delayHint')">
         <span>{{ t('live.sync.delay') }}</span>
-        <select :value="delaySeconds" @change="chooseDelay">
+        <select :value="auto ? SYNC_DELAY_AUTO : delaySeconds" @change="chooseDelay">
+          <option :value="SYNC_DELAY_AUTO">
+            {{
+              auto && !calibrating
+                ? t('live.sync.autoAt', { seconds: delaySeconds })
+                : t('live.sync.auto')
+            }}
+          </option>
           <option v-for="seconds in SYNC_DELAY_CHOICES" :key="seconds" :value="seconds">
             {{ t('live.sync.seconds', { seconds }) }}
           </option>

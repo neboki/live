@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionLine } from '@/modules/session';
-import { linesReached, suggestedDelay } from './sync';
+import {
+  AUTO_MAX_SECONDS,
+  AUTO_MIN_SECONDS,
+  autoDelay,
+  linesReached,
+  suggestedDelay,
+} from './sync';
 
 function line(at: number, from?: number): SessionLine {
   return { at, ...(from === undefined ? {} : { from }), source: 's', translation: 't' };
@@ -53,5 +59,25 @@ describe('suggestedDelay', () => {
     const recent = Array.from({ length: 6 }, () => waited(3000));
     expect(suggestedDelay([...old, ...recent], 5, CHOICES)).toBeNull();
     expect(suggestedDelay([line(120_000), line(130_000)], 5, CHOICES)).toBeNull();
+  });
+});
+
+describe('autoDelay', () => {
+  it('waits for a few captions to be timed', () => {
+    expect(autoDelay([])).toBeNull();
+    expect(autoDelay([3000, 4000])).toBeNull();
+  });
+
+  it('leaves room for all but the slowest, rounded up to the half second', () => {
+    // Second slowest 4200 ms + 1.5 s of room = 5.7 s → 6 s; the 9 s outlier is ignored
+    expect(autoDelay([3000, 4200, 9000])).toBe(6);
+    expect(autoDelay([2000, 2400, 2600, 2900])).toBe(4.5);
+  });
+
+  it('stays within bounds and looks only at the recent captions', () => {
+    expect(autoDelay([100, 100, 100])).toBe(AUTO_MIN_SECONDS);
+    expect(autoDelay([60_000, 60_000, 60_000])).toBe(AUTO_MAX_SECONDS);
+    const slowStart = [20_000, 20_000, 20_000];
+    expect(autoDelay([...slowStart, ...Array<number>(8).fill(3000)])).toBe(4.5);
   });
 });

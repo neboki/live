@@ -1,9 +1,42 @@
 // Which captions a shared tab shown some seconds behind real time has reached, so each
-// lands on its sentence. The delay itself is fixed, chosen by the user (see the overlay's
-// SYNC_DELAY_CHOICES): a caption slower than it shows as soon as it arrives, and when
-// that keeps happening a longer delay is suggested.
+// lands on its sentence, and how far behind it should be. The delay is either chosen by
+// the user (see the overlay's SYNC_DELAY_CHOICES), and then a caption slower than it shows
+// as soon as it arrives and a longer delay is suggested when that keeps happening; or
+// "auto": the first captions of the session are timed and the delay is set from them,
+// once, like a live broadcast that settles its delay and keeps it.
 
 import type { SessionLine } from '@/modules/session';
+
+/** Captions timed before an automatic delay is settled */
+export const CALIBRATION_LINES = 3;
+/**
+ * Seconds the picture is held at first while the delay is automatic: the longest the
+ * user waits for it. The delay is usually settled sooner, as soon as a few captions
+ * were timed, and the picture then starts or glides to it
+ */
+export const CALIBRATION_SECONDS = 20;
+/** Room left on top of the captions' measured wait: for the voice to start, and jitter */
+const AUTO_HEADROOM_MS = 1500;
+/** Bounds of an automatic delay, in seconds */
+export const AUTO_MIN_SECONDS = 3;
+export const AUTO_MAX_SECONDS = 30;
+/** Most recent waits an automatic delay is drawn from */
+const AUTO_WINDOW = 8;
+
+/**
+ * The delay, in seconds, that lets the captions land on their sentence, from how long
+ * each recent one took to arrive after its sentence began (milliseconds); null until
+ * enough were timed. Enough for all but the slowest: one outlier should not double it.
+ * Rounded up to the half second.
+ */
+export function autoDelay(waits: readonly number[]): number | null {
+  const recent = waits.slice(-AUTO_WINDOW);
+  if (recent.length < CALIBRATION_LINES) return null;
+  const sorted = [...recent].sort((a, b) => a - b);
+  const slow = sorted[sorted.length - 2] ?? 0;
+  const seconds = Math.ceil(((slow + AUTO_HEADROOM_MS) / 1000) * 2) / 2;
+  return Math.min(AUTO_MAX_SECONDS, Math.max(AUTO_MIN_SECONDS, seconds));
+}
 
 /**
  * The lines a picture `lagMs` behind real time has reached: a line shows once the

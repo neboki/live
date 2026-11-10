@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHUNK_MS,
+  GLIDE_RATE,
   PACE_MS,
   SLIP_SECONDS,
   canDelayPlayback,
@@ -487,6 +488,63 @@ describe('delayedPlayback', () => {
     buffer.fail();
     FakeMediaRecorder.last?.fail();
     expect(console.error).toHaveBeenCalledTimes(4);
+    playback.stop();
+  });
+
+  it('glides to a shorter delay by playing a little faster, skipping nothing', () => {
+    const { video, playback } = create(10);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(0);
+
+    playback.glideTo(4);
+    vi.advanceTimersByTime(PACE_MS);
+    // No jump: the playhead stays, the picture plays faster
+    expect(video.currentTime).toBe(0);
+    expect(video.playbackRate).toBe(GLIDE_RATE);
+
+    // Close enough to the new delay: back to normal speed, and kept there
+    video.currentTime = 5.9;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.playbackRate).toBe(1);
+    expect(video.currentTime).toBe(5.9);
+    playback.stop();
+  });
+
+  it('reaches a longer delay, or one set while buffering, as setDelay does', () => {
+    const { video, playback } = create(10);
+    const buffer = opened();
+    buffer.hold(0, 4);
+    // Still filling: the picture just starts at the new delay
+    playback.glideTo(3);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(1);
+    expect(video.playbackRate).toBe(1);
+
+    // Longer: held until that much is there, never slowed down
+    playback.glideTo(6);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.pause).toHaveBeenCalled();
+    expect(video.playbackRate).toBe(1);
+    playback.stop();
+  });
+
+  it('stops gliding when paused or sent back to live', () => {
+    const { video, playback } = create(10);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    vi.advanceTimersByTime(PACE_MS);
+    playback.glideTo(4);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.playbackRate).toBe(GLIDE_RATE);
+
+    playback.pause();
+    expect(video.playbackRate).toBe(1);
+    playback.catchUp();
+    expect(video.currentTime).toBe(6);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.playbackRate).toBe(1);
     playback.stop();
   });
 });

@@ -1,10 +1,13 @@
 // The shared tab shown behind time, in step with the captions (see ../utils/sync).
 //
 // While the "sync" option is on and the share allows it, the tab's picture and sound
-// play in the page a fixed number of seconds behind real time, the one the user chose,
-// and the captions the picture has reached are listed under it. The delay never follows
-// the captions' latency on its own: like a live broadcast, everything runs that far
-// behind and stays there. With the "wait" option on, a picture that reaches a sentence
+// play in the page a fixed number of seconds behind real time, and the captions the
+// picture has reached are listed under it. The delay is the one the user chose, or, on
+// "auto", one found at the start: the picture is held while the first captions are
+// timed (CALIBRATION_SECONDS at most), and once a few were, the delay is settled from
+// them; a picture already playing further behind glides there, a little faster, without
+// skipping anything. Either way it then stays put: like a live broadcast, everything
+// runs that far behind and stays there. With the "wait" option on, a picture that reaches a sentence
 // whose caption is not there yet holds until it is (as a video does while it buffers)
 // and goes on from there, that much further behind; without it, the caption simply
 // shows a little late. The lag is polled while it plays, for the status line, the
@@ -15,7 +18,8 @@ import type { SessionLine } from '@/modules/session';
 import type { AudioCapture } from '@/shared/audio/audioCapture';
 import { PACE_MS, type DelayedPlayback } from '@/shared/media/delayedPlayback';
 import type { OverlayStore } from '../pipeline/types';
-import { linesReached } from '../utils/sync';
+import { SYNC_DELAY_AUTO } from '@/modules/overlay';
+import { autoDelay, CALIBRATION_SECONDS, linesReached } from '../utils/sync';
 
 /** A caption that never comes (music, noise) is waited for this long, then let go */
 export const MAX_WAIT_MS = 12_000;
@@ -41,8 +45,10 @@ export interface VideoSync {
   paused: Ref<boolean>;
   /** Held until a late caption arrives */
   waiting: Ref<boolean>;
-  /** Seconds it is held back, as the user chose; null while it is not playing */
+  /** Seconds it is held back, as chosen or as settled on "auto"; null while it is not playing */
   delaySeconds: Ref<number | null>;
+  /** The delay is set automatically, and is still being worked out */
+  calibrating: Ref<boolean>;
   /** The option was on, but the picture could not be played behind time */
   failed: Ref<boolean>;
   /** The lines the picture has reached: what to show under it */
@@ -66,6 +72,17 @@ export function createVideoSync({
   const waiting = ref(false);
   const delaySeconds = ref<number | null>(null);
   const failed = ref(false);
+  const calibrating = ref(false);
+  /** When the picture began to be held back (epoch ms) */
+  let syncedOn = 0;
+  /** Lines already timed */
+  let timed = 0;
+  /** How long each caption took to arrive after its sentence began, in milliseconds */
+  const waits: number[] = [];
+  /** The automatic delay, once settled; null until then */
+  let settled: number | null = null;
+  /** Delay the picture is held at while it fills, once settled below what it already held */
+  let filling: number | null = null;
   /** Advances with each poll, so `reached` follows the picture */
   const clock = ref(0);
   let poll: ReturnType<typeof setInterval> | undefined;
@@ -83,7 +100,7 @@ export function createVideoSync({
   /** True when the picture has reached speech whose caption is not there yet */
   function captionLate(current: DelayedPlayback, lag: number | null, at: number): boolean {
     if (!overlay.syncWait || lag === null || current.paused()) return false;
-    if (lag - overlay.syncDelay > MAX_WAIT_LAG_SECONDS) return false;
+    if (lag - (delaySeconds.value ?? overlay.syncDelay) > MAX_WAIT_LAG_SECONDS) return false;
     const due = captionDueFrom();
     if (due === null || due === givenUp || at - lag * 1000 < due) return false;
     if (current.waiting() && at - waitStartedOn > MAX_WAIT_MS) {
@@ -100,9 +117,46 @@ export function createVideoSync({
     current.wait(late);
   }
 
+  /** Times the captions that arrived since the last look, from their sentence's start */
+  function timeArrivals(at: number): void {
+    const all = lines();
+    for (; timed < all.length; timed++) {
+      const from = all[timed]?.from;
+      if (from !== undefined && from >= syncedOn) waits.push(at - from);
+    }
+  }
+
+  function auto(): boolean {
+    return overlay.syncDelay === SYNC_DELAY_AUTO;
+  }
+
+  /**
+   * On "auto", settles the delay once enough captions were timed. Still filling, the
+   * picture starts that far behind, or as far as it already holds (nothing is skipped);
+   * playing, it glides there
+   */
+  function settle(current: DelayedPlayback, lag: number | null, at: number): void {
+    if (!auto()) return;
+    settled ??= autoDelay(waits);
+    calibrating.value = settled === null;
+    if (settled === null) return;
+    if (lag === null) {
+      const held = Math.ceil(((at - syncedOn) / 1000) * 2) / 2;
+      filling ??= Math.max(settled, Math.min(held, delaySeconds.value ?? held));
+      if (delaySeconds.value !== filling) current.setDelay(filling);
+      delaySeconds.value = filling;
+      return;
+    }
+    if (delaySeconds.value === settled) return;
+    current.glideTo(settled);
+    delaySeconds.value = settled;
+  }
+
   function tick(): void {
     const current = playback.value;
     const at = now();
+    timeArrivals(at);
+    if (current) settle(current, current.lagSeconds(), at);
     if (current) holdForCaption(current, current.lagSeconds(), at);
     lagSeconds.value = current?.lagSeconds() ?? null;
     paused.value = current?.paused() ?? false;
@@ -120,7 +174,12 @@ export function createVideoSync({
     paused.value = false;
     waiting.value = false;
     delaySeconds.value = null;
+    calibrating.value = false;
     givenUp = null;
+    waits.length = 0;
+    timed = 0;
+    settled = null;
+    filling = null;
   }
 
   /** Starts, retunes or ends the delayed playback to match the option and the chosen delay */
@@ -129,7 +188,17 @@ export function createVideoSync({
       if (playback.value) release();
       return;
     }
-    const seconds = overlay.syncDelay;
+    // On "auto", a picture already held keeps its delay (the next look settles it);
+    // a new one is held the longest while the first captions are timed
+    const seconds = auto()
+      ? playback.value
+        ? (delaySeconds.value ?? CALIBRATION_SECONDS)
+        : CALIBRATION_SECONDS
+      : overlay.syncDelay;
+    if (!playback.value) {
+      syncedOn = now();
+      timed = lines().length;
+    }
     const next = capture.syncOriginal(seconds);
     if (next === null) {
       // Not something to retry: the option goes away for this session
@@ -139,7 +208,11 @@ export function createVideoSync({
       return;
     }
     delaySeconds.value = seconds;
-    if (playback.value === next) return;
+    calibrating.value = auto() && settled === null;
+    if (playback.value === next) {
+      tick();
+      return;
+    }
     playback.value = next;
     tick();
     poll ??= setInterval(tick, PACE_MS);
@@ -163,6 +236,7 @@ export function createVideoSync({
     paused,
     waiting,
     delaySeconds,
+    calibrating,
     failed,
     reached,
     started,
