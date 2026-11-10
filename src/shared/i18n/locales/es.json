@@ -269,7 +269,7 @@
       "off": "Volver a la pestaña en directo",
       "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede",
       "waitLabel": "Esperar a los subtítulos",
-      "waitHint": "Si una traducción se retrasa, el vídeo se para un momento y sigue cuando llega. Ideal para vídeos grabados; en directo, te deja un poco más por detrás"
+      "waitHint": "Sincronía exacta: si una traducción se retrasa, el vídeo se para hasta que llega y sigue desde ahí, más por detrás. Desactivado, un subtítulo tardío solo se muestra un poco tarde y el vídeo no se para nunca"
     },
     "groups": {
       "show": "Mostrar",

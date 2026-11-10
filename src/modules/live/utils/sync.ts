@@ -3,7 +3,8 @@
 // the user (see the overlay's SYNC_DELAY_CHOICES), and then a caption slower than it shows
 // as soon as it arrives and a longer delay is suggested when that keeps happening; or
 // "auto": the first captions of the session are timed and the delay is set from them,
-// once, like a live broadcast that settles its delay and keeps it.
+// like a live broadcast that settles its delay and keeps it; only when captions keep
+// landing late is it raised, never lowered, so the picture stops as seldom as it can.
 
 import type { SessionLine } from '@/modules/session';
 
@@ -23,19 +24,38 @@ export const AUTO_MAX_SECONDS = 30;
 /** Most recent waits an automatic delay is drawn from */
 const AUTO_WINDOW = 8;
 
+/** The delay that covers a caption which took `waitMs` to arrive, with room, in bounds */
+function delayCovering(waitMs: number): number {
+  const seconds = Math.ceil(((waitMs + AUTO_HEADROOM_MS) / 1000) * 2) / 2;
+  return Math.min(AUTO_MAX_SECONDS, Math.max(AUTO_MIN_SECONDS, seconds));
+}
+
 /**
  * The delay, in seconds, that lets the captions land on their sentence, from how long
  * each recent one took to arrive after its sentence began (milliseconds); null until
- * enough were timed. Enough for all but the slowest: one outlier should not double it.
- * Rounded up to the half second.
+ * enough were timed. Enough for the slowest of them: a caption can only exist once its
+ * whole sentence was said, so a delay shorter than the long sentences stops the picture
+ * (or shows their captions late) at every one. Rounded up to the half second.
  */
 export function autoDelay(waits: readonly number[]): number | null {
   const recent = waits.slice(-AUTO_WINDOW);
   if (recent.length < CALIBRATION_LINES) return null;
-  const sorted = [...recent].sort((a, b) => a - b);
-  const slow = sorted[sorted.length - 2] ?? 0;
-  const seconds = Math.ceil(((slow + AUTO_HEADROOM_MS) / 1000) * 2) / 2;
-  return Math.min(AUTO_MAX_SECONDS, Math.max(AUTO_MIN_SECONDS, seconds));
+  return delayCovering(Math.max(...recent));
+}
+
+/**
+ * A longer automatic delay, once captions keep landing after their sentence began on
+ * the picture: enough for the slowest of the recent late ones. Null while the current
+ * delay is enough, or while only one caption was late (a single long sentence is let
+ * show late rather than moving the whole picture for it).
+ */
+export function raisedDelay(waits: readonly number[], delaySeconds: number): number | null {
+  const late = waits
+    .slice(-LATE_WINDOW)
+    .filter((wait) => wait > delaySeconds * 1000 + LATE_MARGIN_MS);
+  if (late.length < LATE_LINES) return null;
+  const next = delayCovering(Math.max(...late));
+  return next > delaySeconds ? next : null;
 }
 
 /**

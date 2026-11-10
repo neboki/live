@@ -64,6 +64,19 @@ const VIDEO_BITS_PER_SECOND = 2_500_000;
 export const GLIDE_RATE = 1.08;
 /** Gliding stops this close to the wanted delay */
 const GLIDE_DONE_SECONDS = 0.25;
+/** Every this many checks, the trace notes where the playhead is */
+const TRACE_EVERY = 20;
+
+/**
+ * Development trace of everything that moves or holds the playhead, in the console as
+ * `[sync]`: tells a hold for a caption from a stall of the decoder (dropped frames,
+ * `waiting`/`stalled` events) when the picture seems to skip
+ */
+const TRACED = import.meta.env.DEV && import.meta.env.MODE !== 'test';
+function trace(what: string, detail: Record<string, unknown> = {}): void {
+  // eslint-disable-next-line no-console -- a development trace, never in production
+  if (TRACED) console.debug(`[sync] ${what}`, detail);
+}
 
 function supportedType(): string | null {
   if (typeof MediaRecorder === 'undefined' || typeof MediaSource === 'undefined') return null;
@@ -122,11 +135,40 @@ export function createDelayedPlayback(
    * end of the buffer is always a chunk behind real time; this tells by how much.
    */
   let timeZero: number | null = null;
+  /** Checks so far, for the periodic trace */
+  let ticks = 0;
+  /** When the current wait for a caption began (ms), for the trace */
+  let waitedSince = 0;
   const pacer = setInterval(pace, PACE_MS);
 
   element.playsInline = true;
   element.preload = 'auto';
   element.src = url;
+
+  /** Where things stand, for the trace */
+  function state(): Record<string, unknown> {
+    const end = buffer ? bufferedEnd(buffer) : null;
+    const quality =
+      typeof element.getVideoPlaybackQuality === 'function'
+        ? element.getVideoPlaybackQuality()
+        : null;
+    return {
+      at: Number(element.currentTime.toFixed(2)),
+      end: end === null ? null : Number(end.toFixed(2)),
+      lag: end === null ? null : Number((end - element.currentTime).toFixed(2)),
+      delay,
+      rate: element.playbackRate,
+      dropped: quality?.droppedVideoFrames ?? null,
+      queued: queue.length,
+    };
+  }
+
+  /** The element stalled on its own: not a hold of ours */
+  function onStall(event: Event): void {
+    trace(`element ${event.type}`, state());
+  }
+  const STALL_EVENTS = ['waiting', 'stalled'] as const;
+  if (TRACED) STALL_EVENTS.forEach((type) => element.addEventListener(type, onStall));
 
   function play(): void {
     if (held || waitingForCaption) return;
@@ -135,7 +177,9 @@ export function createDelayedPlayback(
 
   /** Moves the playhead, unless it is already about there (a seek interrupts the sound) */
   function seekTo(time: number): void {
-    if (Math.abs(element.currentTime - time) > SEEK_MIN_SECONDS) element.currentTime = time;
+    if (Math.abs(element.currentTime - time) <= SEEK_MIN_SECONDS) return;
+    trace('seek', { ...state(), to: Number(time.toFixed(2)) });
+    element.currentTime = time;
   }
 
   /** Drops what is far behind the playhead; true when a removal was started */
@@ -199,11 +243,13 @@ export function createDelayedPlayback(
     const end = bufferedEnd(buffer);
     if (end === null) return;
     const lag = end - element.currentTime;
+    if (++ticks % TRACE_EVERY === 0) trace('playhead', state());
     if (!playing) {
       // Buffering: wait until the whole delay is there, then start that far behind
       if (lag < delay) return;
       seekTo(end - delay);
       playing = true;
+      trace('start', state());
       play();
       return;
     }
@@ -223,6 +269,7 @@ export function createDelayedPlayback(
   function glide(lag: number): void {
     if (lag - delay > GLIDE_DONE_SECONDS) {
       element.preservesPitch = true;
+      if (element.playbackRate !== GLIDE_RATE) trace('glide', state());
       setRate(GLIDE_RATE);
       return;
     }
@@ -231,6 +278,7 @@ export function createDelayedPlayback(
 
   function stopGlide(): void {
     gliding = false;
+    if (element.playbackRate !== 1) trace('glide done', state());
     setRate(1);
   }
 
@@ -241,6 +289,7 @@ export function createDelayedPlayback(
   function realign(end: number, tolerance: number): void {
     const gap = end - element.currentTime - delay;
     if (gap < -tolerance) {
+      trace('hold until buffered', state());
       element.pause();
       playing = false;
     } else if (gap > tolerance) {
@@ -308,6 +357,7 @@ export function createDelayedPlayback(
     if (stopped || held) return;
     held = true;
     stopGlide();
+    trace('paused by the user', state());
     element.pause();
   }
 
@@ -315,6 +365,7 @@ export function createDelayedPlayback(
     if (stopped || !held) return;
     held = false;
     behindByChoice = true;
+    trace('resumed by the user', state());
     if (playing) play();
   }
 
@@ -323,16 +374,20 @@ export function createDelayedPlayback(
     waitingForCaption = on;
     if (on) {
       stopGlide();
+      waitedSince = Date.now();
+      trace('wait for a caption', state());
       element.pause();
       return;
     }
     // Further behind now, on purpose: it stays there until catchUp(), never jumps ahead
     behindByChoice = true;
+    trace('caption arrived', { ...state(), waitedMs: Date.now() - waitedSince });
     if (playing) play();
   }
 
   function catchUp(): void {
     if (stopped) return;
+    trace('catch up', state());
     const wasHeld = held || waitingForCaption;
     held = false;
     waitingForCaption = false;
@@ -348,6 +403,7 @@ export function createDelayedPlayback(
     if (stopped) return;
     stopped = true;
     clearInterval(pacer);
+    if (TRACED) STALL_EVENTS.forEach((type) => element.removeEventListener(type, onStall));
     queue.length = 0;
     try {
       if (recorder.state !== 'inactive') recorder.stop();

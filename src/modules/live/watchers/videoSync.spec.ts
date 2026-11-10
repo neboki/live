@@ -347,9 +347,51 @@ describe('createVideoSync', () => {
     lines.push(line(121_000, 120_000), line(123_000, 122_000), line(125_000, 124_000));
     now.value = 126_000;
     vi.advanceTimersByTime(PACE_MS);
-    // Waits of 6, 4 and 2 s: 4 s + room = 5.5 s
-    expect(playback.glideTo).toHaveBeenCalledWith(5.5);
+    // Waits of 6, 4 and 2 s: the slowest, 6 s, + room = 7.5 s
+    expect(playback.glideTo).toHaveBeenCalledWith(7.5);
     expect(sync.calibrating.value).toBe(false);
+    sync.ended();
+  });
+
+  it('on auto, raises a settled delay once captions keep landing late, and never lowers it', async () => {
+    const playback = fakePlayback();
+    const { deps, overlay, lines, now } = setup(playback);
+    overlay.syncDelay = SYNC_DELAY_AUTO;
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    /** A caption arrives for a sentence that began `from`, and the next look sees it */
+    function arrives(from: number, at: number): void {
+      lines.push(line(at, from));
+      now.value = at;
+      vi.advanceTimersByTime(PACE_MS);
+    }
+    // Settled from three 3 s waits: 4.5 s
+    playback.lag = 9.5;
+    arrives(100_000, 103_000);
+    arrives(103_000, 106_000);
+    arrives(106_000, 109_000);
+    expect(sync.delaySeconds.value).toBe(4.5);
+    expect(playback.glideTo).toHaveBeenLastCalledWith(4.5);
+
+    // One long sentence: its caption shows late, the delay stays
+    playback.lag = 4.5;
+    arrives(109_000, 118_000);
+    expect(sync.delaySeconds.value).toBe(4.5);
+
+    // A second one: the delay is raised to cover the slowest (9 s + room = 10.5 s)
+    arrives(118_000, 126_000);
+    expect(playback.glideTo).toHaveBeenLastCalledWith(10.5);
+    expect(sync.delaySeconds.value).toBe(10.5);
+
+    // Quick captions again: it stays where it is
+    playback.lag = 10.5;
+    arrives(126_000, 128_000);
+    arrives(128_000, 130_000);
+    arrives(130_000, 132_000);
+    expect(sync.delaySeconds.value).toBe(10.5);
+    expect(playback.glideTo).toHaveBeenCalledTimes(2);
     sync.ended();
   });
 });

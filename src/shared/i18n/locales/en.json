@@ -269,7 +269,7 @@
       "off": "Back to the live tab",
       "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen",
       "waitLabel": "Wait for the captions",
-      "waitHint": "When a translation runs late, the video stops for a moment and goes on once it arrives. Best for recorded videos; on a live one it leaves you a little further behind"
+      "waitHint": "Exact sync: when a translation runs late, the video stops until it arrives, and goes on from there, further behind. Off, a late caption simply shows a little late and the video never stops"
     },
     "groups": {
       "show": "Show",

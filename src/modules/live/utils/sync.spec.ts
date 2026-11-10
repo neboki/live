@@ -5,6 +5,7 @@ import {
   AUTO_MIN_SECONDS,
   autoDelay,
   linesReached,
+  raisedDelay,
   suggestedDelay,
 } from './sync';
 
@@ -68,10 +69,12 @@ describe('autoDelay', () => {
     expect(autoDelay([3000, 4000])).toBeNull();
   });
 
-  it('leaves room for all but the slowest, rounded up to the half second', () => {
-    // Second slowest 4200 ms + 1.5 s of room = 5.7 s → 6 s; the 9 s outlier is ignored
-    expect(autoDelay([3000, 4200, 9000])).toBe(6);
+  it('leaves room for the slowest caption, rounded up to the half second', () => {
+    // Slowest 4200 ms + 1.5 s of room = 5.7 s → 6 s
+    expect(autoDelay([3000, 4200, 3500])).toBe(6);
     expect(autoDelay([2000, 2400, 2600, 2900])).toBe(4.5);
+    // A long sentence counts: its caption cannot come before it ends
+    expect(autoDelay([3000, 4200, 9000])).toBe(10.5);
   });
 
   it('stays within bounds and looks only at the recent captions', () => {
@@ -79,5 +82,24 @@ describe('autoDelay', () => {
     expect(autoDelay([60_000, 60_000, 60_000])).toBe(AUTO_MAX_SECONDS);
     const slowStart = [20_000, 20_000, 20_000];
     expect(autoDelay([...slowStart, ...Array<number>(8).fill(3000)])).toBe(4.5);
+  });
+});
+
+describe('raisedDelay', () => {
+  it('raises the delay once a couple of recent captions landed late', () => {
+    // Late: later than 5 s + 0.5 s of margin; the slowest, 8 s, plus room → 9.5 s
+    expect(raisedDelay([3000, 7000, 4000, 8000], 5)).toBe(9.5);
+  });
+
+  it('lets a single late caption show late instead', () => {
+    expect(raisedDelay([3000, 9000, 4000], 5)).toBeNull();
+    expect(raisedDelay([], 5)).toBeNull();
+  });
+
+  it('never lowers it, and forgets late captions beyond the recent window', () => {
+    expect(raisedDelay([5300, 5400], 5)).toBeNull();
+    const old = [20_000, 20_000];
+    expect(raisedDelay([...old, ...Array<number>(6).fill(3000)], 5)).toBeNull();
+    expect(raisedDelay([60_000, 60_000], AUTO_MAX_SECONDS)).toBeNull();
   });
 });

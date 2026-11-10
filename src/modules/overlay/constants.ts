@@ -70,6 +70,7 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   pipSize: null,
   syncVideo: true,
   syncDelay: SYNC_DELAY_AUTO,
-  syncWait: true,
+  // Off: a stop for every late caption makes a monologue's picture skip (ADR 0008)
+  syncWait: false,
   placement: 'floating',
 };

@@ -36,15 +36,24 @@ the user hears of it. With the tab's picture it can own what they see of it too.
 2. **The delay is settled at the start, then kept.** _(Revised 2026-11-10; it first
    followed the latency all along, which kept the picture drifting.)_ On "auto", the
    default, the picture is held while the session's first captions are timed, from where
-   their sentence began to when the caption arrived. Once three are, the delay is all but
-   the slowest of the recent ones plus 1.5 s of room (for the voice to start), rounded up
-   to the half second, between 3 and 30 s. The picture starts that far behind, or, if it
-   already holds more, glides there by playing 8 % faster (pitch kept), skipping nothing.
-   Without speech it starts after 20 s and settles once captions come. The delay then
-   stays put for the session, like a broadcast; a caption later than it is held for by
-   the "wait" option. The user can instead pick a fixed delay (3–30 s), and is then
-   offered a longer one when captions keep landing late (`utils/sync.ts`,
-   `watchers/videoSync.ts`).
+   their sentence began to when the caption arrived. Once three are, the delay is the
+   slowest of the recent ones plus 1.5 s of room (for the voice to start), rounded up to
+   the half second, between 3 and 30 s. _(Revised again the same day: it first left out
+   the slowest. A caption can only exist once its sentence was said, so on a monologue
+   with long sentences that delay could not be met, and every long one stopped the
+   picture or showed late.)_ The picture starts that far behind, or, if it already holds
+   more, glides there by playing 8 % faster (pitch kept), skipping nothing. Without
+   speech it starts after 20 s and settles once captions come. The delay then stays put
+   for the session, like a broadcast. Only when two of the last six captions still land
+   late is it raised to cover them, with one hold while the picture buffers; it is never
+   lowered. A single late caption just shows late. The user can instead pick a fixed
+   delay (3–30 s), and is then offered a longer one when captions keep landing late
+   (`utils/sync.ts`, `watchers/videoSync.ts`).
+   The "wait" option, which holds the picture for every late caption, is off by default
+   since 2026-11-10: on a monologue it stopped the picture every few sentences, each stop
+   leaving it further behind, which looked like a skipping video. It stays as an opt-in
+   for exact sync. In development the player traces every hold, seek, glide and stall of
+   the element in the console as `[sync]`, to tell our holds from the decoder's.
 3. **The captions follow the picture.** Under the picture the page lists the session's
    lines whose sentence the delayed picture has reached (its start when known, otherwise
    its end). The floating window keeps showing the captions live: the delayed ones are a

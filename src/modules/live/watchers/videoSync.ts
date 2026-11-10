@@ -6,12 +6,13 @@
 // "auto", one found at the start: the picture is held while the first captions are
 // timed (CALIBRATION_SECONDS at most), and once a few were, the delay is settled from
 // them; a picture already playing further behind glides there, a little faster, without
-// skipping anything. Either way it then stays put: like a live broadcast, everything
-// runs that far behind and stays there. With the "wait" option on, a picture that reaches a sentence
-// whose caption is not there yet holds until it is (as a video does while it buffers)
-// and goes on from there, that much further behind; without it, the caption simply
-// shows a little late. The lag is polled while it plays, for the status line, the
-// captions and the waits.
+// skipping anything. It then stays put, like a live broadcast: everything runs that far
+// behind. Only when captions keep landing late is the automatic delay raised, with one
+// hold of the picture while it buffers, and never lowered again. With the "wait" option
+// on (off by default), a picture that reaches a sentence whose caption is not there yet
+// holds until it is and goes on from there, that much further behind; without it, the
+// caption simply shows a little late. The lag is polled while it plays, for the status
+// line, the captions and the waits.
 
 import { computed, ref, shallowRef, watch, type ComputedRef, type Ref, type ShallowRef } from 'vue';
 import type { SessionLine } from '@/modules/session';
@@ -19,7 +20,7 @@ import type { AudioCapture } from '@/shared/audio/audioCapture';
 import { PACE_MS, type DelayedPlayback } from '@/shared/media/delayedPlayback';
 import type { OverlayStore } from '../pipeline/types';
 import { SYNC_DELAY_AUTO } from '@/modules/overlay';
-import { autoDelay, CALIBRATION_SECONDS, linesReached } from '../utils/sync';
+import { autoDelay, CALIBRATION_SECONDS, linesReached, raisedDelay } from '../utils/sync';
 
 /** A caption that never comes (music, noise) is waited for this long, then let go */
 export const MAX_WAIT_MS = 12_000;
@@ -81,6 +82,8 @@ export function createVideoSync({
   const waits: number[] = [];
   /** The automatic delay, once settled; null until then */
   let settled: number | null = null;
+  /** Waits timed before this index were covered by the last raise of the delay */
+  let raisedFrom = 0;
   /** Delay the picture is held at while it fills, once settled below what it already held */
   let filling: number | null = null;
   /** Advances with each poll, so `reached` follows the picture */
@@ -133,7 +136,8 @@ export function createVideoSync({
   /**
    * On "auto", settles the delay once enough captions were timed. Still filling, the
    * picture starts that far behind, or as far as it already holds (nothing is skipped);
-   * playing, it glides there
+   * playing, it glides there. Later, captions that keep landing late raise it (the
+   * picture holds once while it buffers); it is never lowered again
    */
   function settle(current: DelayedPlayback, lag: number | null, at: number): void {
     if (!auto()) return;
@@ -147,7 +151,13 @@ export function createVideoSync({
       delaySeconds.value = filling;
       return;
     }
+    const raised = raisedDelay(waits.slice(raisedFrom), settled);
+    if (raised !== null) {
+      settled = raised;
+      raisedFrom = waits.length;
+    }
     if (delaySeconds.value === settled) return;
+    // A longer delay is reached by holding the picture; a shorter one by gliding
     current.glideTo(settled);
     delaySeconds.value = settled;
   }
@@ -179,6 +189,7 @@ export function createVideoSync({
     waits.length = 0;
     timed = 0;
     settled = null;
+    raisedFrom = 0;
     filling = null;
   }
 
