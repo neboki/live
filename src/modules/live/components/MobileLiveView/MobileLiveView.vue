@@ -125,7 +125,19 @@ onBeforeUnmount(() => {
     :class="{ 'mlive--present': presenting, 'mlive--full': immersive }"
     :style="{ '--text-scale': String(overlay.scale) }"
   >
-    <p class="mlive__status" :style="{ '--level': String(overlay.level) }">
+    <!-- Full screen: only the text, and one small button to come back -->
+    <button
+      v-if="immersive"
+      class="mlive__min"
+      type="button"
+      :aria-label="t('mobile.exitFullScreen')"
+      :title="t('mobile.exitFullScreen')"
+      @click="toggleImmersive"
+    >
+      <FullscreenIcon :on="true" />
+    </button>
+
+    <p v-else class="mlive__status" :style="{ '--level': String(overlay.level) }">
       <ListeningBadge :error="!!session.liveError" on-page />
       <span>{{ overlay.pair.from }} → {{ overlay.pair.to }}</span>
       <span v-if="session.headset">· 🎧</span>
@@ -185,10 +197,10 @@ onBeforeUnmount(() => {
       </article>
     </section>
 
-    <p v-if="voiceTip && !presenting" class="mlive__tip">{{ t(voiceTip) }}</p>
+    <p v-if="voiceTip && !presenting && !immersive" class="mlive__tip">{{ t(voiceTip) }}</p>
 
     <!-- The same quick controls as the bar: pause, volume, text size; then settings and stop -->
-    <footer class="mlive__controls">
+    <footer v-if="!immersive" class="mlive__controls">
       <div class="mlive__quick">
         <button
           class="mlive__btn"
@@ -321,9 +333,38 @@ onBeforeUnmount(() => {
 
   // Nothing above it: the screen is all text, clear of notches and bars
   &--full {
+    grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
     padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
       max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+
+  // The one control left in full screen: small, faint, in the top corner
+  &__min {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(128 128 128 / 25%);
+    color: var(--fg);
+    opacity: 0.7;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &--present &__min {
+    color: #fff;
   }
 
   &--present {

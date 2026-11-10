@@ -33,6 +33,25 @@ service cloud.firestore {
       }
     }
 
+    // The person's own brand: name, logo (a small image as a data: URL) and accent
+    // colour, all optional (see src/modules/account/store/useCloudBrand.ts)
+    match /users/{uid}/settings/brand {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['name', 'logo', 'accent', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && (!('name' in request.resource.data)
+          || (request.resource.data.name is string
+            && request.resource.data.name.size() <= 40))
+        && (!('logo' in request.resource.data)
+          || (request.resource.data.logo is string
+            && request.resource.data.logo.size() <= 150000
+            && request.resource.data.logo.matches('data:image/(png|jpeg|webp|gif|svg[+]xml)[;,].*')))
+        && (!('accent' in request.resource.data)
+          || (request.resource.data.accent is string
+            && request.resource.data.accent.matches('#[0-9a-f]{6}')));
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

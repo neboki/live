@@ -5,6 +5,7 @@
 export { useAccount, type AccountUser } from './store/useAccount';
 export { useCloudSave, type CloudSaveStatus } from './store/useCloudSave';
 export { useCloudHistory, HISTORY_LIMIT } from './store/useCloudHistory';
+export { useCloudBrand, type CloudBrandStatus } from './store/useCloudBrand';
 export type { CloudHistoryItem } from './utils/cloudSession';
 export { ACCOUNTS_ENABLED } from './firebase';
 export { default as AccountCard } from './components/AccountCard/AccountCard.vue';

@@ -512,6 +512,31 @@
     },
     "listen": "Al empezar una sesión",
     "key": "Conexión",
+    "brand": {
+      "title": "Tu marca",
+      "hint": "Pon tu propio nombre, logo y color en la aplicación. Deja un campo vacío para usar el de serie.",
+      "sync": {
+        "local": "Se guarda en este navegador. Inicia sesión para guardarla en tu cuenta y tenerla en cualquier dispositivo.",
+        "idle": "Se guarda en tu cuenta.",
+        "saving": "Guardando en tu cuenta…",
+        "saved": "Guardada en tu cuenta.",
+        "error": "No se pudo guardar en tu cuenta. Se queda en este navegador; se reintentará con el próximo cambio."
+      },
+      "name": "Nombre",
+      "logo": "Logo",
+      "logoAlt": "Logo actual",
+      "noLogo": "Ninguno",
+      "upload": "Subir logo…",
+      "remove": "Quitar",
+      "color": "Color de acento",
+      "defaultColor": "Color de serie",
+      "reset": "Volver a {name}",
+      "errors": {
+        "type": "Usa una imagen PNG, JPG, WebP, GIF o SVG.",
+        "tooLarge": "Esa imagen es demasiado grande. Prueba con una más pequeña (un SVG de menos de 150 KB o cualquier otra de menos de 5 MB).",
+        "unreadable": "No se pudo leer esa imagen."
+      }
+    },
     "backup": {
       "title": "Copia de seguridad",
       "hint": "Guarda tus ajustes en un archivo para llevarlos a otro navegador o recuperarlos después. La clave nunca se incluye.",

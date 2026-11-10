@@ -28,6 +28,7 @@ export const BACKUP_KEYS: readonly string[] = [
   'locale',
   'theme',
   'brand',
+  'brand-custom',
 ];
 
 /** A backup file is larger than this only if it is not one */

@@ -49,6 +49,11 @@ export const getFirebaseAuth = lazy(async (): Promise<Auth> => {
   return getAuth(app);
 });
 
+/** The Firestore functions (doc, getDoc, setDoc…), loaded on first use */
+export const loadFirestore = lazy(
+  (): Promise<typeof import('firebase/firestore')> => import('firebase/firestore'),
+);
+
 /** The Firestore instance, loaded on first save or read. Only call it when ACCOUNTS_ENABLED. */
 export const getFirebaseDb = lazy(async (): Promise<Firestore> => {
   const [app, { initializeFirestore }] = await Promise.all([

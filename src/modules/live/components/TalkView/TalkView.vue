@@ -99,6 +99,9 @@ const halves = computed(() => ({
   user: halfFor(USER_SPEAKER, userCode.value),
 }));
 
+/** Full screen with nothing to report: the middle bar goes too */
+const bare = computed(() => immersive.value && !session.liveError);
+
 useFitText(boxes, () => [
   halves.value.partner.text,
   halves.value.user.text,
@@ -134,9 +137,20 @@ function receiveText(half: Half): string {
 <template>
   <main
     class="talk"
-    :class="{ 'talk--full': immersive }"
+    :class="{ 'talk--full': immersive, 'talk--bare': bare }"
     :style="{ '--text-scale': String(overlay.scale) }"
   >
+    <!-- Full screen: only the two halves, and one small button to come back -->
+    <button
+      v-if="immersive"
+      class="talk__min"
+      type="button"
+      :aria-label="t('mobile.exitFullScreen')"
+      :title="t('mobile.exitFullScreen')"
+      @click="toggleImmersive"
+    >
+      <FullscreenIcon :on="true" />
+    </button>
     <section
       v-for="half in [halves.partner, halves.user]"
       :key="half.who"
@@ -153,6 +167,7 @@ function receiveText(half: Half): string {
         <p>{{ half.text || (half.who === USER_SPEAKER ? t('mobile.placeTip') : '…') }}</p>
       </div>
       <button
+        v-if="!immersive"
         class="talk__receive"
         type="button"
         :data-receive="receiveOf(half.who)"
@@ -167,7 +182,7 @@ function receiveText(half: Half): string {
       </button>
     </section>
 
-    <div class="talk__middle">
+    <div v-if="!bare" class="talk__middle">
       <i class="talk__dot" :style="{ '--level': String(overlay.level) }" aria-hidden="true"></i>
       <span v-if="session.liveError" class="talk__error" role="alert">{{
         t(session.liveError)
@@ -236,6 +251,36 @@ function receiveText(half: Half): string {
     height: 100dvh;
     padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
       max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  // No middle bar: the two halves share the screen
+  &--bare {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  // The one control left in full screen: small, faint, on the edge between the halves
+  &__min {
+    position: fixed;
+    top: 50%;
+    right: max(4px, env(safe-area-inset-right));
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(128 128 128 / 25%);
+    color: var(--fg);
+    opacity: 0.7;
+    transform: translateY(-50%);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   // The top half belongs to the person across the table

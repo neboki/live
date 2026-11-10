@@ -6,6 +6,7 @@ import {
   useAccount,
   useCloudHistory,
   useCloudSave,
+  useCloudBrand,
   type CloudHistoryItem,
 } from '@/modules/account';
 import { useLiveSession } from '@/modules/live';
@@ -48,6 +49,7 @@ const appPage = useAppPage();
 const account = useAccount();
 const cloudSave = useCloudSave();
 const cloudHistory = useCloudHistory();
+const cloudBrand = useCloudBrand();
 const { t, locale } = useI18n();
 const menuOpen = ref(false);
 const input = ref<HTMLInputElement | null>(null);
@@ -201,9 +203,11 @@ onMounted(() => {
   void account.init();
   cloudSave.start();
   cloudHistory.start();
+  cloudBrand.start();
 });
 onBeforeUnmount(() => {
   cloudSave.stop();
+  cloudBrand.stop();
   clearInterval(ticker);
   drawerQuery?.removeEventListener('change', onDrawerChange);
   window.removeEventListener('keydown', onKeydown);

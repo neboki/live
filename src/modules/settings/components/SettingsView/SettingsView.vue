@@ -4,6 +4,7 @@ import { ACCOUNTS_ENABLED, AccountCard } from '@/modules/account';
 import { ApiKeyField, AudioSourcePicker, PlacementPicker } from '@/modules/onboarding';
 import { SettingsMenu, useFloatingWindow, useOverlayStore } from '@/modules/overlay';
 import { isPhoneLayout } from '@/shared/device';
+import BrandEditor from '../BrandEditor/BrandEditor.vue';
 import LanguageSelect from '../LanguageSelect/LanguageSelect.vue';
 import SettingsBackup from '../SettingsBackup/SettingsBackup.vue';
 import UiLocaleSelect from '../UiLocaleSelect/UiLocaleSelect.vue';
@@ -124,6 +125,13 @@ const phone = isPhoneLayout(canFloat);
           >
             <h2 id="settings-account" class="lg-card__title">{{ t('account.title') }}</h2>
             <AccountCard />
+          </section>
+
+          <section class="lg-card settings-view__card" aria-labelledby="settings-brand">
+            <h2 id="settings-brand" class="lg-card__title">
+              {{ t('settingsPage.brand.title') }}
+            </h2>
+            <BrandEditor />
           </section>
 
           <section class="lg-card settings-view__card" aria-labelledby="settings-backup">

@@ -69,6 +69,9 @@ export function createDocumentPip(): DocumentPip {
       if (theme) win.document.documentElement.dataset.theme = theme;
       const brand = document.documentElement.dataset.brand;
       if (brand) win.document.documentElement.dataset.brand = brand;
+      // A custom accent: its stylesheet came over with the others, this switches it on
+      if (document.documentElement.hasAttribute('data-brand-accent'))
+        win.document.documentElement.setAttribute('data-brand-accent', '');
       win.document.documentElement.lang = document.documentElement.lang;
       win.document.title = document.title;
       win.document.body.classList.add('pip-body');

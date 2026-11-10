@@ -512,6 +512,31 @@
     },
     "listen": "When a session starts",
     "key": "Connection",
+    "brand": {
+      "title": "Your brand",
+      "hint": "Put your own name, logo and colour on the app. Leave a field empty to keep the default.",
+      "sync": {
+        "local": "Saved in this browser. Sign in to keep it in your account and have it on any device.",
+        "idle": "Kept in your account.",
+        "saving": "Saving to your account…",
+        "saved": "Saved to your account.",
+        "error": "Could not save to your account. It stays in this browser; the next change tries again."
+      },
+      "name": "Name",
+      "logo": "Logo",
+      "logoAlt": "Current logo",
+      "noLogo": "None",
+      "upload": "Upload logo…",
+      "remove": "Remove",
+      "color": "Accent colour",
+      "defaultColor": "Default colour",
+      "reset": "Back to {name}",
+      "errors": {
+        "type": "Use a PNG, JPG, WebP, GIF or SVG image.",
+        "tooLarge": "That image is too large. Try a smaller one (an SVG under 150 KB, or any bitmap under 5 MB).",
+        "unreadable": "That image could not be read."
+      }
+    },
     "backup": {
       "title": "Backup",
       "hint": "Save your settings to a file to take them to another browser or get them back later. The key is never included.",
