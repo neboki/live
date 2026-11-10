@@ -502,6 +502,37 @@
   },
   "settingsPage": {
     "title": "Ajustes",
+    "tabsLabel": "Secciones de ajustes",
+    "tabs": {
+      "general": {
+        "label": "General",
+        "hint": "Idiomas, tema y tu cuenta."
+      },
+      "captions": {
+        "label": "Subtítulos",
+        "hint": "Qué se ve en la barra, cómo se ve y dónde aparece."
+      },
+      "audio": {
+        "label": "Audio y voz",
+        "hint": "Qué se escucha y cómo suena la traducción leída en voz alta."
+      },
+      "accuracy": {
+        "label": "Precisión",
+        "hint": "Palabras y contexto de tus reuniones para que la traducción acierte más."
+      },
+      "connection": {
+        "label": "Conexión y coste",
+        "hint": "Tu clave, la calidad y cuánto puede gastar una sesión."
+      },
+      "brand": {
+        "label": "Tu marca",
+        "hint": "Tu nombre, logo y color en la aplicación."
+      },
+      "data": {
+        "label": "Copia de seguridad",
+        "hint": "Lleva tus ajustes a otro navegador o vuelve a empezar."
+      }
+    },
     "intro": "Se guardan en este navegador y valen para la próxima sesión. Durante una sesión también los tienes en el menú de la barra, dentro o fuera de la ventana flotante.",
     "general": {
       "title": "Idioma y aspecto",

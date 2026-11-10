@@ -502,6 +502,37 @@
   },
   "settingsPage": {
     "title": "Settings",
+    "tabsLabel": "Settings sections",
+    "tabs": {
+      "general": {
+        "label": "General",
+        "hint": "Languages, theme and your account."
+      },
+      "captions": {
+        "label": "Captions",
+        "hint": "What the bar shows, how it looks and where it appears."
+      },
+      "audio": {
+        "label": "Audio and voice",
+        "hint": "What is listened to, and how the translation sounds when read aloud."
+      },
+      "accuracy": {
+        "label": "Accuracy",
+        "hint": "Words and context from your meetings, so the translation gets more right."
+      },
+      "connection": {
+        "label": "Connection and cost",
+        "hint": "Your key, the quality and how much a session may spend."
+      },
+      "brand": {
+        "label": "Your brand",
+        "hint": "Your name, logo and colour in the app."
+      },
+      "data": {
+        "label": "Backup",
+        "hint": "Take your settings to another browser, or start again."
+      }
+    },
     "intro": "Saved in this browser and used for the next session. During a session the bar’s menu has them too, in the page or the floating window.",
     "general": {
       "title": "Language and look",

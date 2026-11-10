@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ACCOUNTS_ENABLED, AccountCard } from '@/modules/account';
 import { ApiKeyField, AudioSourcePicker, PlacementPicker } from '@/modules/onboarding';
@@ -7,19 +8,59 @@ import { isPhoneLayout } from '@/shared/device';
 import BrandEditor from '../BrandEditor/BrandEditor.vue';
 import LanguageSelect from '../LanguageSelect/LanguageSelect.vue';
 import SettingsBackup from '../SettingsBackup/SettingsBackup.vue';
+import SettingsTabs from '../SettingsTabs/SettingsTabs.vue';
 import UiLocaleSelect from '../UiLocaleSelect/UiLocaleSelect.vue';
 import UiThemeSelect from '../UiThemeSelect/UiThemeSelect.vue';
 
+type TabId = 'general' | 'captions' | 'audio' | 'accuracy' | 'connection' | 'brand' | 'data';
+
+const TAB_ICONS: Readonly<Record<TabId, string>> = {
+  general: '⚙️',
+  captions: '💬',
+  audio: '🔊',
+  accuracy: '🎯',
+  connection: '🔑',
+  brand: '🎨',
+  data: '💾',
+};
+const TAB_IDS = Object.keys(TAB_ICONS) as TabId[];
+/** The last tab open, so coming back lands where the person left */
+const TAB_STORAGE_KEY = 'neboki.settings.tab';
+
 /**
- * Every setting on one page, without starting a session: languages and look, what to
- * listen to, the key, then the bar's own options (the same menu as in the bar and the
- * floating window, so both always agree), and a backup of it all.
+ * Every setting without starting a session, one subject per tab: languages and look,
+ * the captions, the sound, accuracy, the key and its cost, the brand, a backup. The
+ * captions, sound and technical tabs show the bar's own menu, one block each, so the
+ * page, the bar and the floating window always agree.
  */
 const { t } = useI18n();
 const canFloat = useFloatingWindow().isSupported;
 const overlay = useOverlayStore();
-/** A phone shows the few settings it needs, and the rest folded under "More options" */
+/** A phone also gets its few everyday settings first, under General */
 const phone = isPhoneLayout(canFloat);
+const uid = useId();
+
+const tabs = computed(() =>
+  TAB_IDS.map((id) => ({ id, icon: TAB_ICONS[id], label: t(`settingsPage.tabs.${id}.label`) })),
+);
+
+function readTab(): TabId {
+  try {
+    const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
+    return TAB_IDS.find((id) => id === saved) ?? 'general';
+  } catch {
+    return 'general';
+  }
+}
+
+const active = ref<TabId>(readTab());
+watch(active, (id) => {
+  try {
+    sessionStorage.setItem(TAB_STORAGE_KEY, id);
+  } catch {
+    // Storage blocked: the page simply opens on General next time
+  }
+});
 </script>
 
 <template>
@@ -30,124 +71,145 @@ const phone = isPhoneLayout(canFloat);
     </header>
 
     <div class="settings-view__content lg-page">
-      <div class="settings-view__grid lg-glass-page">
-        <section class="lg-card settings-view__card" aria-labelledby="settings-general">
-          <h2 id="settings-general" class="lg-card__title">
-            {{ t('settingsPage.general.title') }}
-          </h2>
-          <div class="settings-view__row">
-            <span class="settings-view__label">
-              {{ t('settingsPage.general.translate') }}
-              <small>{{ t('settingsPage.general.translateHint') }}</small>
-            </span>
-            <LanguageSelect />
-          </div>
-          <div class="settings-view__row">
-            <span class="settings-view__label">
-              {{ t('nav.uiLanguage') }}
-              <small>{{ t('settingsPage.general.uiLanguageHint') }}</small>
-            </span>
-            <UiLocaleSelect class="settings-view__pick" />
-          </div>
-          <div class="settings-view__row">
-            <span class="settings-view__label">
-              {{ t('nav.theme.label') }}
-              <small>{{ t('settingsPage.general.themeHint') }}</small>
-            </span>
-            <UiThemeSelect class="settings-view__pick" />
-          </div>
-        </section>
-
-        <!-- A phone keeps only what it needs: voice and text size, then the key -->
-        <section v-if="phone" class="lg-card settings-view__card" aria-labelledby="settings-basics">
-          <h2 id="settings-basics" class="lg-card__title">{{ t('mobile.basics.title') }}</h2>
-          <label class="settings-view__switch" for="settings-voice">
-            <span class="settings-view__label">
-              {{ t('mobile.basics.voice') }}
-              <small>{{ t('mobile.basics.voiceHint') }}</small>
-            </span>
-            <input id="settings-voice" v-model="overlay.options.voice" type="checkbox" />
-          </label>
-          <label class="settings-view__slider" for="settings-volume">
-            <span class="settings-view__label">{{ t('mobile.basics.volume') }}</span>
-            <input
-              id="settings-volume"
-              v-model.number="overlay.voiceVolume"
-              type="range"
-              min="0"
-              max="2"
-              step="0.05"
-            />
-          </label>
-          <label class="settings-view__slider" for="settings-scale">
-            <span class="settings-view__label">{{ t('mobile.basics.textSize') }}</span>
-            <input
-              id="settings-scale"
-              v-model.number="overlay.scale"
-              type="range"
-              min="0.8"
-              max="1.8"
-              step="0.1"
-            />
-          </label>
-        </section>
+      <div class="settings-view__layout lg-glass-page">
+        <SettingsTabs
+          v-model="active"
+          class="settings-view__tabs"
+          :tabs="tabs"
+          :label="t('settingsPage.tabsLabel')"
+          :id-prefix="uid"
+        />
 
         <section
-          v-if="phone"
-          class="lg-card settings-view__card"
-          aria-labelledby="settings-key-phone"
+          :id="`${uid}-panel-${active}`"
+          :key="active"
+          class="settings-view__panel"
+          role="tabpanel"
+          :aria-labelledby="`${uid}-tab-${active}`"
+          tabindex="0"
         >
-          <h2 id="settings-key-phone" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
-          <ApiKeyField />
-        </section>
+          <header class="settings-view__panel-head">
+            <h2 class="settings-view__panel-title">{{ t(`settingsPage.tabs.${active}.label`) }}</h2>
+            <p class="settings-view__panel-hint">{{ t(`settingsPage.tabs.${active}.hint`) }}</p>
+          </header>
 
-        <component :is="phone ? 'details' : 'div'" class="settings-view__extra">
-          <summary v-if="phone" class="settings-view__more">{{ t('mobile.moreSettings') }}</summary>
-          <!-- The bar's menu: each of its groups becomes a card of this grid, right under
-               the languages -->
-          <SettingsMenu class="settings-view__menu" popped page />
+          <template v-if="active === 'general'">
+            <div class="lg-card settings-view__card">
+              <div class="settings-view__row">
+                <span class="settings-view__label">
+                  {{ t('settingsPage.general.translate') }}
+                  <small>{{ t('settingsPage.general.translateHint') }}</small>
+                </span>
+                <LanguageSelect />
+              </div>
+              <div class="settings-view__row">
+                <span class="settings-view__label">
+                  {{ t('nav.uiLanguage') }}
+                  <small>{{ t('settingsPage.general.uiLanguageHint') }}</small>
+                </span>
+                <UiLocaleSelect class="settings-view__pick" />
+              </div>
+              <div class="settings-view__row">
+                <span class="settings-view__label">
+                  {{ t('nav.theme.label') }}
+                  <small>{{ t('settingsPage.general.themeHint') }}</small>
+                </span>
+                <UiThemeSelect class="settings-view__pick" />
+              </div>
+            </div>
 
-          <section class="lg-card settings-view__card" aria-labelledby="settings-listen">
-            <h2 id="settings-listen" class="lg-card__title">{{ t('settingsPage.listen') }}</h2>
-            <AudioSourcePicker />
-            <PlacementPicker v-if="!phone" :can-float="canFloat" />
-          </section>
+            <!-- A phone's everyday settings: voice and text size -->
+            <section
+              v-if="phone"
+              class="lg-card settings-view__card"
+              :aria-labelledby="`${uid}-basics`"
+            >
+              <h3 :id="`${uid}-basics`" class="lg-card__title">{{ t('mobile.basics.title') }}</h3>
+              <label class="settings-view__switch" :for="`${uid}-voice`">
+                <span class="settings-view__label">
+                  {{ t('mobile.basics.voice') }}
+                  <small>{{ t('mobile.basics.voiceHint') }}</small>
+                </span>
+                <input :id="`${uid}-voice`" v-model="overlay.options.voice" type="checkbox" />
+              </label>
+              <label class="settings-view__slider" :for="`${uid}-volume`">
+                <span class="settings-view__label">{{ t('mobile.basics.volume') }}</span>
+                <input
+                  :id="`${uid}-volume`"
+                  v-model.number="overlay.voiceVolume"
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                />
+              </label>
+              <label class="settings-view__slider" :for="`${uid}-scale`">
+                <span class="settings-view__label">{{ t('mobile.basics.textSize') }}</span>
+                <input
+                  :id="`${uid}-scale`"
+                  v-model.number="overlay.scale"
+                  type="range"
+                  min="0.8"
+                  max="1.8"
+                  step="0.1"
+                />
+              </label>
+            </section>
 
-          <section v-if="!phone" class="lg-card settings-view__card" aria-labelledby="settings-key">
-            <h2 id="settings-key" class="lg-card__title">{{ t('settingsPage.key') }}</h2>
-            <ApiKeyField />
-          </section>
+            <section
+              v-if="ACCOUNTS_ENABLED"
+              class="lg-card settings-view__card"
+              :aria-labelledby="`${uid}-account`"
+            >
+              <h3 :id="`${uid}-account`" class="lg-card__title">{{ t('account.title') }}</h3>
+              <AccountCard />
+            </section>
+          </template>
 
-          <section
-            v-if="ACCOUNTS_ENABLED"
-            class="lg-card settings-view__card"
-            aria-labelledby="settings-account"
-          >
-            <h2 id="settings-account" class="lg-card__title">{{ t('account.title') }}</h2>
-            <AccountCard />
-          </section>
+          <template v-else-if="active === 'captions'">
+            <SettingsMenu class="settings-view__menu" popped page only="see" />
+            <div v-if="!phone" class="lg-card settings-view__card">
+              <PlacementPicker :can-float="canFloat" />
+            </div>
+          </template>
 
-          <section class="lg-card settings-view__card" aria-labelledby="settings-brand">
-            <h2 id="settings-brand" class="lg-card__title">
-              {{ t('settingsPage.brand.title') }}
-            </h2>
+          <template v-else-if="active === 'audio'">
+            <div class="lg-card settings-view__card">
+              <AudioSourcePicker />
+            </div>
+            <SettingsMenu class="settings-view__menu" popped page only="hear" />
+          </template>
+
+          <SettingsMenu
+            v-else-if="active === 'accuracy'"
+            class="settings-view__menu"
+            popped
+            page
+            only="accuracy"
+          />
+
+          <template v-else-if="active === 'connection'">
+            <div class="lg-card settings-view__card">
+              <ApiKeyField />
+            </div>
+            <SettingsMenu class="settings-view__menu" popped page only="quality" />
+          </template>
+
+          <div v-else-if="active === 'brand'" class="lg-card settings-view__card">
             <BrandEditor />
-          </section>
+          </div>
 
-          <section class="lg-card settings-view__card" aria-labelledby="settings-backup">
-            <h2 id="settings-backup" class="lg-card__title">
-              {{ t('settingsPage.backup.title') }}
-            </h2>
+          <div v-else class="lg-card settings-view__card">
             <SettingsBackup />
-          </section>
-        </component>
+          </div>
+        </section>
       </div>
     </div>
   </main>
 </template>
 
 <style scoped lang="scss">
-$card-gap: 20px;
+$gap: 16px;
 
 .settings-view {
   min-height: 100vh;
@@ -162,41 +224,97 @@ $card-gap: 20px;
 
   &__content {
     display: grid;
-    gap: $card-gap;
     align-content: start;
   }
 
-  // Cards flow into as many columns as fit, each kept whole
-  &__grid {
-    columns: 380px auto;
-    column-gap: $card-gap;
+  // Tabs in a column beside one readable column of cards; stacked on a phone
+  &__layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 720px);
+    gap: 28px;
+    align-items: start;
+
+    @media (width <= 860px) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: $gap;
+    }
+  }
+
+  &__tabs {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+
+    @media (width <= 860px) {
+      position: static;
+    }
+  }
+
+  &__panel {
+    display: grid;
+    gap: $gap;
+    min-width: 0;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 6px;
+      border-radius: var(--radius-lg);
+    }
+  }
+
+  &__panel-head {
+    display: grid;
+    gap: 4px;
+  }
+
+  &__panel-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  &__panel-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13.5px;
   }
 
   &__card {
-    margin: 0 0 $card-gap;
-    break-inside: avoid;
+    display: grid;
+    gap: 12px;
+    margin: 0;
   }
 
-  // The menu's own box disappears: its groups sit in the grid like the other cards
+  // The menu's own box disappears: its blocks sit in the panel like the other cards
   &__menu {
     display: contents;
   }
 
-  // On a computer the wrapper of the extra cards is invisible; on a phone it folds them
-  div#{&}__extra {
-    display: contents;
-  }
+  &__panel :deep(.menu .menu__group) {
+    gap: 4px;
+    margin: 0;
 
-  &__more {
-    min-height: 52px;
-    margin-bottom: $card-gap;
-    padding: 14px 18px;
+    // The menu's rows carry 8px of their own, so the text lines up with the other cards
+    padding: clamp(18px, 2vw, 24px) calc(clamp(18px, 2vw, 24px) - 8px);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--panel);
-    font-size: 17px;
+    box-shadow: var(--shadow-xs);
+  }
+
+  // The tab already names the subject: the menu's own block title would repeat it
+  &__panel :deep(.menu__title) {
+    display: none;
+  }
+
+  // The smaller blocks inside a menu group, as sub-headings here
+  &__panel :deep(:is(.look__title, .sound__title, .quality__title)) {
+    padding: 8px 0 6px;
+    color: var(--fg);
+    font-size: 14px;
     font-weight: 600;
-    cursor: pointer;
+    letter-spacing: -0.01em;
+    text-transform: none;
   }
 
   &__switch,
@@ -225,42 +343,17 @@ $card-gap: 20px;
     }
   }
 
-  &__grid :deep(.menu .menu__group) {
-    margin: 0 0 $card-gap;
-    break-inside: avoid;
-    gap: 4px;
-
-    // The menu's rows carry 8px of their own, so the text lines up with the other cards
-    padding: clamp(18px, 2vw, 24px) calc(clamp(18px, 2vw, 24px) - 8px);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    background: var(--panel);
-    box-shadow: var(--shadow-xs);
-  }
-
-  // The menu's small group titles, as card titles here
-  &__grid :deep(:is(.menu__title, .look__title, .sound__title, .quality__title)) {
-    padding: 0 8px 6px;
-    color: var(--fg);
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    text-transform: none;
-  }
-
-  &__card {
-    display: grid;
-    gap: 12px;
-  }
-
   &__row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 16px;
     align-items: center;
     justify-content: space-between;
-    padding-top: 12px;
-    border-top: 1px solid var(--line-soft);
+
+    & + & {
+      padding-top: 12px;
+      border-top: 1px solid var(--line-soft);
+    }
   }
 
   &__label {

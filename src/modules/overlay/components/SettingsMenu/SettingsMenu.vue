@@ -58,7 +58,14 @@ const props = defineProps<{
   popped?: boolean;
   /** On the settings page: the technical options, and nothing of a running conversation */
   page?: boolean;
+  /** Only this block, for one tab of the settings page; every block when left out */
+  only?: 'see' | 'hear' | 'quality' | 'accuracy';
 }>();
+
+/** A block shows unless the menu was asked for another one */
+function shows(group: NonNullable<typeof props.only>): boolean {
+  return props.only === undefined || props.only === group;
+}
 
 const store = useOverlayStore();
 const settings = useSettingsStore();
@@ -176,7 +183,11 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
 <template>
   <div class="menu" :class="{ 'menu--page': page }">
     <!-- 👁 See -->
-    <section class="menu__group menu__group--see" :aria-labelledby="`${uid}-see`">
+    <section
+      v-if="shows('see')"
+      class="menu__group menu__group--see"
+      :aria-labelledby="`${uid}-see`"
+    >
       <h3 :id="`${uid}-see`" class="menu__title">
         <span aria-hidden="true">👁</span> {{ t('overlay.groups.see') }}
       </h3>
@@ -200,7 +211,11 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
     </section>
 
     <!-- 👂 Hear -->
-    <section class="menu__group menu__group--hear" :aria-labelledby="`${uid}-hear`">
+    <section
+      v-if="shows('hear')"
+      class="menu__group menu__group--hear"
+      :aria-labelledby="`${uid}-hear`"
+    >
       <h3 :id="`${uid}-hear`" class="menu__title">
         <span aria-hidden="true">👂</span> {{ t('overlay.groups.hear') }}
       </h3>
@@ -265,7 +280,7 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
 
     <!-- The technical options: set once, on the settings page -->
     <template v-else>
-      <section class="menu__group menu__group--quality">
+      <section v-if="shows('quality')" class="menu__group menu__group--quality">
         <ListeningPicker />
         <QualityPicker />
         <label class="menu__field menu__limit">
@@ -290,7 +305,11 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         </button>
       </section>
 
-      <section class="menu__group menu__group--accuracy" :aria-labelledby="`${uid}-accuracy`">
+      <section
+        v-if="shows('accuracy')"
+        class="menu__group menu__group--accuracy"
+        :aria-labelledby="`${uid}-accuracy`"
+      >
         <h3 :id="`${uid}-accuracy`" class="menu__title">{{ t('overlay.groups.accuracy') }}</h3>
         <GlossaryEditor />
         <MeetingEditor />

@@ -23,7 +23,7 @@ describe('App', () => {
     await item?.trigger('click');
     await flushPromises();
 
-    expect(wrapper.find('.settings-view .menu--page').exists()).toBe(true);
+    expect(wrapper.find('.settings-view [role="tablist"]').exists()).toBe(true);
     expect(wrapper.find('.start').exists()).toBe(false);
     wrapper.unmount();
   });
