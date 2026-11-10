@@ -16,3 +16,4 @@ export { ACCOUNTS_ENABLED } from './firebase';
 export { default as AccountCard } from './components/AccountCard/AccountCard.vue';
 export { default as AccountMenu } from './components/AccountMenu/AccountMenu.vue';
 export { default as CloudSessionActions } from './components/CloudSessionActions/CloudSessionActions.vue';
+export { default as ConversationsView } from './components/ConversationsView/ConversationsView.vue';

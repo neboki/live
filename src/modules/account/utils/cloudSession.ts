@@ -1,10 +1,20 @@
 // How a conversation is laid out in Firestore: one document with what describes it, and
 // its sentences in numbered chunks under it, since a document holds at most 1 MiB.
 //
-//   users/{uid}/sessions/{sessionId}            CloudSessionDoc (+ updatedAt)
+//   users/{uid}/sessions/{sessionId}            CloudSessionDoc (+ updatedAt, and the
+//                                               person's own title and starred, if set)
 //   users/{uid}/sessions/{sessionId}/chunks/{n} { lines: SessionLine[] } (CHUNK_SIZE each)
 
-import type { SessionLine, SessionPair, SessionSnapshot, Usage } from '@/modules/session';
+import {
+  parseSnapshot,
+  type SessionLine,
+  type SessionPair,
+  type SessionSnapshot,
+  type Usage,
+} from '@/modules/session';
+
+/** Longest name a person can give a conversation (kept in step with firestore.rules) */
+export const TITLE_MAX = 120;
 
 /** Sentences per chunk: even long sentences and their translations stay far below 1 MiB */
 export const CHUNK_SIZE = 200;
@@ -71,10 +81,32 @@ export interface CloudHistoryItem {
   endedAt: number | null;
   pair: SessionPair;
   lineCount: number;
+  /** The name the person gave it; empty until they do */
+  title: string;
+  starred: boolean;
+  summary: string[];
+  glossary: string;
+  usage: Usage[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+type ItemDetails = Pick<CloudHistoryItem, 'summary' | 'glossary' | 'usage'>;
+
+/** The checked summary, terms and usage of a document; empty when any is malformed */
+function details(data: Record<string, unknown>): ItemDetails {
+  try {
+    const snapshot = parseSnapshot({ ...data, lines: [] });
+    return {
+      summary: [...snapshot.summary],
+      glossary: snapshot.glossary,
+      usage: snapshot.usage.map((entry) => ({ ...entry })),
+    };
+  } catch {
+    return { summary: [], glossary: '', usage: [] };
+  }
 }
 
 /** A history entry from a conversation document; null when it is not one of ours */
@@ -90,7 +122,15 @@ export function toHistoryItem(id: string, data: unknown): CloudHistoryItem | nul
       to: typeof pair.to === 'string' ? pair.to : '',
     },
     lineCount: typeof data.lineCount === 'number' ? data.lineCount : 0,
+    title: typeof data.title === 'string' ? data.title.slice(0, TITLE_MAX) : '',
+    starred: data.starred === true,
+    ...details(data),
   };
+}
+
+/** A name as it is kept: on one line, trimmed, at most TITLE_MAX characters */
+export function cleanTitle(title: string): string {
+  return title.replace(/\s+/g, ' ').trim().slice(0, TITLE_MAX);
 }
 
 /**

@@ -14,7 +14,7 @@ service cloud.firestore {
       allow create, update: if isOwner(uid)
         && request.resource.data.keys().hasOnly([
           'version', 'startedAt', 'endedAt', 'pair', 'glossary', 'summary', 'usage',
-          'lineCount', 'chunkSize', 'updatedAt'
+          'lineCount', 'chunkSize', 'updatedAt', 'title', 'starred'
         ])
         && request.resource.data.version is int
         && request.resource.data.startedAt is int
@@ -22,7 +22,13 @@ service cloud.firestore {
         && request.resource.data.summary is list
         && request.resource.data.usage is list
         && request.resource.data.glossary is string
-        && request.resource.data.updatedAt == request.time;
+        && request.resource.data.updatedAt == request.time
+        // The person's own name for it (TITLE_MAX in cloudSession.ts) and star
+        && (!('title' in request.resource.data)
+          || (request.resource.data.title is string
+            && request.resource.data.title.size() <= 120))
+        && (!('starred' in request.resource.data)
+          || request.resource.data.starred is bool);
 
       match /chunks/{chunkId} {
         allow read, delete: if isOwner(uid);

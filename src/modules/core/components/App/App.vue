@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue';
-import { CloudSessionActions } from '@/modules/account';
+import { CloudSessionActions, ConversationsView } from '@/modules/account';
 import { LiveCaptions, LiveView, MobileLiveView, useLiveSession } from '@/modules/live';
 import { MobileHome, OnboardingView } from '@/modules/onboarding';
 import { useFloatingWindow } from '@/modules/overlay';
@@ -46,6 +46,7 @@ function toTop(): void {
       </SessionView>
       <PrivacyView v-else-if="appPage.privacyOpen" />
       <SettingsView v-else-if="appPage.settingsOpen" />
+      <ConversationsView v-else-if="appPage.conversationsOpen" />
       <MobileHome v-else-if="phone" @privacy="appPage.openPrivacy()" />
       <OnboardingView v-else @privacy="appPage.openPrivacy()" />
     </Transition>

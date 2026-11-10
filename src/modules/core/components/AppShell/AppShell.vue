@@ -35,7 +35,8 @@ import { brand } from '@/shared/brand/brand';
 import { HOME_URL, PRIVACY_PATH, REPO_URL } from '@/shared/links';
 
 /** Which page the main area shows, mirrored from App's own choice */
-type Page = 'live' | 'recent' | 'file' | 'cloud' | 'privacy' | 'settings' | 'start';
+type Page =
+  'live' | 'recent' | 'file' | 'cloud' | 'privacy' | 'settings' | 'conversations' | 'start';
 
 /** The picker suggests our files; a renamed .json still opens */
 const ACCEPT = `${SESSION_FILE_EXTENSION},.json,application/json`;
@@ -44,6 +45,8 @@ const TICK_MS = 1000;
 const DRAWER_QUERY = '(width < 900px)';
 /** Remembers whether the user opened the sidebar out; it starts as a column of icons */
 const EXPANDED_KEY = 'sidebar-expanded';
+/** The latest conversations of the account listed in the sidebar; all are on their page */
+const SIDEBAR_SAVED = 6;
 
 /**
  * The app frame: a sidebar to move between a new session, the live one and the
@@ -83,6 +86,7 @@ const page = computed<Page>(() => {
   if (viewer.snapshot) return viewer.source;
   if (appPage.privacyOpen) return 'privacy';
   if (appPage.settingsOpen) return 'settings';
+  if (appPage.conversationsOpen) return 'conversations';
   return 'start';
 });
 const hasRecent = computed(() => record.startedAt !== null && record.endedAt !== null);
@@ -93,11 +97,14 @@ const recentLabel = computed(() => {
   );
   return `${time} · ${elapsed(sessionDuration(record))}`;
 });
-// The one that just ended is already "Last conversation"
+// The one that just ended is already "Last conversation"; the rest live on their own page
 const savedItems = computed(() =>
-  cloudHistory.items.filter((item) => !hasRecent.value || item.startedAt !== record.startedAt),
+  cloudHistory.items
+    .filter((item) => !hasRecent.value || item.startedAt !== record.startedAt)
+    .slice(0, SIDEBAR_SAVED),
 );
 function savedLabel(item: CloudHistoryItem): string {
+  if (item.title) return item.title;
   const when = new Intl.DateTimeFormat(locale.value, {
     dateStyle: 'short',
     timeStyle: 'short',
@@ -123,12 +130,14 @@ function goStart(): void {
   viewer.close();
   appPage.settingsOpen = false;
   appPage.privacyOpen = false;
+  appPage.conversationsOpen = false;
   menuOpen.value = false;
 }
 
 function goRecent(): void {
   appPage.settingsOpen = false;
   appPage.privacyOpen = false;
+  appPage.conversationsOpen = false;
   viewer.showRecent();
   menuOpen.value = false;
 }
@@ -136,14 +145,24 @@ function goRecent(): void {
 function goSaved(id: string): void {
   appPage.settingsOpen = false;
   appPage.privacyOpen = false;
+  appPage.conversationsOpen = false;
   menuOpen.value = false;
   void cloudHistory.open(id);
+}
+
+function goConversations(): void {
+  viewer.close();
+  appPage.settingsOpen = false;
+  appPage.privacyOpen = false;
+  appPage.conversationsOpen = true;
+  menuOpen.value = false;
 }
 
 // A conversation on screen would hide the settings page: close it first
 function goSettings(): void {
   viewer.close();
   appPage.privacyOpen = false;
+  appPage.conversationsOpen = false;
   appPage.settingsOpen = true;
   menuOpen.value = false;
 }
@@ -182,6 +201,7 @@ function openFile(file: File | undefined): void {
   menuOpen.value = false;
   appPage.settingsOpen = false;
   appPage.privacyOpen = false;
+  appPage.conversationsOpen = false;
   viewer.openFile(file).catch((err: unknown) => logError('Opening a session failed', err));
 }
 
@@ -340,6 +360,29 @@ onBeforeUnmount(() => {
         </button>
 
         <p class="shell__group lg-label">{{ t('nav.conversations') }}</p>
+
+        <!-- Every conversation of the account, to search and look after them -->
+        <button
+          v-if="account.enabled"
+          class="shell__item"
+          :class="{ 'shell__item--on': page === 'conversations' }"
+          type="button"
+          :disabled="session.showLive"
+          :aria-current="page === 'conversations' ? 'page' : undefined"
+          :title="tip(t('nav.allConversations'))"
+          @click="goConversations"
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="3" y="3.5" width="14" height="13" rx="2.5" />
+            <path d="M6.5 7.5h7M6.5 10h7M6.5 12.5h4" />
+          </svg>
+          <span class="shell__label">{{ t('nav.allConversations') }}</span>
+          <span
+            v-if="cloudHistory.items.length > 0"
+            class="shell__tag shell__tag--count shell__label"
+            >{{ cloudHistory.items.length }}{{ cloudHistory.hasMore ? '+' : '' }}</span
+          >
+        </button>
 
         <button
           v-if="hasRecent"
@@ -801,6 +844,10 @@ $drawer-at: 900px;
     color: var(--accent-text);
     font: 500 11.5px var(--font-mono);
     font-variant-numeric: tabular-nums;
+
+    &--count {
+      color: var(--subtle);
+    }
   }
 
   &__dot {

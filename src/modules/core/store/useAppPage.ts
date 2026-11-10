@@ -17,6 +17,9 @@ function atPrivacy(): boolean {
 export const useAppPage = defineStore('appPage', () => {
   const settingsOpen = ref(false);
   const privacyOpen = ref(atPrivacy());
+  /** The page of every conversation kept in the account. One opened from it shows on top;
+   * closing that one comes back here. */
+  const conversationsOpen = ref(false);
 
   watch(privacyOpen, (open) => {
     if (typeof window === 'undefined' || open === atPrivacy()) return;
@@ -39,8 +42,9 @@ export const useAppPage = defineStore('appPage', () => {
   /** Shows the privacy page in place of the settings */
   function openPrivacy(): void {
     settingsOpen.value = false;
+    conversationsOpen.value = false;
     privacyOpen.value = true;
   }
 
-  return { settingsOpen, privacyOpen, openPrivacy };
+  return { settingsOpen, privacyOpen, conversationsOpen, openPrivacy };
 });

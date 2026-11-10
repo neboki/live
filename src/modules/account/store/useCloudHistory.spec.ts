@@ -9,6 +9,7 @@ interface Ref {
 const store = vi.hoisted(() => ({
   docs: new Map<string, Record<string, unknown>>(),
   failReads: false,
+  failWrites: false,
 }));
 
 function children(path: string): { id: string; ref: Ref; data: () => Record<string, unknown> }[] {
@@ -31,6 +32,7 @@ vi.mock('../firebase', () => ({
 vi.mock('firebase/auth', () => ({ onAuthStateChanged: vi.fn() }));
 
 vi.mock('firebase/firestore', () => {
+  const DELETE = Symbol('delete');
   const join = (parent: { path?: string }, segments: string[]): Ref => ({
     path: [parent.path, ...segments].filter(Boolean).join('/'),
   });
@@ -40,6 +42,17 @@ vi.mock('firebase/firestore', () => {
     query: (ref: Ref): Ref => ref,
     orderBy: (): null => null,
     limit: (): null => null,
+    startAfter: (): null => null,
+    serverTimestamp: (): string => 'now',
+    deleteField: (): symbol => DELETE,
+    updateDoc: (ref: Ref, fields: Record<string, unknown>): Promise<void> => {
+      if (store.failWrites) return Promise.reject(new Error('denied'));
+      const merged = Object.entries({ ...store.docs.get(ref.path), ...fields }).filter(
+        ([, value]) => value !== DELETE,
+      );
+      store.docs.set(ref.path, Object.fromEntries(merged));
+      return Promise.resolve();
+    },
     getDocs: (ref: Ref): Promise<{ docs: ReturnType<typeof children> }> => {
       if (store.failReads) return Promise.reject(new Error('offline'));
       const docs = children(ref.path).sort(
@@ -102,6 +115,7 @@ describe('useCloudHistory', () => {
     setActivePinia(createPinia());
     store.docs.clear();
     store.failReads = false;
+    store.failWrites = false;
     window.localStorage.clear();
   });
 
@@ -176,5 +190,44 @@ describe('useCloudHistory', () => {
     await history.load();
     expect(history.errorKey).toBe('account.history.loadFailed');
     expect(history.loading).toBe(false);
+  });
+
+  it('names and stars a conversation, and an empty name removes it', async () => {
+    saved('1000', 1000, [['a']]);
+    signIn();
+    const history = useCloudHistory();
+    await history.load();
+    expect(await history.rename('1000', '  Weekly   sync ')).toBe(true);
+    expect(await history.setStarred('1000', true)).toBe(true);
+    expect(store.docs.get(`${BASE}/1000`)).toMatchObject({ title: 'Weekly sync', starred: true });
+    expect(history.items[0]).toMatchObject({ title: 'Weekly sync', starred: true });
+    await history.rename('1000', '');
+    expect(store.docs.get(`${BASE}/1000`)).not.toHaveProperty('title');
+  });
+
+  it('puts the name back when saving it failed', async () => {
+    saved('1000', 1000, [['a']]);
+    signIn();
+    const history = useCloudHistory();
+    await history.load();
+    store.failWrites = true;
+    expect(await history.rename('1000', 'Nope')).toBe(false);
+    expect(history.items[0]?.title).toBe('');
+    expect(history.errorKey).toBe('account.history.updateFailed');
+  });
+
+  it('deletes a selection and reads what was said to search it', async () => {
+    saved('1000', 1000, [['alpha']]);
+    saved('2000', 2000, [['beta']]);
+    saved('3000', 3000, [['gamma']]);
+    signIn();
+    const history = useCloudHistory();
+    await history.load();
+    await history.indexContent();
+    expect(history.texts.get('2000')).toBe('beta\nt:beta');
+    expect(await history.removeMany(['1000', '3000'])).toBe(true);
+    expect(history.items.map((item) => item.id)).toEqual(['2000']);
+    expect(history.texts.has('1000')).toBe(false);
+    expect([...store.docs.keys()].every((key) => key.includes('/2000'))).toBe(true);
   });
 });

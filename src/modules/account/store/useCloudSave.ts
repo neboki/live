@@ -92,7 +92,8 @@ export const useCloudSave = defineStore('cloud-save', () => {
       ]);
       const session = doc(db, 'users', target.uid, 'sessions', target.id);
       const batch = writeBatch(db);
-      batch.set(session, { ...sessionDoc, updatedAt: serverTimestamp() });
+      // Merged, so a name or star the person gave it meanwhile is kept
+      batch.set(session, { ...sessionDoc, updatedAt: serverTimestamp() }, { merge: true });
       for (const index of chunksToWrite(target.savedLines, total)) {
         batch.set(doc(session, 'chunks', String(index)), {
           lines: chunkLines(record.lines, index),

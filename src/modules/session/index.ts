@@ -13,7 +13,11 @@ export {
   hasUnpricedUsage,
   perHourUsd,
 } from './utils/costUsd';
-export { downloadSubtitles } from './composables/useExportSession';
+export {
+  downloadMarkdown,
+  downloadMarkdownBundle,
+  downloadSubtitles,
+} from './composables/useExportSession';
 export { formatEur, usdToEur } from './utils/formatCost';
 export { SESSION_FILE_EXTENSION, parseSnapshot } from './utils/sessionFile';
 export { elapsed, sessionDuration } from './utils/toMarkdown';

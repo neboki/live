@@ -63,6 +63,28 @@ export function downloadMarkdown(record: SessionSnapshot): boolean {
   return downloadText(sessionFilename(record.startedAt), markdown);
 }
 
+/**
+ * Downloads several sessions as one Markdown file, one after another, oldest first, so a
+ * whole selection leaves in one download. False when there was none or it failed (logged).
+ */
+export function downloadMarkdownBundle(records: readonly SessionSnapshot[]): boolean {
+  const ordered = records
+    .filter(
+      (record): record is SessionSnapshot & { startedAt: number } => record.startedAt !== null,
+    )
+    .sort((a, b) => a.startedAt - b.startedAt);
+  const first = ordered[0];
+  if (!first) return false;
+  const labels = markdownLabels();
+  const locale = unref(i18n.global.locale);
+  const markdown = ordered.map((record) => toMarkdown(record, labels, locale)).join('\n\n---\n\n');
+  const name =
+    ordered.length === 1
+      ? sessionFilename(first.startedAt)
+      : sessionFilename(first.startedAt, `-x${ordered.length}.md`);
+  return downloadText(name, markdown);
+}
+
 /** Downloads a session as subtitles for a recording of the call. False when it failed (logged). */
 export function downloadSubtitles(record: SessionSnapshot, format: SubtitleFormat): boolean {
   if (record.startedAt === null) return false;
