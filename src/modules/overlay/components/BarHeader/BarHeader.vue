@@ -1,33 +1,42 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { costUsd, formatEur, hasUnpricedUsage, useSessionRecord } from '@/modules/session';
-import { LanguageSelect } from '@/modules/settings';
+import { costUsd, formatEur, usdToEur, useSessionRecord } from '@/modules/session';
+import { LanguageSelect, useSettingsStore } from '@/modules/settings';
+import { useQuickControls } from '../../composables/useQuickControls';
+import { NEAR_SPEND_LIMIT } from '../../constants';
 import { useOverlayStore } from '../../store/useOverlayStore';
+import ListeningBadge from '../ListeningBadge/ListeningBadge.vue';
+import QuickStepper from '../QuickStepper/QuickStepper.vue';
 
 /** From this delay on the captions are running behind, and the bar says so */
 const SLOW_LATENCY_MS = 4000;
 
-/** Top row of the caption bar: status, languages, delay and the bar's buttons. */
+/**
+ * Top row of the caption bar. The same six controls wherever the bar is, always in the
+ * same order: Pause, Volume, Text size, Settings, Float / Back and Stop. Everything else
+ * is in the settings. Beside them, whether it is listening (big) and the languages.
+ */
 defineProps<{
   /** A real session: the target language can be changed from the language pill */
   live?: boolean;
   popped?: boolean;
   canPopOut?: boolean;
   menuOpen?: boolean;
-  /** A live session's floating window: a Stop button instead of the pop in/out one */
+  /** A live session: offers Stop */
   stoppable?: boolean;
-  /**
-   * The bar fills the page: only Pause, Float and the settings, with their names. The
-   * rest is in the settings, and Stop in the page's header
-   */
+  /** The bar fills the page: there is room to name each button */
   page?: boolean;
+  /** The session stopped on an error: the listening light turns red */
+  error?: boolean;
 }>();
 
 const emit = defineEmits<{ 'toggle-menu': []; 'toggle-pop': []; stop: [] }>();
 
 const store = useOverlayStore();
+const settings = useSettingsStore();
 const record = useSessionRecord();
+const quick = useQuickControls();
 const { t, locale } = useI18n();
 
 const latencyLabel = computed(() => {
@@ -41,12 +50,12 @@ const latencyLabel = computed(() => {
 
 const slow = computed(() => (store.latencyMs ?? 0) >= SLOW_LATENCY_MS);
 
-/** Running estimate of what this session has cost, in euros */
-const costLabel = computed(() =>
-  hasUnpricedUsage(record.usage)
-    ? t('overlay.cost.unknown')
-    : formatEur(costUsd(record.usage), locale.value),
-);
+/** The cost is in the settings; the bar only shows it once the spending limit is close */
+const nearLimit = computed(() => {
+  const limit = settings.spendLimitEur;
+  return limit !== null && usdToEur(costUsd(record.usage)) >= limit * NEAR_SPEND_LIMIT;
+});
+const costLabel = computed(() => formatEur(costUsd(record.usage), locale.value));
 </script>
 
 <template>
@@ -58,17 +67,7 @@ const costLabel = computed(() =>
       'bar-header--page': page,
     }"
   >
-    <span
-      class="bar-header__status"
-      :class="{ 'bar-header__status--paused': store.paused }"
-      :title="popped ? `${t('overlay.latency')}: ${latencyLabel}` : undefined"
-    >
-      <i class="bar-header__dot" aria-hidden="true"></i>
-      <span class="bar-header__label">
-        {{ store.paused ? t('overlay.paused') : t('overlay.listening') }}
-      </span>
-      <span class="bar-header__eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-    </span>
+    <ListeningBadge :error="error" />
     <!-- In the floating window the languages are in its title bar; a live session keeps the picker -->
     <span v-if="!popped || live" class="bar-header__pair">
       {{ store.pair.from }}
@@ -78,77 +77,28 @@ const costLabel = computed(() =>
       <LanguageSelect v-if="live" compact />
       <template v-else>{{ store.pair.to }}</template>
     </span>
-    <!-- No delay until the first sentence is measured; the floating window only shows it when running behind -->
+    <!-- Only when the captions are running behind -->
     <span
-      v-if="store.latencyMs !== null && ((!popped && !page) || slow)"
+      v-if="store.latencyMs !== null && slow"
       class="bar-header__latency"
-      :class="{ 'bar-header__latency--slow': slow }"
-      :title="slow ? t('overlay.slow') : t('overlay.latency')"
+      :title="t('overlay.slow')"
     >
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path d="M9.5 1 3 9h4.5l-1 6L13 7H8.5z" fill="currentColor" />
       </svg>
       {{ latencyLabel }}
     </span>
-
     <span
-      v-if="live"
+      v-if="live && nearLimit"
       class="bar-header__cost"
-      :title="t('overlay.cost.hint')"
+      :title="t('overlay.cost.nearLimit')"
       :aria-label="t('overlay.cost.label', { cost: costLabel })"
     >
       ≈ {{ costLabel }}
     </span>
 
     <div class="bar-header__actions">
-      <!-- What you hear (original / translated voice) is a quick action: always on the bar -->
-      <button
-        v-if="store.canHearOriginal && !page"
-        type="button"
-        :title="store.hearOriginal ? t('overlay.originalOff') : t('overlay.originalOn')"
-        :aria-label="t('overlay.original')"
-        :aria-pressed="store.hearOriginal"
-        @click="store.hearOriginal = !store.hearOriginal"
-      >
-        <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M2 8h1.5M5 5v6M8 3v10M11 5.5v5M14 8h-.5" />
-          <path v-if="!store.hearOriginal" d="m2.5 2.5 11 11" />
-        </svg>
-      </button>
-      <!-- The picture in step with the captions: a quick action whenever the share allows it -->
-      <button
-        v-if="store.canSyncVideo && !page"
-        type="button"
-        :title="store.syncVideo ? t('overlay.sync.off') : t('overlay.sync.on')"
-        :aria-label="t('overlay.sync.label')"
-        :aria-pressed="store.syncVideo"
-        @click="store.syncVideo = !store.syncVideo"
-      >
-        <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
-          <rect x="1.5" y="3" width="13" height="9" rx="1.5" />
-          <path d="M5 14.5h6" />
-          <path v-if="store.syncVideo" d="M6.8 5.6v3.8L9.8 7.5z" fill="currentColor" />
-          <path v-else d="m2.5 2.5 11 11" />
-        </svg>
-      </button>
-      <button
-        v-if="!page"
-        class="bar-header__voice"
-        type="button"
-        :title="store.options.voice ? t('overlay.voiceOff') : t('overlay.voiceOn')"
-        :aria-label="t('overlay.options.voice.label')"
-        :aria-pressed="store.options.voice"
-        @click="store.toggleOption('voice')"
-      >
-        <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M2.5 6h2l3-2.5v9l-3-2.5h-2z" />
-          <template v-if="store.options.voice">
-            <path d="M10.2 6a2.8 2.8 0 0 1 0 4" />
-            <path d="M12.2 4.3a5.2 5.2 0 0 1 0 7.4" />
-          </template>
-          <path v-else d="m10.5 6.2 3 3.6m0-3.6-3 3.6" />
-        </svg>
-      </button>
+      <!-- 1 · Pause -->
       <button
         type="button"
         :title="store.paused ? t('overlay.resume') : t('overlay.pause')"
@@ -167,36 +117,68 @@ const costLabel = computed(() =>
           {{ store.paused ? t('overlay.resume') : t('overlay.pause') }}
         </span>
       </button>
-      <button
-        v-if="!store.minimized"
-        type="button"
-        :title="t('overlay.options.title')"
-        :aria-label="t('overlay.options.title')"
-        :aria-expanded="menuOpen"
-        aria-haspopup="dialog"
-        aria-controls="lg-menu"
-        @click="emit('toggle-menu')"
-      >
-        <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6" />
-          <circle cx="10" cy="4.5" r="1.5" />
-          <circle cx="6" cy="11.5" r="1.5" />
-        </svg>
-        <span v-if="page" class="bar-header__text">{{ t('overlay.options.title') }}</span>
-      </button>
-      <button
-        v-if="stoppable && !page"
-        class="bar-header__stop"
-        type="button"
-        :title="t('live.stop')"
-        :aria-label="t('live.stop')"
-        @click="emit('stop')"
-      >
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <rect x="4" y="4" width="8" height="8" rx="1.5" />
-        </svg>
-      </button>
-      <!-- Float / back to the page: beside Stop in a live session, so both are always at hand -->
+
+      <template v-if="!store.minimized">
+        <!-- 2 · Volume: the speaker turns the voice on or off, − + set how loud -->
+        <QuickStepper
+          :label="t('overlay.quick.volume')"
+          :down-label="t('overlay.quick.quieter')"
+          :up-label="t('overlay.quick.louder')"
+          :can-down="quick.canQuieter.value"
+          :can-up="quick.canLouder.value"
+          :value="quick.volumeLabel.value"
+          :toggle-label="store.options.voice ? t('overlay.voiceOff') : t('overlay.voiceOn')"
+          :pressed="store.options.voice"
+          :named="page"
+          @toggle="quick.toggleVoice"
+          @down="quick.quieter"
+          @up="quick.louder"
+        >
+          <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2.5 6h2l3-2.5v9l-3-2.5h-2z" />
+            <template v-if="store.options.voice">
+              <path d="M10.2 6a2.8 2.8 0 0 1 0 4" />
+              <path d="M12.2 4.3a5.2 5.2 0 0 1 0 7.4" />
+            </template>
+            <path v-else d="m10.5 6.2 3 3.6m0-3.6-3 3.6" />
+          </svg>
+        </QuickStepper>
+
+        <!-- 3 · Text size -->
+        <QuickStepper
+          :label="t('overlay.quick.text')"
+          :down-label="t('overlay.look.smaller')"
+          :up-label="t('overlay.look.larger')"
+          :can-down="quick.canSmaller.value"
+          :can-up="quick.canBigger.value"
+          :value="quick.scaleLabel.value"
+          :named="page"
+          @down="quick.smaller"
+          @up="quick.bigger"
+        >
+          <span class="bar-header__glyph">Aa</span>
+        </QuickStepper>
+
+        <!-- 4 · Settings -->
+        <button
+          type="button"
+          :title="t('overlay.options.title')"
+          :aria-label="t('overlay.options.title')"
+          :aria-expanded="menuOpen"
+          aria-haspopup="dialog"
+          aria-controls="lg-menu"
+          @click="emit('toggle-menu')"
+        >
+          <svg class="bar-header__stroke" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6" />
+            <circle cx="10" cy="4.5" r="1.5" />
+            <circle cx="6" cy="11.5" r="1.5" />
+          </svg>
+          <span v-if="page" class="bar-header__text">{{ t('overlay.options.title') }}</span>
+        </button>
+      </template>
+
+      <!-- 5 · Float / back to the page -->
       <button
         v-if="canPopOut || popped"
         type="button"
@@ -218,8 +200,27 @@ const costLabel = computed(() =>
           />
           <path v-else d="M6 8h4M8 6v4" />
         </svg>
-        <span v-if="page" class="bar-header__text">{{ t('overlay.float') }}</span>
+        <span v-if="page" class="bar-header__text">
+          {{ popped ? t('overlay.back') : t('overlay.float') }}
+        </span>
       </button>
+
+      <!-- 6 · Stop: red and always last -->
+      <button
+        v-if="stoppable"
+        class="bar-header__stop"
+        type="button"
+        :title="t('live.stop')"
+        :aria-label="t('live.stop')"
+        @click="emit('stop')"
+      >
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect x="4" y="4" width="8" height="8" rx="1.5" />
+        </svg>
+        <span v-if="page" class="bar-header__text">{{ t('live.stop') }}</span>
+      </button>
+
+      <!-- The previews float over the page: they fold down instead -->
       <button
         v-if="!popped && !page"
         type="button"
@@ -253,75 +254,6 @@ const costLabel = computed(() =>
   letter-spacing: 0.06em;
   transition: opacity 0.4s ease;
 
-  &__status {
-    display: inline-flex;
-    gap: 7px;
-    align-items: center;
-    padding: 4px 10px 4px 8px;
-    border-radius: var(--radius-pill);
-    background: rgb(var(--tint-a) / 14%);
-    color: rgb(255 255 255 / 88%);
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: rgb(var(--tint-a));
-    box-shadow: 0 0 8px rgb(var(--tint-a));
-    animation: pulse 1.6s infinite;
-  }
-
-  // Four bars that follow the voice level
-  &__eq {
-    display: inline-flex;
-    gap: 2px;
-    align-items: center;
-    height: 10px;
-
-    i {
-      width: 2px;
-      height: 100%;
-      border-radius: 1px;
-      background: linear-gradient(to top, rgb(var(--tint-a)), rgb(var(--tint-b)));
-      transform: scaleY(calc(0.2 + var(--level) * var(--k)));
-      transition: transform 0.12s linear;
-
-      &:nth-child(1) {
-        --k: 0.6;
-      }
-
-      &:nth-child(2) {
-        --k: 1;
-      }
-
-      &:nth-child(3) {
-        --k: 0.75;
-      }
-
-      &:nth-child(4) {
-        --k: 0.45;
-      }
-    }
-  }
-
-  &__status--paused {
-    background: rgb(255 255 255 / 6%);
-    color: var(--glass-muted);
-  }
-
-  &__status--paused &__dot {
-    background: #8b8f98;
-    box-shadow: none;
-    animation: none;
-  }
-
-  &__status--paused &__eq {
-    display: none;
-  }
-
   // A gradient border drawn by two backgrounds
   &__pair {
     display: inline-flex;
@@ -350,13 +282,15 @@ const costLabel = computed(() =>
     }
   }
 
+  // Running behind, or close to the spending limit: amber, so a glance tells
   &__latency,
   &__cost {
     display: inline-flex;
     gap: 3px;
     align-items: center;
+    color: #ffc266;
     font-family: var(--font-mono);
-    font-weight: 400;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0;
     white-space: nowrap;
@@ -364,18 +298,7 @@ const costLabel = computed(() =>
     svg {
       width: 10px;
       height: 10px;
-      color: rgb(var(--tint-b));
     }
-  }
-
-  &__cost {
-    color: var(--glass-muted);
-  }
-
-  // Running behind: amber, so a glance tells the captions are late
-  &__latency--slow,
-  &__latency--slow svg {
-    color: #ffc266;
   }
 
   &--min &__pair,
@@ -384,46 +307,15 @@ const costLabel = computed(() =>
     display: none;
   }
 
-  // Floating window: the title bar already says it all, so the status is just the light
-  &--popped &__label {
-    display: none;
-  }
-
-  &--popped &__status {
-    padding: 6px 8px;
-  }
-
   &__actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
+    align-items: center;
     margin-left: auto;
 
-    button {
+    > button {
       @include buttons.round;
-    }
-
-    // At rest the buttons step back so the captions lead; reaching for them brings them all up.
-    // Stop always stays clear.
-    button:not([aria-pressed='true'], [aria-expanded='true'], .bar-header__stop) {
-      opacity: 0.6;
-      transition:
-        opacity 0.25s ease,
-        background 0.2s,
-        box-shadow 0.25s,
-        color 0.15s,
-        transform 0.35s var(--ease-spring);
-    }
-
-    &:hover button,
-    &:focus-within button {
-      opacity: 1;
-    }
-
-    // Touch has no hover to bring them up: keep them at full strength
-    @media (hover: none) {
-      button:not([aria-pressed='true'], [aria-expanded='true'], .bar-header__stop) {
-        opacity: 1;
-      }
     }
 
     svg {
@@ -432,17 +324,24 @@ const costLabel = computed(() =>
     }
   }
 
-  // In the page there is room to name the buttons: pills with an icon and a word,
-  // fully clear at rest. A phone keeps the icons alone, side by side.
+  &__glyph {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  // In the page there is room to name the buttons: pills with an icon and a word.
+  // A narrow screen keeps the icons alone, side by side.
   &--page &__actions {
     gap: 6px;
 
-    button {
+    > button {
       display: inline-flex;
       gap: 7px;
       width: auto;
       padding: 0 13px 0 11px;
       border-radius: var(--radius-pill);
+      color: rgb(255 255 255 / 85%);
       font: inherit;
       font-size: 12.5px;
       font-weight: 600;
@@ -450,13 +349,8 @@ const costLabel = computed(() =>
       white-space: nowrap;
     }
 
-    button:not([aria-pressed='true'], [aria-expanded='true'], .bar-header__stop) {
-      opacity: 1;
-      color: rgb(255 255 255 / 85%);
-    }
-
     @media (width < 600px) {
-      button {
+      > button {
         justify-content: center;
         width: auto;
         padding: 0;
@@ -465,13 +359,21 @@ const costLabel = computed(() =>
     }
   }
 
-  &--page &__text {
+  // A narrow floating window keeps every control on one line: the numbers go to the tooltip
+  &--popped :deep(.stepper__value) {
+    @media (width < 520px) {
+      display: none;
+    }
+  }
+
+  &--page &__text,
+  &--page :deep(.stepper__label) {
     @media (width < 600px) {
       display: none;
     }
   }
 
-  // Ends the live session from the floating window: red, so it is never pressed by mistake
+  // Stop: red, so it is never pressed by mistake
   &__actions &__stop {
     background: rgb(255 90 95 / 14%);
     box-shadow: inset 0 0 0 1px rgb(255 90 95 / 35%);
@@ -490,20 +392,6 @@ const costLabel = computed(() =>
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.6;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgb(var(--tint-a) / 55%);
-  }
-
-  70% {
-    box-shadow: 0 0 0 6px rgb(var(--tint-a) / 0%);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgb(var(--tint-a) / 0%);
   }
 }
 </style>

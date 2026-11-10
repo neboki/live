@@ -273,9 +273,32 @@
     },
     "groups": {
       "show": "Show",
-      "accuracy": "Accuracy"
+      "accuracy": "Accuracy",
+      "see": "See",
+      "hear": "Hear",
+      "session": "Session"
     },
-    "float": "Float"
+    "float": "Float",
+    "stopped": "Stopped",
+    "back": "Back",
+    "badge": {
+      "listening": "Listening and translating",
+      "paused": "Paused: not listening until you press Resume",
+      "error": "The session stopped because of an error"
+    },
+    "quick": {
+      "volume": "Volume",
+      "quieter": "Volume down",
+      "louder": "Volume up",
+      "text": "Text",
+      "off": "Off"
+    },
+    "cc": {
+      "label": "Captions",
+      "hint": "The translated text; turn it off and the voice goes on",
+      "hidden": "Captions hidden. The session and the voice go on.",
+      "show": "Show captions"
+    }
   },
   "errors": {
     "unexpected": "Something went wrong. Please try again.",
@@ -728,6 +751,7 @@
       "voiceHint": "With headphones you hear it as people talk.",
       "volume": "Voice volume",
       "textSize": "Text size"
-    }
+    },
+    "optionsHint": "Changes apply at once."
   }
 }

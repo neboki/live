@@ -14,7 +14,6 @@ import {
   sessionDuration,
 } from '@/modules/session';
 import { toSpendLimit, useSettingsStore, type ModelRole } from '@/modules/settings';
-import { OVERLAY_OPTIONS } from '../../constants';
 import { useOverlayStore } from '../../store/useOverlayStore';
 import type { OverlayOption } from '../../types';
 import AppearanceControls from '../AppearanceControls/AppearanceControls.vue';
@@ -26,20 +25,38 @@ import SoundControls from '../SoundControls/SoundControls.vue';
 import StartOver from '../StartOver/StartOver.vue';
 import VoiceGallery from '../VoiceGallery/VoiceGallery.vue';
 
+interface MenuSwitch {
+  key: string;
+  label: string;
+  hint: string;
+  checked: boolean;
+  disabled?: boolean;
+  toggle: () => void;
+}
+
 const MODEL_ROLES: readonly ModelRole[] = [
   'transcription',
   'translation',
   'summary',
   'suggestions',
 ];
+/** What can be shown on the bar, besides the captions themselves */
+const SHOWN: readonly OverlayOption[] = ['source', 'summary', 'suggestions', 'speakers'];
 const EXPORTED_FEEDBACK_MS = 2500;
 
+/**
+ * The settings, in three short blocks: what you see, what you hear and the session.
+ * During a session (the bar's menu, or the panel beside the floating window) that is
+ * all: the technical options (quality, spending limit, glossary, meeting, models) live
+ * on the settings page, which shows them too and leaves out what only acts on a
+ * running conversation.
+ */
 const props = defineProps<{
-  /** A real session is running: shows its cost and the "forget key" action */
+  /** A real session is running: shows its cost */
   live?: boolean;
   /** Shown in the floating window, where the background cannot be see-through */
   popped?: boolean;
-  /** On the settings page: leaves out what only acts on a running conversation */
+  /** On the settings page: the technical options, and nothing of a running conversation */
   page?: boolean;
 }>();
 
@@ -56,6 +73,64 @@ let feedbackTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** A session is running, but what it shares cannot be played behind time */
 const syncUnavailable = computed(() => props.live === true && !store.canSyncVideo);
+
+/** i18n key of an option: about a talk, the suggestions are questions to ask */
+function optionKey(option: OverlayOption): string {
+  return option === 'suggestions' && store.mode === 'talk' ? 'questions' : option;
+}
+
+/** The "see" block, in the order a user looks for them */
+const seeSwitches = computed<MenuSwitch[]>(() => {
+  const list: MenuSwitch[] = [];
+  if (!props.page) {
+    list.push({
+      key: 'cc',
+      label: t('overlay.cc.label'),
+      hint: t('overlay.cc.hint'),
+      checked: !store.captionsHidden,
+      toggle: () => (store.captionsHidden = !store.captionsHidden),
+    });
+  }
+  for (const option of SHOWN) {
+    list.push({
+      key: option,
+      label: t(`overlay.options.${optionKey(option)}.label`),
+      hint: t(`overlay.options.${optionKey(option)}.hint`),
+      checked: store.options[option],
+      toggle: () => store.toggleOption(option),
+    });
+  }
+  if (store.canHearOriginal) {
+    list.push({
+      key: 'original',
+      label: t('overlay.original'),
+      hint: t('overlay.originalOn'),
+      checked: store.hearOriginal,
+      toggle: () => (store.hearOriginal = !store.hearOriginal),
+    });
+  }
+  // Always listed, so it can be found and set before sharing; a session whose share
+  // cannot be synced says why instead
+  list.push({
+    key: 'sync',
+    label: t('overlay.sync.label'),
+    hint: t(syncUnavailable.value ? 'overlay.sync.unavailable' : 'overlay.sync.hint'),
+    checked: store.syncVideo,
+    disabled: syncUnavailable.value,
+    toggle: () => (store.syncVideo = !store.syncVideo),
+  });
+  // Only means something while the picture is synced
+  if (store.syncVideo && !syncUnavailable.value) {
+    list.push({
+      key: 'syncWait',
+      label: t('overlay.sync.waitLabel'),
+      hint: t('overlay.sync.waitHint'),
+      checked: store.syncWait,
+      toggle: () => (store.syncWait = !store.syncWait),
+    });
+  }
+  return list;
+});
 
 const unpriced = computed(() => hasUnpricedUsage(record.usage));
 const costLabel = computed(() =>
@@ -81,27 +156,18 @@ const spendLimit = computed({
   set: (value: string | number) => (settings.spendLimitEur = toSpendLimit(value)),
 });
 
-/** i18n key of an option: about a talk, the suggestions are questions to ask */
-function optionKey(option: OverlayOption): string {
-  return option === 'suggestions' && store.mode === 'talk' ? 'questions' : option;
+function flash(flag: typeof exported): void {
+  flag.value = true;
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => (flag.value = false), EXPORTED_FEEDBACK_MS);
 }
 
 function onExport(): void {
-  if (!exportSession()) return;
-  exported.value = true;
-  clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(() => (exported.value = false), EXPORTED_FEEDBACK_MS);
+  if (exportSession()) flash(exported);
 }
 
 function onSave(): void {
-  if (!downloadSessionFile(record)) return;
-  saved.value = true;
-  clearTimeout(feedbackTimer);
-  feedbackTimer = setTimeout(() => (saved.value = false), EXPORTED_FEEDBACK_MS);
-}
-
-function forgetKey(): void {
-  settings.forgetKey();
+  if (downloadSessionFile(record)) flash(saved);
 }
 
 onBeforeUnmount(() => clearTimeout(feedbackTimer));
@@ -109,84 +175,54 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
 
 <template>
   <div class="menu" :class="{ 'menu--page': page }">
-    <StartOver v-if="!page" />
-
-    <section class="menu__group menu__group--look">
-      <AppearanceControls :popped="popped" />
+    <!-- 👁 See -->
+    <section class="menu__group menu__group--see" :aria-labelledby="`${uid}-see`">
+      <h3 :id="`${uid}-see`" class="menu__title">
+        <span aria-hidden="true">👁</span> {{ t('overlay.groups.see') }}
+      </h3>
+      <button
+        v-for="item in seeSwitches"
+        :key="item.key"
+        class="menu__option"
+        type="button"
+        role="switch"
+        :aria-checked="item.checked"
+        :disabled="item.disabled"
+        @click="item.toggle()"
+      >
+        <span class="menu__text">
+          {{ item.label }}
+          <small>{{ item.hint }}</small>
+        </span>
+        <span class="menu__switch"></span>
+      </button>
+      <AppearanceControls :popped="popped" :with-size="page" />
     </section>
 
-    <section class="menu__group menu__group--show" :aria-labelledby="`${uid}-show`">
-      <h3 :id="`${uid}-show`" class="menu__title">{{ t('overlay.groups.show') }}</h3>
-      <ListeningPicker />
-      <button
-        v-for="option in OVERLAY_OPTIONS"
-        :key="option"
-        class="menu__option"
-        type="button"
-        role="switch"
-        :aria-checked="store.options[option]"
-        @click="store.toggleOption(option)"
-      >
-        <span class="menu__text">
-          {{ t(`overlay.options.${optionKey(option)}.label`) }}
-          <small>{{ t(`overlay.options.${optionKey(option)}.hint`) }}</small>
-        </span>
-        <span class="menu__switch"></span>
-      </button>
-      <button
-        v-if="store.canHearOriginal"
-        class="menu__option"
-        type="button"
-        role="switch"
-        :aria-checked="store.hearOriginal"
-        @click="store.hearOriginal = !store.hearOriginal"
-      >
-        <span class="menu__text">
-          {{ t('overlay.original') }}
-          <small>{{ t('overlay.originalOn') }}</small>
-        </span>
-        <span class="menu__switch"></span>
-      </button>
-      <!-- Always listed, so it can be found and set before sharing; a session whose
-           share cannot be synced says why instead -->
+    <!-- 👂 Hear -->
+    <section class="menu__group menu__group--hear" :aria-labelledby="`${uid}-hear`">
+      <h3 :id="`${uid}-hear`" class="menu__title">
+        <span aria-hidden="true">👂</span> {{ t('overlay.groups.hear') }}
+      </h3>
       <button
         class="menu__option"
         type="button"
         role="switch"
-        :aria-checked="store.syncVideo"
-        :disabled="syncUnavailable"
-        @click="store.syncVideo = !store.syncVideo"
+        :aria-checked="store.options.voice"
+        @click="store.toggleOption('voice')"
       >
         <span class="menu__text">
-          {{ t('overlay.sync.label') }}
-          <small>{{ t(syncUnavailable ? 'overlay.sync.unavailable' : 'overlay.sync.hint') }}</small>
+          {{ t('overlay.options.voice.label') }}
+          <small>{{ t('overlay.options.voice.hint') }}</small>
         </span>
         <span class="menu__switch"></span>
       </button>
-      <!-- Only means something while the picture is synced -->
-      <button
-        v-if="store.syncVideo && !syncUnavailable"
-        class="menu__option"
-        type="button"
-        role="switch"
-        :aria-checked="store.syncWait"
-        @click="store.syncWait = !store.syncWait"
-      >
-        <span class="menu__text">
-          {{ t('overlay.sync.waitLabel') }}
-          <small>{{ t('overlay.sync.waitHint') }}</small>
-        </span>
-        <span class="menu__switch"></span>
-      </button>
-    </section>
-
-    <section class="menu__group menu__group--sound">
       <SoundControls :live="live" />
       <details class="menu__section">
         <summary class="menu__option">{{ t('overlay.voice.title') }}</summary>
         <div class="menu__fields">
           <VoiceGallery />
-          <label v-if="settings.tts.engine === 'openai'" class="menu__field">
+          <label v-if="page && settings.tts.engine === 'openai'" class="menu__field">
             {{ t('overlay.voice.model') }}
             <input v-model.trim="settings.tts.model" type="text" spellcheck="false" />
           </label>
@@ -194,47 +230,23 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
       </details>
     </section>
 
-    <section class="menu__group menu__group--quality">
-      <QualityPicker />
+    <!-- 📄 Session: only while one can run -->
+    <section
+      v-if="!page"
+      class="menu__group menu__group--session"
+      :aria-labelledby="`${uid}-session`"
+    >
+      <h3 :id="`${uid}-session`" class="menu__title">
+        <span aria-hidden="true">📄</span> {{ t('overlay.groups.session') }}
+      </h3>
       <p v-if="live" class="menu__cost">
         {{ t('overlay.cost.label', { cost: costLabel }) }}
         <template v-if="rateLabel"> · {{ t('overlay.cost.rate', { rate: rateLabel }) }}</template>
         <small v-if="billedLabel">{{ billedLabel }}</small>
         <small>{{ t('overlay.cost.hint') }}</small>
       </p>
-      <label class="menu__field menu__limit">
-        {{ t('overlay.cost.limit') }}
-        <input
-          v-model.lazy="spendLimit"
-          type="number"
-          min="0"
-          step="0.5"
-          inputmode="decimal"
-          :placeholder="t('overlay.cost.noLimit')"
-        />
-        <small>{{ t('overlay.cost.limitHint') }}</small>
-      </label>
-    </section>
-
-    <section class="menu__group menu__group--accuracy" :aria-labelledby="`${uid}-accuracy`">
-      <h3 :id="`${uid}-accuracy`" class="menu__title">{{ t('overlay.groups.accuracy') }}</h3>
-      <GlossaryEditor />
-      <MeetingEditor />
-      <details class="menu__section">
-        <summary class="menu__option">{{ t('overlay.models.title') }}</summary>
-        <div class="menu__fields">
-          <label v-for="role in MODEL_ROLES" :key="role" class="menu__field">
-            {{ t(`overlay.models.${role}`) }}
-            <input v-model.trim="settings.models[role]" type="text" spellcheck="false" />
-          </label>
-          <button class="menu__link" type="button" @click="settings.resetModels()">
-            {{ t('overlay.models.reset') }}
-          </button>
-        </div>
-      </details>
-    </section>
-
-    <section v-if="!page" class="menu__group menu__group--session">
+      <StartOver />
+      <ListeningPicker />
       <div class="menu__row">
         <button class="menu__link" type="button" :disabled="!canExport" @click="onSave">
           {{ saved ? t('overlay.export.done') : t('overlay.export.file') }}
@@ -242,11 +254,7 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         <button class="menu__link" type="button" :disabled="!canExport" @click="onExport">
           {{ exported ? t('overlay.export.done') : t('overlay.export.label') }}
         </button>
-        <button v-if="live" class="menu__link menu__link--danger" type="button" @click="forgetKey">
-          {{ t('overlay.forgetKey') }}
-        </button>
       </div>
-
       <p class="menu__hint">
         <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>{{ t('overlay.space') }}</kbd>
         {{ t('overlay.shortcut') }}<br />
@@ -254,6 +262,52 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         {{ t('overlay.shortcutExport') }}
       </p>
     </section>
+
+    <!-- The technical options: set once, on the settings page -->
+    <template v-else>
+      <section class="menu__group menu__group--quality">
+        <ListeningPicker />
+        <QualityPicker />
+        <label class="menu__field menu__limit">
+          {{ t('overlay.cost.limit') }}
+          <input
+            v-model.lazy="spendLimit"
+            type="number"
+            min="0"
+            step="0.5"
+            inputmode="decimal"
+            :placeholder="t('overlay.cost.noLimit')"
+          />
+          <small>{{ t('overlay.cost.limitHint') }}</small>
+        </label>
+        <button
+          v-if="settings.apiKey"
+          class="menu__link menu__link--danger menu__forget"
+          type="button"
+          @click="settings.forgetKey()"
+        >
+          {{ t('overlay.forgetKey') }}
+        </button>
+      </section>
+
+      <section class="menu__group menu__group--accuracy" :aria-labelledby="`${uid}-accuracy`">
+        <h3 :id="`${uid}-accuracy`" class="menu__title">{{ t('overlay.groups.accuracy') }}</h3>
+        <GlossaryEditor />
+        <MeetingEditor />
+        <details class="menu__section">
+          <summary class="menu__option">{{ t('overlay.models.title') }}</summary>
+          <div class="menu__fields">
+            <label v-for="role in MODEL_ROLES" :key="role" class="menu__field">
+              {{ t(`overlay.models.${role}`) }}
+              <input v-model.trim="settings.models[role]" type="text" spellcheck="false" />
+            </label>
+            <button class="menu__link" type="button" @click="settings.resetModels()">
+              {{ t('overlay.models.reset') }}
+            </button>
+          </div>
+        </details>
+      </section>
+    </template>
   </div>
 </template>
 
@@ -269,6 +323,12 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
   overflow-y: auto;
   overscroll-behavior: contain;
   cursor: default;
+
+  // Under "See" and "Hear" the blocks need no title of their own; on the page they keep it
+  &:not(.menu--page) :deep(.look__title),
+  &:not(.menu--page) :deep(.sound__title) {
+    display: none;
+  }
 
   &__option {
     display: flex;
@@ -462,6 +522,10 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
     &:focus-visible {
       outline: 2px solid var(--glass-accent);
       outline-offset: 1px;
+    }
+
+    &.menu__forget {
+      margin: 4px 8px 0;
     }
 
     &--danger {

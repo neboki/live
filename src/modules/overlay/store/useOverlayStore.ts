@@ -54,6 +54,8 @@ export const useOverlayStore = defineStore('overlay', () => {
   const minimized = ref(false);
   /** Hidden with Ctrl+Shift+Space, wherever the bar is; the session goes on */
   const hidden = ref(false);
+  /** The caption text is put away (CC off) while the bar, the voice and the session go on */
+  const captionsHidden = ref(false);
   /**
    * What the user hears of the shared tab. Turning the translated voice on silences
    * the original, turning it off brings it back; either can then be changed by hand.
@@ -269,6 +271,7 @@ export const useOverlayStore = defineStore('overlay', () => {
     paused,
     minimized,
     hidden,
+    captionsHidden,
     hearOriginal,
     canHearOriginal,
     canSyncVideo,

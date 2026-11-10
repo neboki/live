@@ -319,7 +319,9 @@ test('closing the floating window moves the captions to the page, and they can f
   await floating.close();
   const bar = page.locator('.live .bar');
   await expect(bar).toBeVisible();
-  await expect(page.locator('.live__stop')).toBeVisible();
+  // With the bar in the page, Stop is its last button, not the header's
+  await expect(bar.getByRole('button', { name: 'Stop' })).toBeVisible();
+  await expect(page.locator('.live__stop')).toHaveCount(0);
   await speakOneSentence(page, page);
   await expect(page.locator('.live .lines__translation')).toHaveText(TRANSLATED, {
     timeout: 10_000,
@@ -346,7 +348,7 @@ test('shows the captions in the app when that is the chosen place, and floats th
 
   const bar = page.locator('.live .bar');
   await expect(bar).toBeVisible();
-  await expect(page.locator('.live__stop')).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Stop' })).toBeVisible();
   expect(opened).toBe(false);
   await speakOneSentence(page, page);
   await expect(page.locator('.live .lines__translation')).toHaveText(TRANSLATED, {

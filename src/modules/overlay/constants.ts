@@ -37,6 +37,8 @@ export const OPACITY_RANGE: Readonly<NumberRange> = { min: 0.3, max: 1, step: 0.
 export const VOLUME_RANGE: Readonly<NumberRange> = { min: 0, max: 1, step: 0.05 };
 /** The translated voice can be boosted: synthetic voices are quiet at 100% */
 export const VOICE_VOLUME_RANGE: Readonly<NumberRange> = { min: 0, max: 2, step: 0.05 };
+/** Share of the spending limit at which the session warns, and the bar starts showing the cost */
+export const NEAR_SPEND_LIMIT = 0.8;
 /**
  * Seconds the synced tab can be held behind real time. Fixed for the whole session, like
  * a live broadcast: longer leaves more room for a slow translation to land on time

@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useOverlayStore } from '@/modules/overlay';
+import {
+  ListeningBadge,
+  SettingsPanel,
+  useOverlayStore,
+  useQuickControls,
+} from '@/modules/overlay';
 import { useSessionRecord } from '@/modules/session';
 import { createScreenWakeLock, exitImmersive, immersive, toggleImmersive } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { useFitText } from '../../composables/fitText';
-import { useTextScale } from '../../composables/textScale';
 import { stopVoiceNote } from '../../composables/voiceNote';
 import { useLiveSession } from '../../store/useLiveSession';
 import TalkView from '../TalkView/TalkView.vue';
 import FullscreenIcon from './FullscreenIcon.vue';
 
 /**
- * The live screen on a phone: big text and three controls. Listening (and a voice note)
+ * The live screen on a phone: big text and the same quick controls as the bar elsewhere
+ * (pause, volume, text size, settings, stop) plus full screen. Listening (and a voice note)
  * shows the lines as a running transcript with who said each; presenting shows the last
  * line huge on black, for the room or a projector; talking splits the screen in two.
  */
@@ -73,7 +78,9 @@ function saveName(): void {
 }
 
 // Presenting: the one line shrinks until it all shows, however long it runs
-const { bigger, smaller } = useTextScale();
+const quick = useQuickControls();
+/** The session's settings, in a sheet over the bottom of the screen */
+const menuOpen = ref(false);
 const stage = ref<HTMLElement | null>(null);
 useFitText(stage, () => [last.value?.text, overlay.scale, immersive.value, presenting.value]);
 
@@ -118,8 +125,8 @@ onBeforeUnmount(() => {
     :class="{ 'mlive--present': presenting, 'mlive--full': immersive }"
     :style="{ '--text-scale': String(overlay.scale) }"
   >
-    <p class="mlive__status" role="status">
-      <i class="mlive__dot" :style="{ '--level': String(overlay.level) }" aria-hidden="true"></i>
+    <p class="mlive__status" :style="{ '--level': String(overlay.level) }">
+      <ListeningBadge :error="!!session.liveError" on-page />
       <span>{{ overlay.pair.from }} → {{ overlay.pair.to }}</span>
       <span v-if="session.headset">· 🎧</span>
       <span v-if="overlay.notice" class="mlive__notice">{{ t(overlay.notice) }}</span>
@@ -180,34 +187,123 @@ onBeforeUnmount(() => {
 
     <p v-if="voiceTip && !presenting" class="mlive__tip">{{ t(voiceTip) }}</p>
 
+    <!-- The same quick controls as the bar: pause, volume, text size; then settings and stop -->
     <footer class="mlive__controls">
-      <button
-        class="mlive__btn"
-        type="button"
-        :aria-pressed="overlay.options.voice"
-        @click="overlay.toggleOption('voice')"
-      >
-        {{ overlay.options.voice ? t('mobile.voiceOn') : t('mobile.voiceOff') }}
-      </button>
-      <button class="mlive__btn" type="button" :aria-label="t('mobile.smaller')" @click="smaller">
-        A−
-      </button>
-      <button class="mlive__btn" type="button" :aria-label="t('mobile.bigger')" @click="bigger">
-        A+
-      </button>
-      <button
-        class="mlive__btn"
-        type="button"
-        :aria-label="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
-        :aria-pressed="immersive"
-        @click="toggleImmersive"
-      >
-        <FullscreenIcon :on="immersive" />
-      </button>
-      <button class="mlive__btn mlive__btn--stop" type="button" @click="stop">
-        {{ t('mobile.stop') }}
-      </button>
+      <div class="mlive__quick">
+        <button
+          class="mlive__btn"
+          type="button"
+          :aria-label="overlay.paused ? t('overlay.resume') : t('overlay.pause')"
+          :title="overlay.paused ? t('overlay.resume') : t('overlay.pause')"
+          :aria-pressed="overlay.paused"
+          @click="overlay.paused = !overlay.paused"
+        >
+          <span aria-hidden="true">{{ overlay.paused ? '▶' : '⏸' }}</span>
+        </button>
+        <div class="mlive__group" role="group" :aria-label="t('overlay.quick.volume')">
+          <button
+            class="mlive__btn"
+            type="button"
+            :aria-label="overlay.options.voice ? t('overlay.voiceOff') : t('overlay.voiceOn')"
+            :title="overlay.options.voice ? t('overlay.voiceOff') : t('overlay.voiceOn')"
+            :aria-pressed="overlay.options.voice"
+            @click="quick.toggleVoice"
+          >
+            <span aria-hidden="true">{{ overlay.options.voice ? '🔊' : '🔇' }}</span>
+          </button>
+          <button
+            class="mlive__btn"
+            type="button"
+            :disabled="!quick.canQuieter.value"
+            :aria-label="t('overlay.quick.quieter')"
+            :title="t('overlay.quick.quieter')"
+            @click="quick.quieter"
+          >
+            −
+          </button>
+          <button
+            class="mlive__btn"
+            type="button"
+            :disabled="!quick.canLouder.value"
+            :aria-label="t('overlay.quick.louder')"
+            :title="t('overlay.quick.louder')"
+            @click="quick.louder"
+          >
+            +
+          </button>
+        </div>
+        <div class="mlive__group" role="group" :aria-label="t('overlay.quick.text')">
+          <button
+            class="mlive__btn"
+            type="button"
+            :disabled="!quick.canSmaller.value"
+            :aria-label="t('mobile.smaller')"
+            :title="t('mobile.smaller')"
+            @click="quick.smaller"
+          >
+            A−
+          </button>
+          <button
+            class="mlive__btn"
+            type="button"
+            :disabled="!quick.canBigger.value"
+            :aria-label="t('mobile.bigger')"
+            :title="t('mobile.bigger')"
+            @click="quick.bigger"
+          >
+            A+
+          </button>
+        </div>
+        <button
+          class="mlive__btn"
+          type="button"
+          :aria-label="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
+          :title="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
+          :aria-pressed="immersive"
+          @click="toggleImmersive"
+        >
+          <FullscreenIcon :on="immersive" />
+        </button>
+      </div>
+      <div class="mlive__row">
+        <button
+          class="mlive__btn"
+          type="button"
+          aria-haspopup="dialog"
+          :aria-expanded="menuOpen"
+          @click="menuOpen = true"
+        >
+          ⚙ {{ t('overlay.options.title') }}
+        </button>
+        <button class="mlive__btn mlive__btn--stop" type="button" @click="stop">
+          ■ {{ t('mobile.stop') }}
+        </button>
+      </div>
     </footer>
+
+    <!-- Settings: a sheet over the bottom, closed by its button, the backdrop or Esc -->
+    <div
+      v-if="menuOpen"
+      class="mlive__sheet"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('overlay.options.title')"
+      @click.self="menuOpen = false"
+      @keydown.esc="menuOpen = false"
+    >
+      <div class="mlive__sheet-body">
+        <button
+          class="mlive__sheet-close"
+          type="button"
+          :aria-label="t('live.side.hide')"
+          :title="t('live.side.hide')"
+          @click="menuOpen = false"
+        >
+          ✕
+        </button>
+        <SettingsPanel :live="session.active" hint="mobile.optionsHint" />
+      </div>
+    </div>
   </main>
 </template>
 
@@ -248,18 +344,6 @@ onBeforeUnmount(() => {
 
   &--present &__status {
     color: rgb(255 255 255 / 60%);
-  }
-
-  // Grows with the sound it hears: the user can see the phone is listening
-  &__dot {
-    --level: 0;
-
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--success);
-    transform: scale(calc(1 + var(--level) * 0.8));
-    transition: transform 0.1s linear;
   }
 
   &__notice {
@@ -374,8 +458,86 @@ onBeforeUnmount(() => {
   }
 
   &__controls {
-    grid-template-columns: 1fr 48px 48px 48px 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  // Pause · volume · text size · full screen: one row the thumb reaches
+  &__quick {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+
+    > .mlive__btn {
+      flex: 0 0 48px;
+    }
+  }
+
+  // Buttons that belong together sit joined in one pill
+  &__group {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+
+    .mlive__btn {
+      flex: 1 1 44px;
+      border-radius: 0;
+    }
+
+    .mlive__btn + .mlive__btn {
+      border-left-width: 0;
+    }
+
+    .mlive__btn:first-child {
+      border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    }
+
+    .mlive__btn:last-child {
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    }
+  }
+
+  &__sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    background: rgb(0 0 0 / 45%);
+  }
+
+  &__sheet-body {
+    position: relative;
+    width: 100%;
+    max-height: 85dvh;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--bg);
+
+    :deep(.settings-panel) {
+      max-height: none;
+    }
+
+    // Room for the close button beside the title
+    :deep(.settings-panel__head) {
+      padding-right: 60px;
+    }
+  }
+
+  &__sheet-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--panel);
+    color: var(--fg);
+    font-size: 16px;
+    cursor: pointer;
   }
 
   &__btn {
@@ -404,10 +566,19 @@ onBeforeUnmount(() => {
       color: #fff;
     }
 
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
     &:focus-visible {
       outline: 3px solid var(--accent);
       outline-offset: 2px;
     }
+  }
+
+  &--present &__status :deep(.badge) {
+    color: #fff;
   }
 
   &--present &__btn:not(&__btn--stop) {

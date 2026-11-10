@@ -89,8 +89,9 @@ onBeforeUnmount(() => wakeLock.release());
           </svg>
           <span class="live__panel-label">{{ t(sideLabelKey) }}</span>
         </button>
+        <!-- With the bar in the page, Stop is its last button; here only while it is away -->
         <button
-          v-if="session.active"
+          v-if="session.active && (!session.inPage || session.syncedTab)"
           class="live__stop lg-btn"
           type="button"
           @click="session.stop()"
@@ -119,7 +120,7 @@ onBeforeUnmount(() => wakeLock.release());
         <section v-else-if="session.inPage" class="live__captions">
           <CaptionBar
             v-show="!overlay.hidden"
-            stoppable
+            :stoppable="session.active"
             :resizable="false"
             fill
             :can-pop-out="session.canFloat"

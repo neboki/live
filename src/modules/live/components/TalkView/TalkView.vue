@@ -173,22 +173,49 @@ function receiveText(half: Half): string {
         t(session.liveError)
       }}</span>
       <span v-else class="talk__notice">{{ overlay.notice ? t(overlay.notice) : '' }}</span>
-      <button class="talk__tool" type="button" :aria-label="t('mobile.smaller')" @click="smaller">
+      <!-- The quick controls in the same order as everywhere else; what each person
+           hears is chosen on their own half -->
+      <button
+        class="talk__tool"
+        type="button"
+        :aria-label="overlay.paused ? t('overlay.resume') : t('overlay.pause')"
+        :title="overlay.paused ? t('overlay.resume') : t('overlay.pause')"
+        :aria-pressed="overlay.paused"
+        @click="overlay.paused = !overlay.paused"
+      >
+        <span aria-hidden="true">{{ overlay.paused ? '▶' : '⏸' }}</span>
+      </button>
+      <button
+        class="talk__tool"
+        type="button"
+        :aria-label="t('mobile.smaller')"
+        :title="t('mobile.smaller')"
+        @click="smaller"
+      >
         A−
       </button>
-      <button class="talk__tool" type="button" :aria-label="t('mobile.bigger')" @click="bigger">
+      <button
+        class="talk__tool"
+        type="button"
+        :aria-label="t('mobile.bigger')"
+        :title="t('mobile.bigger')"
+        @click="bigger"
+      >
         A+
       </button>
       <button
         class="talk__tool"
         type="button"
         :aria-label="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
+        :title="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
         :aria-pressed="immersive"
         @click="toggleImmersive"
       >
         <FullscreenIcon :on="immersive" />
       </button>
-      <button class="talk__stop" type="button" @click="emit('stop')">{{ t('mobile.stop') }}</button>
+      <button class="talk__stop" type="button" @click="emit('stop')">
+        ■ {{ t('mobile.stop') }}
+      </button>
     </div>
   </main>
 </template>
@@ -323,7 +350,7 @@ function receiveText(half: Half): string {
     display: grid;
     flex: none;
     place-items: center;
-    width: 48px;
+    width: 44px;
     height: 48px;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-lg);
@@ -342,7 +369,7 @@ function receiveText(half: Half): string {
 
   &__stop {
     flex: none;
-    min-width: 92px;
+    min-width: 80px;
     min-height: 48px;
     padding: 0 14px;
     border: 0;

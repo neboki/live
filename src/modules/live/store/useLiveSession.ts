@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, reactive, ref, watch } from 'vue';
-import { useFloatingWindow, useOverlayStore } from '@/modules/overlay';
+import { NEAR_SPEND_LIMIT, useFloatingWindow, useOverlayStore } from '@/modules/overlay';
 import { costUsd, hasUnpricedUsage, usdToEur, useSessionRecord } from '@/modules/session';
 import { useSettingsStore } from '@/modules/settings';
 import { createAudioCapture } from '@/shared/audio/audioCapture';
@@ -26,8 +26,6 @@ const NOTICE_TTL_MS = 8000;
 const HEARD_ENOUGH = 0.5;
 const UNPRICED_KEY = 'overlay.cost.unpricedLimit';
 const NEAR_LIMIT_KEY = 'overlay.cost.nearLimit';
-/** Share of the spending limit at which the bar gives a warning */
-const NEAR_LIMIT = 0.8;
 /** Shown while the shared tab sends no sound at all: its video is most likely paused */
 const TAB_SILENT_KEY = 'live.tabSilent';
 /** Shown as the free demo starts, and on the home screen once its time is up */
@@ -411,7 +409,7 @@ export const useLiveSession = defineStore('live', () => {
         return;
       }
       // Once, as the estimate crosses the line; a raised limit may cross it again later
-      const line = limit * NEAR_LIMIT;
+      const line = limit * NEAR_SPEND_LIMIT;
       if (spentEur >= line && (wasSpent ?? 0) < line) {
         overlay.setNotice(NEAR_LIMIT_KEY, NOTICE_TTL_MS);
       }

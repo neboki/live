@@ -14,15 +14,29 @@ describe('SettingsMenu', () => {
     setActivePinia(createPinia());
   });
 
-  it('groups its options under titles, the same in the bar and on the page', () => {
+  it('keeps three blocks in a session: see, hear and the session', () => {
     const t = i18n.global.t;
-    for (const page of [false, true]) {
-      const wrapper = mountMenu({ page });
-      expect(wrapper.findAll('.menu__group').length).toBeGreaterThanOrEqual(5);
-      expect(wrapper.text()).toContain(t('overlay.groups.show'));
-      expect(wrapper.text()).toContain(t('overlay.groups.accuracy'));
-      wrapper.unmount();
-    }
+    const bar = mountMenu();
+    const titles = bar.findAll('.menu__title').map((title) => title.text());
+    expect(titles).toEqual([
+      expect.stringContaining(t('overlay.groups.see')),
+      expect.stringContaining(t('overlay.groups.hear')),
+      expect.stringContaining(t('overlay.groups.session')),
+    ]);
+    expect(bar.text()).toContain(t('overlay.cc.label'));
+    expect(bar.text()).not.toContain(t('overlay.groups.accuracy'));
+    expect(bar.text()).not.toContain(t('overlay.cost.limit'));
+    bar.unmount();
+  });
+
+  it('shows the technical options on the settings page', () => {
+    const t = i18n.global.t;
+    const page = mountMenu({ page: true });
+    expect(page.text()).toContain(t('overlay.groups.see'));
+    expect(page.text()).toContain(t('overlay.groups.accuracy'));
+    expect(page.text()).toContain(t('overlay.cost.limit'));
+    expect(page.text()).not.toContain(t('overlay.cc.label'));
+    page.unmount();
   });
 
   it('leaves out what only acts on a running conversation on the settings page', () => {

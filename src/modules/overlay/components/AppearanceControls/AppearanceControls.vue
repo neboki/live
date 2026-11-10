@@ -12,7 +12,14 @@ import ThemePicker from '../ThemePicker/ThemePicker.vue';
  * shows while it is being made. A floating window is always opaque, so there the
  * opacity slider is left out.
  */
-defineProps<{ popped?: boolean }>();
+withDefaults(
+  defineProps<{
+    popped?: boolean;
+    /** The text size too: left out where the bar has its own Aa − + */
+    withSize?: boolean;
+  }>(),
+  { withSize: true },
+);
 
 const store = useOverlayStore();
 const { t, locale } = useI18n();
@@ -41,7 +48,7 @@ function onOpacity(event: Event): void {
   <section class="look" :aria-label="t('overlay.look.title')">
     <h3 class="look__title">{{ t('overlay.look.title') }}</h3>
 
-    <div class="look__row">
+    <div v-if="withSize" class="look__row">
       <span id="lg-look-size" class="look__label">{{ t('overlay.look.textSize') }}</span>
       <div class="look__stepper" role="group" aria-labelledby="lg-look-size">
         <button

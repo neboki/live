@@ -30,7 +30,10 @@ describe('CaptionBar', () => {
     const wrapper = mountBar();
 
     await wrapper.get('[aria-controls="lg-menu"]').trigger('click');
-    await wrapper.get('[role="switch"]').trigger('click');
+    const source = wrapper
+      .findAll('[role="switch"]')
+      .find((item) => item.text().includes(i18n.global.t('overlay.options.source.label')));
+    await source?.trigger('click');
 
     expect(store.options.source).toBe(true);
     expect(wrapper.find('.lines__source').exists()).toBe(true);
@@ -42,8 +45,9 @@ describe('CaptionBar', () => {
       global: { plugins: [i18n] },
     });
 
-    expect(wrapper.findAll('.bar-header__actions button')).toHaveLength(5);
-    expect(mountBar().findAll('.bar-header__actions button')).toHaveLength(4);
+    const float = `[aria-label="${i18n.global.t('overlay.popOut')}"]`;
+    expect(wrapper.find(float).exists()).toBe(true);
+    expect(mountBar().find(float).exists()).toBe(false);
   });
 
   it('closes the options with Escape or a press outside the bar', async () => {
@@ -63,25 +67,53 @@ describe('CaptionBar', () => {
     wrapper.unmount();
   });
 
-  it('keeps the sound quick actions in the floating window', () => {
-    const store = useOverlayStore();
-    store.canHearOriginal = true;
+  it('offers the same six controls in the floating window, in order', () => {
+    const t = i18n.global.t;
     const popped = mount(CaptionBar, {
       props: { popped: true, live: true, stoppable: true },
       global: { plugins: [i18n] },
     });
-    const labels = popped
-      .findAll('.bar-header__actions button')
-      .map((button) => button.attributes('aria-label'));
+    const buttons = popped.findAll('.bar-header__actions button');
 
-    expect(labels).toEqual(
-      expect.arrayContaining([
-        i18n.global.t('overlay.original'),
-        i18n.global.t('overlay.options.voice.label'),
-        i18n.global.t('overlay.pause'),
-        i18n.global.t('live.stop'),
-      ]),
-    );
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual([
+      t('overlay.pause'),
+      t('overlay.voiceOn'),
+      t('overlay.quick.quieter'),
+      t('overlay.quick.louder'),
+      t('overlay.look.smaller'),
+      t('overlay.look.larger'),
+      t('overlay.options.title'),
+      t('overlay.popIn'),
+      t('live.stop'),
+    ]);
+    // Every control says what it does on hover
+    for (const button of buttons) expect(button.attributes('title')).toBeTruthy();
+  });
+
+  it('turns the voice on when the volume goes up', async () => {
+    const store = useOverlayStore();
+    const wrapper = mountBar();
+    const louder = `[aria-label="${i18n.global.t('overlay.quick.louder')}"]`;
+    expect(store.options.voice).toBe(false);
+
+    await wrapper.get(louder).trigger('click');
+    expect(store.options.voice).toBe(true);
+    expect(store.voiceVolume).toBe(1);
+
+    await wrapper.get(louder).trigger('click');
+    expect(store.voiceVolume).toBe(1.1);
+  });
+
+  it('puts the caption text away with CC and brings it back', async () => {
+    const store = useOverlayStore();
+    const wrapper = mountBar();
+    store.captionsHidden = true;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.lines').exists()).toBe(false);
+    await wrapper.get('.bar__cc-off button').trigger('click');
+    expect(store.captionsHidden).toBe(false);
+    expect(wrapper.find('.lines').exists()).toBe(true);
   });
 
   it('resizes with the arrow keys on its grip, but not in the floating window', async () => {
@@ -141,16 +173,15 @@ describe('CaptionBar', () => {
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
   });
 
-  it('offers the session cost and forget key only in a live session', async () => {
+  it('offers the session cost only in a live session, and nothing technical', async () => {
     const live = mount(CaptionBar, { props: { live: true }, global: { plugins: [i18n] } });
     await live.get('[aria-controls="lg-menu"]').trigger('click');
     expect(live.find('.menu__cost').exists()).toBe(true);
-    expect(live.text()).toContain(i18n.global.t('overlay.forgetKey'));
+    expect(live.text()).not.toContain(i18n.global.t('overlay.groups.accuracy'));
 
     const demo = mountBar();
     await demo.get('[aria-controls="lg-menu"]').trigger('click');
     expect(demo.find('.menu__cost').exists()).toBe(false);
-    expect(demo.text()).not.toContain(i18n.global.t('overlay.forgetKey'));
   });
 });
 
@@ -189,7 +220,7 @@ describe('CaptionBar between the page and the floating window', () => {
     expect(wrapper.find(`[aria-label="${i18n.global.t('live.stop')}"]`).exists()).toBe(true);
   });
 
-  it('fills the page with only Pause, Float and the settings, named', () => {
+  it('fills the page with the same controls, each one named', () => {
     const store = useOverlayStore();
     store.canHearOriginal = true;
     store.canSyncVideo = true;
@@ -200,12 +231,18 @@ describe('CaptionBar between the page and the floating window', () => {
 
     expect(wrapper.classes()).toContain('bar--fill');
     expect(wrapper.get('.lines').classes()).toContain('lines--tall');
-    const names = wrapper.findAll('.bar-header__actions button').map((button) => button.text());
+    const t = i18n.global.t;
+    const names = wrapper.findAll('.bar-header__actions > button').map((button) => button.text());
     expect(names).toEqual([
-      i18n.global.t('overlay.pause'),
-      i18n.global.t('overlay.options.title'),
-      i18n.global.t('overlay.float'),
+      t('overlay.pause'),
+      t('overlay.options.title'),
+      t('overlay.float'),
+      t('live.stop'),
     ]);
+    const steppers = wrapper.findAll('.stepper__label').map((label) => label.text());
+    expect(steppers).toEqual([t('overlay.quick.volume'), t('overlay.quick.text')]);
+    // In the settings now: no quick button for the original audio
+    expect(wrapper.find(`[aria-label="${t('overlay.original')}"]`).exists()).toBe(false);
     wrapper.unmount();
   });
 });

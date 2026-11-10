@@ -174,6 +174,7 @@ watch(
       :menu-open="menuOpen"
       :stoppable="stoppable"
       :page="fill"
+      :error="!!error"
       @toggle-menu="toggleMenu"
       @toggle-pop="togglePopOut"
       @stop="emit('stop')"
@@ -194,8 +195,15 @@ watch(
       </div>
     </Transition>
 
+    <!-- CC off: the text is put away, the voice and the session go on -->
+    <p v-if="store.captionsHidden && !store.minimized && !error" class="bar__cc-off">
+      {{ t('overlay.cc.hidden') }}
+      <button type="button" @click="store.captionsHidden = false">
+        {{ t('overlay.cc.show') }}
+      </button>
+    </p>
     <CaptionLines
-      v-if="!store.minimized || error"
+      v-else-if="!store.minimized || error"
       ref="lines"
       class="bar__lines"
       :style="linesStyle"
@@ -308,6 +316,38 @@ watch(
   &--fill &__lines {
     flex: 1 1 auto;
     min-height: 0;
+  }
+
+  &__cc-off {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 14px 8px;
+    color: var(--glass-muted);
+    font-size: 13px;
+    text-align: center;
+
+    button {
+      padding: 4px 12px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: rgb(var(--tint-a) / 22%);
+      color: var(--glass-fg);
+      font: 600 12.5px var(--font-ui);
+      cursor: pointer;
+
+      &:hover {
+        background: rgb(var(--tint-a) / 40%);
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgb(var(--tint-b));
+        outline-offset: 1px;
+      }
+    }
   }
 
   // A whole page to read from at arm's length: larger text, the user's size on top
@@ -456,6 +496,17 @@ watch(
     inset: 46px 10px 10px;
     width: auto;
     max-height: none;
+  }
+
+  // Filling the page there is no room around the bar: the panel opens inside it, under
+  // the Settings button
+  &--fill &__panel {
+    top: 52px;
+    right: 18px;
+    bottom: auto;
+    width: min(400px, calc(100% - 36px));
+    max-height: calc(100% - 64px);
+    transform-origin: top right;
   }
 }
 </style>

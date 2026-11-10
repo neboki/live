@@ -217,6 +217,7 @@ onBeforeUnmount(() => {
       'shell--open': menuOpen,
       'shell--compact': compact,
       'shell--account': account.enabled,
+      'shell--signed-out': account.enabled && !account.user,
     }"
   >
     <!-- Phones: the sidebar is a drawer behind this bar -->
@@ -842,6 +843,11 @@ $drawer-at: 900px;
   @media (width >= $drawer-at) {
     &--account :deep(.lg-head) {
       padding-right: calc(clamp(16px, 3vw, 40px) + 52px);
+    }
+
+    // Signed out, a "Sign in" button takes the avatar's place: wider
+    &--signed-out :deep(.lg-head) {
+      padding-right: calc(clamp(16px, 3vw, 40px) + 150px);
     }
   }
 

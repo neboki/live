@@ -273,9 +273,32 @@
     },
     "groups": {
       "show": "Mostrar",
-      "accuracy": "Precisión"
+      "accuracy": "Precisión",
+      "see": "Ver",
+      "hear": "Oír",
+      "session": "Sesión"
     },
-    "float": "Flotar"
+    "float": "Flotar",
+    "stopped": "Detenido",
+    "back": "Volver",
+    "badge": {
+      "listening": "Está escuchando y traduciendo",
+      "paused": "En pausa: no escucha hasta que pulses Seguir",
+      "error": "La sesión se ha detenido por un error"
+    },
+    "quick": {
+      "volume": "Volumen",
+      "quieter": "Bajar volumen",
+      "louder": "Subir volumen",
+      "text": "Letra",
+      "off": "Sin voz"
+    },
+    "cc": {
+      "label": "Subtítulos",
+      "hint": "El texto de la traducción; si lo quitas, la voz sigue",
+      "hidden": "Subtítulos ocultos. La sesión y la voz siguen.",
+      "show": "Mostrar subtítulos"
+    }
   },
   "errors": {
     "unexpected": "Algo ha fallado. Inténtalo de nuevo.",
@@ -728,6 +751,7 @@
       "voiceHint": "Con auriculares la oyes mientras hablan.",
       "volume": "Volumen de la voz",
       "textSize": "Tamaño del texto"
-    }
+    },
+    "optionsHint": "Los cambios se aplican al momento."
   }
 }
