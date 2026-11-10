@@ -6,11 +6,13 @@ import { type SessionLine, useSessionRecord } from '@/modules/session';
 import { languageLabel } from '@/modules/settings';
 import { immersive, toggleImmersive } from '@/shared/device';
 import { useFitText } from '../../composables/fitText';
+import { useTapReveal } from '../../composables/tapReveal';
 import { useTextScale } from '../../composables/textScale';
 import { PARTNER_SPEAKER, sameLanguage, USER_SPEAKER } from '../../pipeline/conversation';
 import { guessLanguage } from '../../pipeline/textLanguage';
 import { type Receive, useLiveSession } from '../../store/useLiveSession';
 import FullscreenIcon from '../MobileLiveView/FullscreenIcon.vue';
+import QuickIcon from '../MobileLiveView/QuickIcon.vue';
 
 /**
  * Two people, two languages, one phone on the table. The screen is split: the top half
@@ -101,6 +103,8 @@ const halves = computed(() => ({
 
 /** Full screen with nothing to report: the middle bar goes too */
 const bare = computed(() => immersive.value && !session.liveError);
+/** Full screen hides every button; a tap brings back the way out for a moment */
+const { shown: revealed, reveal } = useTapReveal();
 
 useFitText(boxes, () => [
   halves.value.partner.text,
@@ -139,15 +143,16 @@ function receiveText(half: Half): string {
     class="talk"
     :class="{ 'talk--full': immersive, 'talk--bare': bare }"
     :style="{ '--text-scale': String(overlay.scale) }"
+    @click="immersive && reveal()"
   >
-    <!-- Full screen: only the two halves, and one small button to come back -->
+    <!-- Full screen: only the two halves; a tap shows the way back for a few seconds -->
     <button
-      v-if="immersive"
+      v-if="immersive && revealed"
       class="talk__min"
       type="button"
       :aria-label="t('mobile.exitFullScreen')"
       :title="t('mobile.exitFullScreen')"
-      @click="toggleImmersive"
+      @click.stop="toggleImmersive"
     >
       <FullscreenIcon :on="true" />
     </button>
@@ -198,25 +203,25 @@ function receiveText(half: Half): string {
         :aria-pressed="overlay.paused"
         @click="overlay.paused = !overlay.paused"
       >
-        <span aria-hidden="true">{{ overlay.paused ? '▶' : '⏸' }}</span>
+        <QuickIcon :name="overlay.paused ? 'play' : 'pause'" />
       </button>
       <button
-        class="talk__tool"
+        class="talk__tool talk__tool--small-a"
         type="button"
         :aria-label="t('mobile.smaller')"
         :title="t('mobile.smaller')"
         @click="smaller"
       >
-        A−
+        <span aria-hidden="true">A</span>
       </button>
       <button
-        class="talk__tool"
+        class="talk__tool talk__tool--big-a"
         type="button"
         :aria-label="t('mobile.bigger')"
         :title="t('mobile.bigger')"
         @click="bigger"
       >
-        A+
+        <span aria-hidden="true">A</span>
       </button>
       <button
         class="talk__tool"
@@ -224,12 +229,18 @@ function receiveText(half: Half): string {
         :aria-label="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
         :title="immersive ? t('mobile.exitFullScreen') : t('mobile.fullScreen')"
         :aria-pressed="immersive"
-        @click="toggleImmersive"
+        @click.stop="toggleImmersive"
       >
         <FullscreenIcon :on="immersive" />
       </button>
-      <button class="talk__stop" type="button" @click="emit('stop')">
-        ■ {{ t('mobile.stop') }}
+      <button
+        class="talk__tool talk__tool--stop"
+        type="button"
+        :aria-label="t('mobile.stop')"
+        :title="t('mobile.stop')"
+        @click="emit('stop')"
+      >
+        <QuickIcon name="stop" />
       </button>
     </div>
   </main>
@@ -395,41 +406,47 @@ function receiveText(half: Half): string {
     display: grid;
     flex: none;
     place-items: center;
-    width: 44px;
-    height: 48px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg);
-    background: var(--panel);
-    color: var(--fg);
-    font-size: 16px;
-    font-weight: 700;
+    width: 36px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--muted);
     cursor: pointer;
 
+    &:active {
+      background: var(--hover);
+    }
+
+    // On: the icon takes the accent, no fill
     &[aria-pressed='true'] {
-      border-color: var(--accent-fill);
-      background: var(--accent-fill);
-      color: #fff;
+      color: var(--accent-text);
+    }
+
+    &--small-a,
+    &--big-a {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    &--small-a {
+      font-size: 14px;
+    }
+
+    &--big-a {
+      font-size: 21px;
+    }
+
+    &--stop {
+      color: var(--danger);
     }
   }
 
-  &__stop {
-    flex: none;
-    min-width: 80px;
-    min-height: 48px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: var(--radius-lg);
-    background: var(--danger-fill);
-    color: #fff;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
   &__receive:focus-visible,
-  &__tool:focus-visible,
-  &__stop:focus-visible {
-    outline: 3px solid var(--accent);
+  &__tool:focus-visible {
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }

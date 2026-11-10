@@ -26,7 +26,7 @@ async function pretendPhone(page: Page): Promise<void> {
   await page.routeWebSocket(/api\.openai\.com\/v1\/realtime/, () => undefined);
 }
 
-test('a phone listens with one tap and shows big, labelled controls', async ({ page }) => {
+test('a phone listens with one tap and shows one quiet row of controls', async ({ page }) => {
   await pretendPhone(page);
   await page.goto('./');
   await page.locator('#lg-api-key').fill(VALID_KEY);
@@ -36,12 +36,27 @@ test('a phone listens with one tap and shows big, labelled controls', async ({ p
   await expect(live).toBeVisible();
   const stop = live.getByRole('button', { name: /Stop|Parar/ });
   await expect(stop).toBeVisible();
-  // Thumb-sized
-  expect((await stop.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(48);
+  // Still thumb-sized, and all on one row
+  expect((await stop.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  const tops = await live
+    .locator('.mlive__controls .mlive__btn')
+    .evaluateAll((els) => [
+      ...new Set(els.map((el) => Math.round(el.getBoundingClientRect().top))),
+    ]);
+  expect(tops).toHaveLength(1);
   const width = await page.evaluate(() => document.documentElement.clientWidth);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     width,
   );
+  await page.screenshot({ path: 'test-results/mobile-controls.png' });
+
+  // Full screen: no buttons at all until a tap brings back the way out
+  await live.getByRole('button', { name: /Full screen|Pantalla completa/ }).click();
+  await expect(live.getByRole('button')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/mobile-fullscreen.png' });
+  await live.click({ position: { x: 100, y: 200 } });
+  await live.getByRole('button', { name: /Leave full screen|Salir de pantalla completa/ }).click();
+  await expect(stop).toBeVisible();
   await stop.click();
   await expect(page.locator('.home')).toBeVisible();
 });
@@ -69,6 +84,9 @@ test('a conversation splits the screen, the top half turned to the other person'
   const height = await page.evaluate(() => window.innerHeight);
   expect((await page.locator('.talk').boundingBox())?.height ?? 0).toBeGreaterThan(height - 2);
   await page.screenshot({ path: 'test-results/talk-fullscreen.png' });
+  // Nothing on top of the text until a tap
+  await expect(page.locator('.talk').getByRole('button')).toHaveCount(0);
+  await page.locator('.talk').click({ position: { x: 100, y: 100 } });
   await page.getByRole('button', { name: /Leave full screen|Salir de pantalla completa/ }).click();
   await expect(page.locator('.shell__mobile')).toBeVisible();
 });
@@ -194,6 +212,7 @@ test('the chosen option stands out from the others', async ({ page }) => {
   await page.locator('#lg-api-key').fill(VALID_KEY);
   await page.locator('.shell__burger').click();
   await page.getByRole('button', { name: /Settings|Ajustes/ }).click();
+  await page.getByRole('tab', { name: /Connection|Conexión/ }).click();
 
   const providers = page.locator('.key__provider');
   const look = (index: number): Promise<string> =>
@@ -207,10 +226,7 @@ test('the chosen option stands out from the others', async ({ page }) => {
   expect(chosen).toContain('rgb(255, 255, 255)');
 
   // A chosen card carries a tick, not only a tint
-  await page
-    .locator('summary')
-    .filter({ hasText: /More options|Más opciones/ })
-    .click();
+  await page.getByRole('tab', { name: /Audio/ }).click();
   const card = page.locator('.lg-choice__option--on').first();
   await expect(card).toBeVisible();
   expect(await card.evaluate((el) => getComputedStyle(el, '::after').content)).toContain('✓');
