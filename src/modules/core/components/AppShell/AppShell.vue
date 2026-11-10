@@ -7,6 +7,7 @@ import {
   useCloudHistory,
   useCloudSave,
   useCloudBrand,
+  useCloudPrefs,
   type CloudHistoryItem,
 } from '@/modules/account';
 import { useLiveSession } from '@/modules/live';
@@ -17,7 +18,14 @@ import {
   elapsed,
   sessionDuration,
 } from '@/modules/session';
-import { UiLocaleSelect, UiBrandSelect, UiThemeSelect } from '@/modules/settings';
+import {
+  readSyncedPrefs,
+  SYNC_KEYS,
+  UiLocaleSelect,
+  UiBrandSelect,
+  UiThemeSelect,
+  writeSyncedPrefs,
+} from '@/modules/settings';
 import { immersive } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
@@ -50,6 +58,7 @@ const account = useAccount();
 const cloudSave = useCloudSave();
 const cloudHistory = useCloudHistory();
 const cloudBrand = useCloudBrand();
+const cloudPrefs = useCloudPrefs();
 const { t, locale } = useI18n();
 const menuOpen = ref(false);
 const input = ref<HTMLInputElement | null>(null);
@@ -204,10 +213,26 @@ onMounted(() => {
   cloudSave.start();
   cloudHistory.start();
   cloudBrand.start();
+  // The preferences follow the account; a copy from another device waits for the session to end
+  cloudPrefs.start({
+    keys: SYNC_KEYS,
+    read: readSyncedPrefs,
+    write: writeSyncedPrefs,
+    isBusy: () => session.active,
+    reload: () => window.location.reload(),
+    watchBusy: (onIdle) =>
+      watch(
+        () => session.active,
+        (active) => {
+          if (!active) onIdle();
+        },
+      ),
+  });
 });
 onBeforeUnmount(() => {
   cloudSave.stop();
   cloudBrand.stop();
+  cloudPrefs.stop();
   clearInterval(ticker);
   drawerQuery?.removeEventListener('change', onDrawerChange);
   window.removeEventListener('keydown', onKeydown);

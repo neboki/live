@@ -31,6 +31,33 @@ export const BACKUP_KEYS: readonly string[] = [
   'brand-custom',
 ];
 
+/**
+ * Preferences kept in the account while signed in (useCloudPrefs). Also left out:
+ * the own brand (it has its own sync, with the logo) and the audio source (the tab
+ * on a computer, the microphone on a phone).
+ */
+export const SYNC_KEYS: readonly string[] = BACKUP_KEYS.filter(
+  (key) => key !== 'brand-custom' && key !== 'audio-source',
+);
+
+/** The synced preferences as stored in this browser */
+export function readSyncedPrefs(): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const key of SYNC_KEYS) {
+    const value = readStorage(key);
+    if (value !== null) values[key] = value;
+  }
+  return values;
+}
+
+/** Replaces the synced preferences with `values` (a missing one goes back to default) */
+export function writeSyncedPrefs(values: Readonly<Record<string, unknown>>): void {
+  for (const key of SYNC_KEYS) {
+    const value = values[key];
+    writeStorage(key, typeof value === 'string' ? value : null);
+  }
+}
+
 /** A backup file is larger than this only if it is not one */
 const MAX_BACKUP_BYTES = 256 * 1024;
 

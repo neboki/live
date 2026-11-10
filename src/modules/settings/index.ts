@@ -11,6 +11,7 @@ export {
 export { MAX_MEETING_LANGUAGES } from './store/meetingHints';
 export { languageLabel, ORIGINAL_LANGUAGE, TARGET_LANGUAGES } from './languages';
 export { isLikelyAzureKey, isLikelyOpenAiKey } from './utils/apiKey';
+export { readSyncedPrefs, SYNC_KEYS, writeSyncedPrefs } from './utils/settingsBackup';
 export { default as SettingsView } from './components/SettingsView/SettingsView.vue';
 export { default as LanguageSelect } from './components/LanguageSelect/LanguageSelect.vue';
 export { default as UiBrandSelect } from './components/UiBrandSelect/UiBrandSelect.vue';

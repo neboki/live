@@ -52,6 +52,18 @@ service cloud.firestore {
             && request.resource.data.accent.matches('#[0-9a-f]{6}')));
     }
 
+    // The preferences (never the API key), as stored in the browser: one string per
+    // storage key (see src/modules/account/store/useCloudPrefs.ts)
+    match /users/{uid}/settings/prefs {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['version', 'values', 'updatedAt'])
+        && request.resource.data.version is int
+        && request.resource.data.values is map
+        && request.resource.data.values.size() <= 20
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

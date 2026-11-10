@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useTwoStep } from '../../composables/useTwoStep';
 import { useAccount } from '../../store/useAccount';
 import { useCloudBrand } from '../../store/useCloudBrand';
+import { useCloudPrefs } from '../../store/useCloudPrefs';
 import { useCloudHistory } from '../../store/useCloudHistory';
 import { useCloudSave } from '../../store/useCloudSave';
 
@@ -17,12 +18,14 @@ const account = useAccount();
 const cloud = useCloudSave();
 const history = useCloudHistory();
 const cloudBrand = useCloudBrand();
+const cloudPrefs = useCloudPrefs();
 const busy = computed(() => account.busy || history.deleting);
 
 const deleteAll = useTwoStep(() => history.removeAll());
 // The data goes first: once the sign-in account is gone, its data can't be reached
 const deleteAccount = useTwoStep(async () => {
-  if ((await history.removeAll()) && (await cloudBrand.remove())) await account.deleteAccount();
+  if ((await history.removeAll()) && (await cloudBrand.remove()) && (await cloudPrefs.remove()))
+    await account.deleteAccount();
 });
 
 const savedAt = computed(() =>
