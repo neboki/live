@@ -1,7 +1,16 @@
 <script setup lang="ts">
 /** Thin line icons for the phone's quick controls, drawn in the text colour */
 export type QuickIconName =
-  'pause' | 'play' | 'voice' | 'mute' | 'minus' | 'plus' | 'gear' | 'stop';
+  | 'pause'
+  | 'play'
+  | 'voice'
+  | 'mute'
+  | 'minus'
+  | 'plus'
+  | 'gear'
+  | 'stop'
+  | 'textSmaller'
+  | 'textBigger';
 
 defineProps<{ name: QuickIconName }>();
 
@@ -14,6 +23,9 @@ const PATHS: Record<QuickIconName, string> = {
   plus: 'M6 12h12M12 6v12',
   gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   stop: 'M7 7h10v10H7z',
+  // Text size: a rounded sans "A", small or large, as on iOS
+  textSmaller: 'M8 18l4-10.5 4 10.5M9.5 14.3h5',
+  textBigger: 'M5.5 20L12 4l6.5 16M7.9 14.2h8.2',
 };
 </script>
 

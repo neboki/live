@@ -205,24 +205,26 @@ function receiveText(half: Half): string {
       >
         <QuickIcon :name="overlay.paused ? 'play' : 'pause'" />
       </button>
-      <button
-        class="talk__tool talk__tool--small-a"
-        type="button"
-        :aria-label="t('mobile.smaller')"
-        :title="t('mobile.smaller')"
-        @click="smaller"
-      >
-        <span aria-hidden="true">A</span>
-      </button>
-      <button
-        class="talk__tool talk__tool--big-a"
-        type="button"
-        :aria-label="t('mobile.bigger')"
-        :title="t('mobile.bigger')"
-        @click="bigger"
-      >
-        <span aria-hidden="true">A</span>
-      </button>
+      <span class="talk__size" role="group" :aria-label="t('overlay.quick.text')">
+        <button
+          class="talk__tool talk__tool--round"
+          type="button"
+          :aria-label="t('mobile.smaller')"
+          :title="t('mobile.smaller')"
+          @click="smaller"
+        >
+          <QuickIcon name="textSmaller" />
+        </button>
+        <button
+          class="talk__tool talk__tool--round"
+          type="button"
+          :aria-label="t('mobile.bigger')"
+          :title="t('mobile.bigger')"
+          @click="bigger"
+        >
+          <QuickIcon name="textBigger" />
+        </button>
+      </span>
       <button
         class="talk__tool"
         type="button"
@@ -402,6 +404,15 @@ function receiveText(half: Half): string {
     color: var(--danger);
   }
 
+  &__size {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-pill);
+    background: var(--hover);
+  }
+
   &__tool {
     display: grid;
     flex: none;
@@ -424,19 +435,16 @@ function receiveText(half: Half): string {
       color: var(--accent-text);
     }
 
-    &--small-a,
-    &--big-a {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-weight: 500;
-      line-height: 1;
-    }
+    // Text size: two circles in one soft capsule
+    &--round {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: var(--fg);
 
-    &--small-a {
-      font-size: 14px;
-    }
-
-    &--big-a {
-      font-size: 21px;
+      &:active {
+        background: var(--panel);
+      }
     }
 
     &--stop {

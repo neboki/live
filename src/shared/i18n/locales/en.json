@@ -829,11 +829,6 @@
       "title": "Present",
       "hint": "You speak; the room follows in its language"
     },
-    "audio": {
-      "title": "Translate a voice note",
-      "hint": "Pick an audio file: it plays with subtitles",
-      "failed": "This audio file could not be opened. Try another format (mp3, m4a, ogg)."
-    },
     "partnerLanguage": "The other person speaks",
     "roomLanguage": "Language of the room",
     "start": "Start",

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { playVoiceNote, prepareVoiceNote, useLiveSession } from '@/modules/live';
+import { useLiveSession } from '@/modules/live';
 import { useOverlayStore } from '@/modules/overlay';
 import {
   LanguageSelect,
@@ -18,7 +18,7 @@ import InstallHint from '../InstallHint/InstallHint.vue';
 
 /**
  * The phone's start screen: the user's language and three big buttons, one per situation
- * (listen, talk, present), plus a voice note. Talking and presenting ask one thing first:
+ * (listen, talk, present); the chosen one turns red. Talking and presenting ask one thing first:
  * the other person's language, or the room's. Without a key, a single step asks for it.
  */
 type Asking = 'talk' | 'present' | null;
@@ -33,8 +33,6 @@ const { t, locale } = useI18n();
 const emit = defineEmits<{ privacy: [] }>();
 
 const asking = ref<Asking>(null);
-const audioFailed = ref(false);
-const fileInput = ref<HTMLInputElement | null>(null);
 const mine = computed(() =>
   settings.targetLanguage === ORIGINAL_LANGUAGE ? 'en' : settings.targetLanguage,
 );
@@ -51,6 +49,8 @@ function otherThan(code: string, remembered: string | null): string {
 const partner = ref(otherThan(mine.value, readStorage(PARTNER_KEY)));
 const room = ref(otherThan(mine.value, readStorage(ROOM_KEY)));
 const ready = computed(() => settings.keyLooksValid && !session.starting);
+/** Listening starts at once: it shows as chosen while it gets going */
+const listening = computed(() => session.starting && session.mode === 'listen');
 /** The other side's languages: never the user's own, which would leave nothing to translate */
 const options = computed(() =>
   TARGET_LANGUAGES.filter((code) => code !== mine.value).map((code) => ({
@@ -90,20 +90,6 @@ function startPresent(): void {
   asking.value = null;
   run(session.start(room.value, { mode: 'present', interpret: overlay.options.voice }));
 }
-
-function pickAudio(): void {
-  audioFailed.value = false;
-  prepareVoiceNote();
-  fileInput.value?.click();
-}
-
-async function onAudio(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
-  audioFailed.value = !(await playVoiceNote(file, settings.targetLanguage));
-}
 </script>
 
 <template>
@@ -121,13 +107,20 @@ async function onAudio(event: Event): Promise<void> {
     </section>
 
     <div class="home__modes">
-      <button class="home__mode home__mode--main" type="button" :disabled="!ready" @click="listen">
+      <button
+        class="home__mode"
+        :class="{ 'home__mode--on': listening }"
+        type="button"
+        :disabled="!ready"
+        @click="listen"
+      >
         <strong>{{ t('mobile.listen.title') }}</strong>
         <span>{{ t('mobile.listen.hint') }}</span>
       </button>
 
       <button
         class="home__mode"
+        :class="{ 'home__mode--on': asking === 'talk' }"
         type="button"
         :disabled="!ready"
         :aria-expanded="asking === 'talk'"
@@ -156,6 +149,7 @@ async function onAudio(event: Event): Promise<void> {
 
       <button
         class="home__mode"
+        :class="{ 'home__mode--on': asking === 'present' }"
         type="button"
         :disabled="!ready"
         :aria-expanded="asking === 'present'"
@@ -181,24 +175,9 @@ async function onAudio(event: Event): Promise<void> {
           </button>
         </div>
       </div>
-
-      <button class="home__audio" type="button" :disabled="!ready" @click="pickAudio">
-        <strong>{{ t('mobile.audio.title') }}</strong>
-        <span>{{ t('mobile.audio.hint') }}</span>
-      </button>
-      <input
-        ref="fileInput"
-        class="home__file"
-        type="file"
-        accept="audio/*,.opus,.ogg,.m4a,.mp3,.wav,.aac"
-        tabindex="-1"
-        aria-hidden="true"
-        @change="onAudio"
-      />
     </div>
 
     <p v-if="session.starting" class="home__status" role="status">{{ t(session.startingKey) }}</p>
-    <p v-else-if="audioFailed" class="home__error" role="alert">{{ t('mobile.audio.failed') }}</p>
     <p v-else-if="session.errorKey" class="home__error" role="alert">{{ t(session.errorKey) }}</p>
 
     <p class="home__consent">
@@ -251,8 +230,7 @@ async function onAudio(event: Event): Promise<void> {
   }
 
   // Big, thumb-sized cards: the whole card is the button
-  &__mode,
-  &__audio {
+  &__mode {
     display: grid;
     gap: 4px;
     min-height: 96px;
@@ -286,23 +264,19 @@ async function onAudio(event: Event): Promise<void> {
     }
   }
 
-  &__mode--main {
-    min-height: 120px;
+  // The chosen situation: filled red, so it is clear which one the panel below belongs to
+  &__mode--on,
+  &__mode:active:not(:disabled) {
     border-color: transparent;
-    background: var(--brand-gradient);
+    background: var(--accent-fill);
     color: #fff;
 
     span {
       color: rgb(255 255 255 / 90%);
     }
-  }
 
-  &__audio {
-    min-height: 72px;
-    border-style: dashed;
-
-    strong {
-      font-size: 18px;
+    &:disabled {
+      opacity: 1;
     }
   }
 
@@ -331,10 +305,6 @@ async function onAudio(event: Event): Promise<void> {
       min-height: 52px;
       font-size: 17px;
     }
-  }
-
-  &__file {
-    display: none;
   }
 
   &__status,

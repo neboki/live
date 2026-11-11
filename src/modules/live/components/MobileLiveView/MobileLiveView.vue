@@ -20,7 +20,7 @@ import QuickIcon from './QuickIcon.vue';
 
 /**
  * The live screen on a phone: big text and the same quick controls as the bar elsewhere
- * (pause, volume, text size, settings, stop) plus full screen. Listening (and a voice note)
+ * (pause, voice, text size, settings, stop) plus full screen; the volume is in settings. Listening (and a voice note)
  * shows the lines as a running transcript with who said each; presenting shows the last
  * line huge on black, for the room or a projector; talking splits the screen in two.
  */
@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
     <p v-if="voiceTip && !presenting && !immersive" class="mlive__tip">{{ t(voiceTip) }}</p>
 
     <!-- The same quick controls as the bar, as one quiet row of icons: pause, volume,
-         text size, full screen, settings, stop -->
+         text size, full screen, settings, stop. The volume lives in settings -->
     <footer v-if="!immersive" class="mlive__controls">
       <button
         class="mlive__btn"
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
         <QuickIcon :name="overlay.paused ? 'play' : 'pause'" />
       </button>
       <span class="mlive__sep" aria-hidden="true"></span>
-      <div class="mlive__group" role="group" :aria-label="t('overlay.quick.volume')">
+      <div class="mlive__group">
         <button
           class="mlive__btn"
           type="button"
@@ -229,48 +229,28 @@ onBeforeUnmount(() => {
         >
           <QuickIcon :name="overlay.options.voice ? 'voice' : 'mute'" />
         </button>
-        <button
-          class="mlive__btn"
-          type="button"
-          :disabled="!quick.canQuieter.value"
-          :aria-label="t('overlay.quick.quieter')"
-          :title="t('overlay.quick.quieter')"
-          @click="quick.quieter"
-        >
-          <QuickIcon name="minus" />
-        </button>
-        <button
-          class="mlive__btn"
-          type="button"
-          :disabled="!quick.canLouder.value"
-          :aria-label="t('overlay.quick.louder')"
-          :title="t('overlay.quick.louder')"
-          @click="quick.louder"
-        >
-          <QuickIcon name="plus" />
-        </button>
       </div>
       <span class="mlive__sep" aria-hidden="true"></span>
-      <div class="mlive__group" role="group" :aria-label="t('overlay.quick.text')">
+      <div class="mlive__size" role="group" :aria-label="t('overlay.quick.text')">
         <button
-          class="mlive__btn mlive__btn--small-a"
+          class="mlive__btn mlive__btn--round"
           type="button"
           :disabled="!quick.canSmaller.value"
           :aria-label="t('mobile.smaller')"
           :title="t('mobile.smaller')"
           @click="quick.smaller"
         >
-          <span aria-hidden="true">A</span>
+          <QuickIcon name="textSmaller" />
         </button>
         <button
-          class="mlive__btn mlive__btn--big-a"
+          class="mlive__btn mlive__btn--round"
           type="button"
           :disabled="!quick.canBigger.value"
           :aria-label="t('mobile.bigger')"
           :title="t('mobile.bigger')"
           @click="quick.bigger"
         >
-          <span aria-hidden="true">A</span>
+          <QuickIcon name="textBigger" />
         </button>
       </div>
       <span class="mlive__sep" aria-hidden="true"></span>
@@ -523,6 +503,14 @@ onBeforeUnmount(() => {
     display: flex;
   }
 
+  &__size {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-pill);
+    background: var(--hover);
+  }
+
   // A hairline between groups: pause | volume | text | the rest
   &__sep {
     flex: none;
@@ -596,19 +584,16 @@ onBeforeUnmount(() => {
       color: var(--accent-text);
     }
 
-    &--small-a,
-    &--big-a {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-weight: 500;
-      line-height: 1;
-    }
+    // Text size: two circles in one soft capsule
+    &--round {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: var(--fg);
 
-    &--small-a {
-      font-size: 14px;
-    }
-
-    &--big-a {
-      font-size: 21px;
+      &:active {
+        background: var(--panel);
+      }
     }
 
     &--stop {
@@ -637,6 +622,10 @@ onBeforeUnmount(() => {
 
   &--present &__sep {
     background: rgb(255 255 255 / 12%);
+  }
+
+  &--present &__size {
+    background: rgb(255 255 255 / 10%);
   }
 
   &--present &__btn:not(&__btn--stop, [aria-pressed='true']) {

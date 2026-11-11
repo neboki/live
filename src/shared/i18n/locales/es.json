@@ -829,11 +829,6 @@
       "title": "Presentar",
       "hint": "Hablas tú; la sala te sigue en su idioma"
     },
-    "audio": {
-      "title": "Traducir un audio",
-      "hint": "Elige un archivo de audio: suena con subtítulos",
-      "failed": "No se ha podido abrir este audio. Prueba con otro formato (mp3, m4a, ogg)."
-    },
     "partnerLanguage": "La otra persona habla",
     "roomLanguage": "Idioma de la sala",
     "start": "Empezar",
