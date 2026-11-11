@@ -51,12 +51,26 @@ jobs:
       # Runs the unit tests once, with the coverage thresholds from vitest.config.ts
       - run: pnpm test:coverage
       - run: pnpm build
-      - name: Cache Playwright browsers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+
+  # The browser tests run in Playwright's own image, which already has the browsers and their
+  # system libraries: no apt download, so an Ubuntu mirror outage cannot fail the build.
+  # Keep the image tag equal to the @playwright/test version in pnpm-lock.yaml.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
       # The tests take about a minute; a hang fails fast instead of eating the job
       - run: pnpm test:e2e
         timeout-minutes: 8
