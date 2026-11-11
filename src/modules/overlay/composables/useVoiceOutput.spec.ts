@@ -26,7 +26,7 @@ const settings = reactive({
   apiKey: 'openai-key',
   voiceKey: 'test-key',
   tts: {
-    engine: 'browser' as 'browser' | 'openai' | 'elevenlabs',
+    engine: 'openai' as 'openai' | 'elevenlabs',
     model: 'gpt-realtime-2.1-mini',
     voice: 'marin',
     elevenLabsModel: 'eleven_flash_v2_5',
@@ -79,7 +79,9 @@ describe('useVoiceOutput', () => {
     overlay.options.voice = true;
     overlay.paused = false;
     settings.voiceKey = 'test-key';
-    settings.tts.engine = 'browser';
+    // OpenAI's voice without a key: the browser reads
+    settings.tts.engine = 'openai';
+    settings.apiKey = '';
     vi.clearAllMocks();
     scope = effectScope();
     scope.run(() => useVoiceOutput(() => 'es'));
@@ -139,12 +141,9 @@ describe('useVoiceOutput', () => {
 
   it('uses the OpenAI voice when selected with the OpenAI key, and the browser without it', () => {
     const options = captured();
-    settings.tts.engine = 'openai';
-    const openAi = options.engine();
-    expect(openAi).not.toBe(options.fallback);
-    settings.apiKey = '';
     expect(options.engine()).toBe(options.fallback);
     settings.apiKey = 'openai-key';
+    expect(options.engine()).not.toBe(options.fallback);
   });
 
   it('stops and closes the OpenAI voice with the rest', () => {

@@ -31,7 +31,7 @@ ElevenLabs is the reference for natural voices. Checked on 2026-11-11 against it
 
 ## Decision
 
-1. **Three voices, OpenAI's by default.**
+1. **Two voices, OpenAI's by default.**
    - **OpenAI** (default): a Realtime session with `gpt-realtime-2.1-mini`, keyed like the
      transcription socket (subprotocol on OpenAI, `api-key` on Azure, where the model is the
      deployment name). Each sentence is an out-of-band response (`conversation: "none"`)
@@ -41,7 +41,8 @@ ElevenLabs is the reference for natural voices. Checked on 2026-11-11 against it
      Realtime voices; fable, nova and onyx no longer exist and fall back to marin.
    - **ElevenLabs** (optional): `eleven_flash_v2_5` on the plain streaming endpoint, with its
      own key asked for in the voice section; the voices come from the user's account.
-   - **Browser** (free): `speechSynthesis`, and the fallback for the other two.
+   - The **browser's** `speechSynthesis` is not offered as a choice (the user's call,
+     2026-11-11): it only reads when the chosen voice fails or has no key.
 2. **Safety.** If the chosen voice fails (refused key, no credit, network, a model the key
    cannot use), the sentence and the rest of the run are read by the browser voice, with a
    notice. The voice model is left out of the check before a session starts, so a voice

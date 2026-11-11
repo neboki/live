@@ -14,13 +14,12 @@ import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
 import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
 import { INTERPRETER_MODEL, VOICES } from '@/shared/providers/openai/config';
 import { createOpenAiVoice } from '@/shared/providers/openai/realtime/realtimeVoice';
-import { createBrowserTts } from '@/shared/speech/browserTts';
 import type { TtsEngine } from '@/shared/speech/types';
 import { useOverlayStore } from '../../store/useOverlayStore';
 
 /** One voice card: which engine reads, with which of its voices */
 interface Choice {
-  /** Unique across engines: "openai:marin", "elevenlabs:<id>", "browser" */
+  /** Unique across engines: "openai:marin", "elevenlabs:<id>" */
   id: string;
   engine: TtsEngine;
   voice: string;
@@ -31,10 +30,11 @@ interface Choice {
 const RECOMMENDED: ReadonlySet<string> = new Set(['marin', 'cedar']);
 
 /**
- * Picks the voice that reads the translation: OpenAI's (the default, with the OpenAI key),
- * ElevenLabs' (optional, with the user's ElevenLabs key, asked for here) or the browser's
- * (free). Each has a short sample to hear it first; a sample is a tiny request billed to
- * the key and not counted in the session cost.
+ * Picks the voice that reads the translation: OpenAI's (the default, with the OpenAI key)
+ * or ElevenLabs' (optional, with the user's ElevenLabs key, asked for here). Each has a
+ * short sample to hear it first; a sample is a tiny request billed to the key and not
+ * counted in the session cost. The browser's voice is not offered: it only reads when the
+ * chosen voice fails (useSpeech).
  */
 const store = useOverlayStore();
 const settings = useSettingsStore();
@@ -69,7 +69,6 @@ const elevenLabs = createElevenLabsTts(() => ({
     playing.value?.engine === 'elevenlabs' ? playing.value.voice : settings.tts.elevenLabsVoice,
   volume: store.voiceVolume,
 }));
-const browser = createBrowserTts(() => store.voiceVolume);
 
 const { voices, loading, error: loadError } = useElevenLabsVoices(() => settings.voiceKey);
 
@@ -91,27 +90,17 @@ const elevenLabsChoices = computed<Choice[]>(() =>
     tag: voice.category === 'premade' ? 'ElevenLabs' : t('overlay.voice.yours'),
   })),
 );
-const browserChoice = computed<Choice>(() => ({
-  id: 'browser',
-  engine: 'browser',
-  voice: '',
-  name: t('overlay.voice.browser'),
-  tag: t('overlay.voice.free'),
-}));
-/** The cards in three groups: OpenAI (default), ElevenLabs (optional), the browser (free) */
+/** The cards in two groups: OpenAI (default) and ElevenLabs (optional, once its key works) */
 const groups = computed(() =>
   [
     { id: 'openai', title: t('overlay.voice.openai'), choices: openAiChoices.value },
     { id: 'elevenlabs', title: t('overlay.voice.elevenlabs'), choices: elevenLabsChoices.value },
-    { id: 'browser', title: t('overlay.voice.free'), choices: [browserChoice.value] },
   ].filter((group) => group.choices.length > 0),
 );
 
 const selected = computed(() => {
   const { engine, voice, elevenLabsVoice } = settings.tts;
-  if (engine === 'openai') return `openai:${voice}`;
-  if (engine === 'elevenlabs') return `elevenlabs:${elevenLabsVoice}`;
-  return 'browser';
+  return engine === 'elevenlabs' ? `elevenlabs:${elevenLabsVoice}` : `openai:${voice}`;
 });
 const hasOpenAiKey = computed(() => settings.apiKey.trim() !== '');
 const hasVoices = computed(() => voices.value.length > 0);
@@ -142,7 +131,6 @@ function canPreview(choice: Choice): boolean {
 function stop(): void {
   openAi.stop();
   elevenLabs.stop();
-  browser.stop();
   playing.value = null;
 }
 
@@ -153,8 +141,7 @@ async function preview(choice: Choice): Promise<void> {
   failed.value = false;
   playing.value = choice;
   try {
-    const engine =
-      choice.engine === 'openai' ? openAi : choice.engine === 'elevenlabs' ? elevenLabs : browser;
+    const engine = choice.engine === 'elevenlabs' ? elevenLabs : openAi;
     await engine.speak(t('overlay.voice.sample'), locale.value);
   } catch (err) {
     logError('Voice sample failed', err);
