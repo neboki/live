@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PcmPlayer } from '@/shared/audio/pcmPlayer';
-import { createElevenLabsTts } from './tts';
+import { CATCH_UP_SPEED, createElevenLabsTts } from './tts';
 
 /** Shaped like an ElevenLabs key, built at runtime so no key-like text sits in the repo */
 const KEY = ['sk', 'fakefakefakefakefake'].join('_');
@@ -93,6 +93,18 @@ describe('createElevenLabsTts', () => {
       previous_text: 'Hola a todos.',
     });
     expect(JSON.parse(sent(fetchMock, 2)[1].body as string)).not.toHaveProperty('previous_text');
+  });
+
+  it('reads a backlog of joined sentences a little faster, a single sentence at its pace', async () => {
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await tts.speak('Una frase corta.', 'es');
+    fetchMock.mockResolvedValueOnce(streamed([[1, 0]]).response);
+    await tts.speak('Frase pendiente. '.repeat(10), 'es');
+
+    expect(JSON.parse(sent(fetchMock, 0)[1].body as string)).not.toHaveProperty('voice_settings');
+    expect(JSON.parse(sent(fetchMock, 1)[1].body as string)).toMatchObject({
+      voice_settings: { speed: CATCH_UP_SPEED },
+    });
   });
 
   it('leaves the language out when the tag has no ISO 639-1 code', async () => {

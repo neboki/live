@@ -20,6 +20,12 @@ export interface ElevenLabsTtsConfig {
  * it arrives in time (ElevenLabs answers in a few hundred ms) and they join without a gap.
  */
 const PREFETCH_SECONDS = 1.2;
+/**
+ * A clip this long is a backlog of joined sentences: it is read a little faster, as an
+ * interpreter catches up. ElevenLabs changes the pace, not the pitch (0.7..1.2).
+ */
+export const BACKLOG_CHARS = 120;
+export const CATCH_UP_SPEED = 1.12;
 /** What came before is passed for a smoother join; longer context only adds latency */
 const MAX_PREVIOUS_CHARS = 300;
 
@@ -60,6 +66,7 @@ export function createElevenLabsTts(
     const body: Record<string, unknown> = { text, model_id: config.model };
     const code = languageCode(lang);
     if (code) body.language_code = code;
+    if (text.length > BACKLOG_CHARS) body.voice_settings = { speed: CATCH_UP_SPEED };
     if (previous && previous.lang === lang) {
       body.previous_text = previous.text.slice(-MAX_PREVIOUS_CHARS);
     }

@@ -28,19 +28,28 @@ interface QueueItem {
 /** Pending items kept while one plays; the oldest is dropped beyond this. */
 export const MAX_BACKLOG = 3;
 /**
- * Sentences waiting in the same language are read as one clip: nothing is skipped and the
- * voice keeps one tone. Beyond this many characters waiting, the oldest text goes, so the
- * voice never lags far behind the conversation.
+ * Sentences waiting in the same language are read as one clip, in one tone. Like an
+ * interpreter, the voice stays at most about two sentences (~12 s) behind: beyond this many
+ * characters waiting, it skips to the latest whole sentences.
  */
-export const MAX_PENDING_CHARS = 900;
+export const MAX_PENDING_CHARS = 220;
+/** A sentence end followed by a space: where a trimmed backlog may start */
+const SENTENCE_START = /[.!?…。！？]["'”’»)\]]*\s+/g;
 const TTS_FAILED_KEY = 'errors.ttsFailed';
 /** Voice errors that say why (a refused key, no credit left) keep their own message */
 const TTS_KEY_PREFIX = 'errors.tts';
 
-/** The last MAX_PENDING_CHARS of `text`, cut at a word so no half word is read */
+/**
+ * The last MAX_PENDING_CHARS of `text`, starting at a whole sentence when one starts there,
+ * otherwise at a whole word, so nothing is read from its middle.
+ */
 function trimToRecent(text: string): string {
   if (text.length <= MAX_PENDING_CHARS) return text;
   const tail = text.slice(-MAX_PENDING_CHARS);
+  const sentence = [...tail.matchAll(SENTENCE_START)][0];
+  if (sentence && sentence.index + sentence[0].length < tail.length) {
+    return tail.slice(sentence.index + sentence[0].length);
+  }
   const space = tail.indexOf(' ');
   return space >= 0 ? tail.slice(space + 1) : tail;
 }

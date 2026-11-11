@@ -85,6 +85,21 @@ describe('useSpeech', () => {
     expect(waiting.split(' ')[0]).toMatch(/^w\d+$/);
   });
 
+  it('skips to the latest whole sentences when the voice falls too far behind', async () => {
+    const engine = fakeEngine();
+    const speech = useSpeech({ engine: () => engine, fallback: engine });
+    speech.speak('playing', 'es');
+    await flush();
+    for (let i = 1; i <= 20; i++) speech.speak(`Esta es la frase número ${i}.`, 'es');
+
+    engine.finish();
+    await flush();
+    const waiting = engine.spoken[1] ?? '';
+    expect(waiting.length).toBeLessThanOrEqual(MAX_PENDING_CHARS);
+    expect(waiting.startsWith('Esta es la frase')).toBe(true);
+    expect(waiting.endsWith('número 20.')).toBe(true);
+  });
+
   it('stop() empties the queue and stops the engine', async () => {
     const engine = fakeEngine();
     const speech = useSpeech({ engine: () => engine, fallback: engine });
