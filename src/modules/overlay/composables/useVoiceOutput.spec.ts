@@ -23,17 +23,24 @@ const overlay = reactive({
   setNotice: vi.fn(),
 });
 const settings = reactive({
+  apiKey: 'openai-key',
   voiceKey: 'test-key',
   tts: {
-    engine: 'browser' as 'browser' | 'elevenlabs',
-    model: 'eleven_flash_v2_5',
-    voice: 'voice-id',
+    engine: 'browser' as 'browser' | 'openai' | 'elevenlabs',
+    model: 'gpt-realtime-2.1-mini',
+    voice: 'marin',
+    elevenLabsModel: 'eleven_flash_v2_5',
+    elevenLabsVoice: 'voice-id',
   },
 });
 
 vi.mock('../store/useOverlayStore', () => ({ useOverlayStore: () => overlay }));
 vi.mock('@/modules/settings/store/useSettingsStore', () => ({
   useSettingsStore: () => settings,
+}));
+const openAiVoice = vi.hoisted(() => ({ stop: vi.fn(), close: vi.fn() }));
+vi.mock('@/shared/providers/openai/realtime/realtimeVoice', () => ({
+  createOpenAiVoice: () => ({ speak: vi.fn(), ...openAiVoice }),
 }));
 vi.mock('@/shared/providers/elevenlabs/tts', () => ({
   createElevenLabsTts: (_config: unknown, onUsage: unknown) => {
@@ -128,6 +135,22 @@ describe('useVoiceOutput', () => {
     scope.stop();
     expect(speech.stop).toHaveBeenCalled();
     expect(voiceClose).toHaveBeenCalled();
+  });
+
+  it('uses the OpenAI voice when selected with the OpenAI key, and the browser without it', () => {
+    const options = captured();
+    settings.tts.engine = 'openai';
+    const openAi = options.engine();
+    expect(openAi).not.toBe(options.fallback);
+    settings.apiKey = '';
+    expect(options.engine()).toBe(options.fallback);
+    settings.apiKey = 'openai-key';
+  });
+
+  it('stops and closes the OpenAI voice with the rest', () => {
+    scope.stop();
+    expect(openAiVoice.close).toHaveBeenCalled();
+    expect(openAiVoice.stop).toHaveBeenCalled();
   });
 
   it('uses the ElevenLabs engine only when selected and a key is present', async () => {

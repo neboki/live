@@ -58,7 +58,8 @@ by about ±8 %), at 150 words per minute and about 15 words per sentence, so 390
   That gives luna ≈ $0.04 and sol ≈ $1.40, at Standard rates (the app does not ask for Fast mode).
 
 _Update 2026-11-11:_ Low cost moved to `gpt-transcribe` (`gpt-4o-mini-transcribe` is retired), and the
-optional voice is now ElevenLabs, about $1.50 per hour with voice ([0010](0010-elevenlabs-voice.md)).
+voice is now `gpt-realtime-2.1-mini` (about $1 per hour with voice), or ElevenLabs if the user
+adds its key (about $1.50) ([0010](0010-elevenlabs-voice.md)).
 
 The app's tier picker shows these figures. Voice output (`gpt-4o-mini-tts`, now retired) was optional
 and adds about $0.45 per hour, but that figure uses a $0.015/min rate that OpenAI does not

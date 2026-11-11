@@ -2,27 +2,39 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { onRadioKeydown } from '../../composables/radioGroup';
+import {
+  MIN_ELEVENLABS_KEY_CHARS,
+  useElevenLabsVoices,
+} from '../../composables/useElevenLabsVoices';
 import { VOICE_VOLUME_RANGE } from '../../constants';
 import { fractionOf, stepTo } from '../../utils/range';
 import { useSettingsStore } from '@/modules/settings';
-import { AppError, logError } from '@/shared/errors';
+import { logError } from '@/shared/errors';
 import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
 import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
-import { type ElevenLabsVoice, listElevenLabsVoices } from '@/shared/providers/elevenlabs/voices';
-import { INTERPRETER_MODEL } from '@/shared/providers/openai/config';
+import { INTERPRETER_MODEL, VOICES } from '@/shared/providers/openai/config';
+import { createOpenAiVoice } from '@/shared/providers/openai/realtime/realtimeVoice';
 import { createBrowserTts } from '@/shared/speech/browserTts';
+import type { TtsEngine } from '@/shared/speech/types';
 import { useOverlayStore } from '../../store/useOverlayStore';
 
-/** The browser's own voice, free; not an ElevenLabs voice id */
-const BROWSER = 'browser';
-/** Shorter than any ElevenLabs key: not worth asking for the voices yet */
-const MIN_KEY_CHARS = 20;
+/** One voice card: which engine reads, with which of its voices */
+interface Choice {
+  /** Unique across engines: "openai:marin", "elevenlabs:<id>", "browser" */
+  id: string;
+  engine: TtsEngine;
+  voice: string;
+  name: string;
+  tag: string;
+}
+
+const RECOMMENDED: ReadonlySet<string> = new Set(['marin', 'cedar']);
 
 /**
- * Picks the voice that reads the translation: the browser's (free) or one of the
- * ElevenLabs account's, each with a short sample to hear it first. ElevenLabs needs the
- * user's own ElevenLabs key, asked for here; a sample is a tiny request billed to it and
- * not counted in the session cost.
+ * Picks the voice that reads the translation: OpenAI's (the default, with the OpenAI key),
+ * ElevenLabs' (optional, with the user's ElevenLabs key, asked for here) or the browser's
+ * (free). Each has a short sample to hear it first; a sample is a tiny request billed to
+ * the key and not counted in the session cost.
  */
 const store = useOverlayStore();
 const settings = useSettingsStore();
@@ -39,101 +51,122 @@ function onVolume(event: Event): void {
   const value = Number((event.target as HTMLInputElement | null)?.value);
   if (Number.isFinite(value)) store.voiceVolume = stepTo(VOICE_VOLUME_RANGE, value);
 }
-/** The voice whose sample is playing, if any */
-const playing = ref<string | null>(null);
+/** The card whose sample is playing, if any */
+const playing = ref<Choice | null>(null);
 const failed = ref(false);
 const keyVisible = ref(false);
+const openAi = createOpenAiVoice(() => ({
+  apiKey: settings.apiKey,
+  endpoint: settings.endpoint,
+  model: settings.tts.model,
+  voice: playing.value?.engine === 'openai' ? playing.value.voice : settings.tts.voice,
+  volume: store.voiceVolume,
+}));
 const elevenLabs = createElevenLabsTts(() => ({
   apiKey: settings.voiceKey,
-  model: settings.tts.model,
-  voice: playing.value ?? settings.tts.voice,
+  model: settings.tts.elevenLabsModel,
+  voice:
+    playing.value?.engine === 'elevenlabs' ? playing.value.voice : settings.tts.elevenLabsVoice,
   volume: store.voiceVolume,
 }));
 const browser = createBrowserTts(() => store.voiceVolume);
 
-/** The account's voices; empty until loaded or without a key */
-const voices = ref<ElevenLabsVoice[]>([]);
-const loading = ref(false);
-/** i18n key of why the voices could not be loaded, or null */
-const loadError = ref<string | null>(null);
-let loadController: AbortController | null = null;
+const { voices, loading, error: loadError } = useElevenLabsVoices(() => settings.voiceKey);
 
-/** The key works: its voices came back */
+const openAiChoices = computed<Choice[]>(() =>
+  VOICES.map((voice) => ({
+    id: `openai:${voice}`,
+    engine: 'openai',
+    voice,
+    name: voice.charAt(0).toUpperCase() + voice.slice(1),
+    tag: RECOMMENDED.has(voice) ? t('overlay.voice.recommended') : 'OpenAI',
+  })),
+);
+const elevenLabsChoices = computed<Choice[]>(() =>
+  voices.value.map((voice) => ({
+    id: `elevenlabs:${voice.id}`,
+    engine: 'elevenlabs',
+    voice: voice.id,
+    name: voice.name,
+    tag: voice.category === 'premade' ? 'ElevenLabs' : t('overlay.voice.yours'),
+  })),
+);
+const browserChoice = computed<Choice>(() => ({
+  id: 'browser',
+  engine: 'browser',
+  voice: '',
+  name: t('overlay.voice.browser'),
+  tag: t('overlay.voice.free'),
+}));
+/** The cards in three groups: OpenAI (default), ElevenLabs (optional), the browser (free) */
+const groups = computed(() =>
+  [
+    { id: 'openai', title: t('overlay.voice.openai'), choices: openAiChoices.value },
+    { id: 'elevenlabs', title: t('overlay.voice.elevenlabs'), choices: elevenLabsChoices.value },
+    { id: 'browser', title: t('overlay.voice.free'), choices: [browserChoice.value] },
+  ].filter((group) => group.choices.length > 0),
+);
+
+const selected = computed(() => {
+  const { engine, voice, elevenLabsVoice } = settings.tts;
+  if (engine === 'openai') return `openai:${voice}`;
+  if (engine === 'elevenlabs') return `elevenlabs:${elevenLabsVoice}`;
+  return 'browser';
+});
+const hasOpenAiKey = computed(() => settings.apiKey.trim() !== '');
 const hasVoices = computed(() => voices.value.length > 0);
-const selected = computed(() => (settings.tts.engine === 'browser' ? BROWSER : settings.tts.voice));
 /** In interpreter mode the model speaks with its own voice */
 const interpreter = computed(() => settings.models.translation === INTERPRETER_MODEL);
 
-async function loadVoices(key: string): Promise<void> {
-  loadController?.abort();
-  voices.value = [];
-  loadError.value = null;
-  if (key.trim().length < MIN_KEY_CHARS) return;
-  const controller = new AbortController();
-  loadController = controller;
-  loading.value = true;
-  try {
-    voices.value = await listElevenLabsVoices(key, controller.signal);
-  } catch (err) {
-    if (controller.signal.aborted) return;
-    logError('Loading the ElevenLabs voices failed', err);
-    const refused = err instanceof AppError && err.userMessageKey === 'errors.ttsKey';
-    loadError.value = refused ? 'overlay.voice.keyRefused' : 'overlay.voice.loadFailed';
-  } finally {
-    if (loadController === controller) {
-      loading.value = false;
-      loadController = null;
-    }
-  }
-}
-
+// Without a usable ElevenLabs key its voices cannot read: back to OpenAI's, the default
 watch(
   () => settings.voiceKey,
   (key) => {
-    // Without a usable key the browser reads; with one, a voice from the list can be picked
-    if (key.trim().length < MIN_KEY_CHARS && settings.tts.engine === 'elevenlabs') {
-      settings.tts.engine = 'browser';
+    if (key.trim().length < MIN_ELEVENLABS_KEY_CHARS && settings.tts.engine === 'elevenlabs') {
+      settings.tts.engine = 'openai';
     }
-    void loadVoices(key);
   },
   { immediate: true },
 );
 
-function choose(voice: string): void {
-  if (voice === BROWSER) {
-    settings.tts.engine = 'browser';
-    return;
-  }
-  settings.tts.engine = 'elevenlabs';
-  settings.tts.voice = voice;
+function choose(choice: Choice): void {
+  settings.tts.engine = choice.engine;
+  if (choice.engine === 'openai') settings.tts.voice = choice.voice;
+  if (choice.engine === 'elevenlabs') settings.tts.elevenLabsVoice = choice.voice;
+}
+
+function canPreview(choice: Choice): boolean {
+  return choice.engine !== 'openai' || hasOpenAiKey.value;
 }
 
 function stop(): void {
+  openAi.stop();
   elevenLabs.stop();
   browser.stop();
   playing.value = null;
 }
 
-async function preview(voice: string): Promise<void> {
-  const again = playing.value === voice;
+async function preview(choice: Choice): Promise<void> {
+  const again = playing.value?.id === choice.id;
   stop();
   if (again) return;
   failed.value = false;
-  playing.value = voice;
+  playing.value = choice;
   try {
-    const engine = voice === BROWSER ? browser : elevenLabs;
+    const engine =
+      choice.engine === 'openai' ? openAi : choice.engine === 'elevenlabs' ? elevenLabs : browser;
     await engine.speak(t('overlay.voice.sample'), locale.value);
   } catch (err) {
     logError('Voice sample failed', err);
     failed.value = true;
   } finally {
-    if (playing.value === voice) playing.value = null;
+    if (playing.value?.id === choice.id) playing.value = null;
   }
 }
 
 onBeforeUnmount(() => {
-  loadController?.abort();
   stop();
+  openAi.close?.();
   elevenLabs.close?.();
 });
 </script>
@@ -148,57 +181,38 @@ onBeforeUnmount(() => {
         :aria-label="t('overlay.voice.voice')"
         @keydown="onRadioKeydown"
       >
-        <div class="voices__card" :class="{ 'voices__card--on': selected === BROWSER }">
-          <button
-            class="voices__pick"
-            type="button"
-            role="radio"
-            :aria-checked="selected === BROWSER"
-            :tabindex="selected === BROWSER ? 0 : -1"
-            @click="choose(BROWSER)"
+        <template v-for="group in groups" :key="group.id">
+          <p class="voices__group">{{ group.title }}</p>
+          <div
+            v-for="choice in group.choices"
+            :key="choice.id"
+            class="voices__card"
+            :class="{ 'voices__card--on': selected === choice.id }"
           >
-            {{ t('overlay.voice.browser') }}
-            <small>{{ t('overlay.voice.free') }}</small>
-          </button>
-          <button
-            class="voices__play"
-            type="button"
-            :aria-label="t('overlay.voice.listen', { voice: t('overlay.voice.browser') })"
-            :aria-pressed="playing === BROWSER"
-            @click="preview(BROWSER)"
-          >
-            <span aria-hidden="true">{{ playing === BROWSER ? '■' : '▶' }}</span>
-          </button>
-        </div>
-        <div
-          v-for="voice in voices"
-          :key="voice.id"
-          class="voices__card"
-          :class="{ 'voices__card--on': selected === voice.id }"
-        >
-          <button
-            class="voices__pick"
-            type="button"
-            role="radio"
-            :aria-checked="selected === voice.id"
-            :tabindex="selected === voice.id ? 0 : -1"
-            @click="choose(voice.id)"
-          >
-            {{ voice.name }}
-            <small>{{
-              voice.category === 'premade' ? 'ElevenLabs' : t('overlay.voice.yours')
-            }}</small>
-          </button>
-          <button
-            class="voices__play"
-            type="button"
-            :aria-label="t('overlay.voice.listen', { voice: voice.name })"
-            :aria-pressed="playing === voice.id"
-            @click="preview(voice.id)"
-          >
-            <span aria-hidden="true">{{ playing === voice.id ? '■' : '▶' }}</span>
-          </button>
-        </div>
+            <button
+              class="voices__pick"
+              type="button"
+              role="radio"
+              :aria-checked="selected === choice.id"
+              :tabindex="selected === choice.id ? 0 : -1"
+              @click="choose(choice)"
+            >
+              {{ choice.name }}
+              <small>{{ choice.tag }}</small>
+            </button>
+            <button
+              class="voices__play"
+              type="button"
+              :disabled="!canPreview(choice)"
+              :title="canPreview(choice) ? undefined : t('overlay.voice.needsKey')"
+              :aria-label="t('overlay.voice.listen', { voice: choice.name })"
+              :aria-pressed="playing?.id === choice.id"
+              @click="preview(choice)"
+            >
+              <span aria-hidden="true">{{ playing?.id === choice.id ? '■' : '▶' }}</span>
+            </button>
+          </div>
+        </template>
       </div>
       <p v-if="loading" class="voices__note" role="status">{{ t('overlay.voice.loading') }}</p>
       <p v-else-if="loadError" class="voices__note voices__note--error" role="status">
@@ -290,6 +304,19 @@ onBeforeUnmount(() => {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
     gap: 4px;
+  }
+
+  // A heading over each engine's voices, across the whole grid
+  &__group {
+    grid-column: 1 / -1;
+    margin: 6px 0 0;
+    color: var(--glass-muted);
+    font-size: 11px;
+    font-weight: 600;
+
+    &:first-child {
+      margin-top: 0;
+    }
   }
 
   &__card {

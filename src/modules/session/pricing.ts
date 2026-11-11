@@ -36,6 +36,12 @@ export const PRICES: PriceTable = {
   // Retired: no longer offered (shuts down 2027-01-06). Kept only to price sessions saved
   // before the switch to ElevenLabs. audioPerMinute was never confirmed by OpenAI.
   'gpt-4o-mini-tts': { input: 0.6, cachedInput: 0, output: 12, audioPerMinute: 0.015 },
+  // OpenAI's voice (the default), a Realtime session that reads each sentence. Its input
+  // is text (instructions and the sentence, $0.6 / $0.06 cached); its output is almost all
+  // audio ($20), with a short transcript ($2.4) also counted at the audio rate, so the
+  // estimate errs a little high. From the model page as of 2026-11-11. About 1,200 audio
+  // tokens per minute of speech: ≈ $0.024 a minute, ≈ $1 per hour of meeting with voice.
+  'gpt-realtime-2.1-mini': { input: 0.6, cachedInput: 0.06, output: 20 },
   // Optional voice output, ElevenLabs, billed per character of text read. From
   // https://elevenlabs.io/pricing/api as of 2026-11-11: $0.04 per 1K characters for Flash
   // and v4 Turbo, $0.08 for the multilingual models. Usage beyond what the user's plan

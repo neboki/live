@@ -227,22 +227,25 @@
       "title": "Voice",
       "engine": "Engine",
       "browser": "Browser",
+      "openai": "OpenAI · default",
+      "elevenlabs": "ElevenLabs · optional",
       "model": "Model",
       "voice": "Voice",
       "free": "Free",
       "recommended": "Recommended",
       "listen": "Listen to {voice}",
       "sample": "Hello, this is how the translations of your meeting will sound.",
-      "sampleFailed": "The sample could not be played. Check your ElevenLabs key.",
+      "sampleFailed": "The sample could not be played. Check the key for that voice.",
+      "needsKey": "Enter your OpenAI key to hear its voices",
       "yours": "Yours",
       "loading": "Loading your ElevenLabs voices…",
       "key": "ElevenLabs key (optional)",
       "keyHelp": "For far more natural voices. Create a key with voice access only and give it a spending cap.",
-      "keySet": "Pick one of your ElevenLabs voices. If anything fails, the browser voice reads instead.",
+      "keySet": "Your ElevenLabs voices now appear above to pick from.",
       "getKey": "Create a key",
       "keyRefused": "ElevenLabs refused this key. Check that it is complete and active.",
       "loadFailed": "Your ElevenLabs voices could not be loaded. Try again in a moment.",
-      "cost": "ElevenLabs voices are billed to your ElevenLabs account (≈ $1.50/h with voice); the browser voice is free.",
+      "cost": "The OpenAI voice is billed to your OpenAI key (≈ $1/h with voice) and ElevenLabs voices to your ElevenLabs account (≈ $1.50/h). The browser voice is free, and reads if the others fail.",
       "interpreter": "In Interpreter mode the translation model speaks with its own voice."
     },
     "meeting": {
@@ -324,7 +327,7 @@
     "interpreterAzure": "Interpreter mode works with OpenAI only, not Azure. Pick another quality level.",
     "spendLimit": "The session reached your spending limit and stopped. Raise it in the settings to go on.",
     "noCredit": "Your OpenAI account has no credit left. Add credit in your OpenAI billing settings and start again.",
-    "ttsFailed": "The ElevenLabs voice failed, so your browser's voice is reading instead.",
+    "ttsFailed": "The chosen voice failed, so your browser's voice is reading instead.",
     "ttsKey": "ElevenLabs refused your key, so your browser's voice is reading instead. Check it under Voice.",
     "ttsCredit": "Your ElevenLabs account has no credit left, so your browser's voice is reading instead.",
     "invalidEndpoint": "That Azure endpoint isn't valid. Check it on the home page.",
@@ -708,8 +711,8 @@
         },
         "tts": {
           "what": "The translated text",
-          "where": "ElevenLabs text-to-speech",
-          "when": "Only if you pick an ElevenLabs voice. With the browser voice, your operating system speaks and nothing is sent."
+          "where": "OpenAI Realtime (default voice) or ElevenLabs text-to-speech",
+          "when": "Only with the voice on: to OpenAI with its voice, to ElevenLabs only if you pick one of its voices. With the browser voice, your operating system speaks and nothing is sent."
         },
         "key": {
           "what": "Your API key",

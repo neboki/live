@@ -2,6 +2,7 @@ import { onScopeDispose, watch } from 'vue';
 import { useSessionRecord } from '@/modules/session';
 import { useSettingsStore } from '@/modules/settings';
 import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
+import { createOpenAiVoice } from '@/shared/providers/openai/realtime/realtimeVoice';
 import { createBrowserTts } from '@/shared/speech/browserTts';
 import { spokenUpTo } from '@/shared/speech/sentences';
 import type { TtsProvider } from '@/shared/speech/types';
@@ -37,12 +38,22 @@ export function useVoiceOutput(
   const settings = useSettingsStore();
   const record = useSessionRecord();
   const browser = createBrowserTts(() => store.voiceVolume);
-  // ElevenLabs speech is billed to the user's ElevenLabs key, so it counts in the session cost
+  // Both voices are billed to the user's own keys, so they count in the session cost
+  const openAi = createOpenAiVoice(
+    () => ({
+      apiKey: settings.apiKey,
+      endpoint: settings.endpoint,
+      model: settings.tts.model,
+      voice: settings.tts.voice,
+      volume: store.voiceVolume,
+    }),
+    (usage) => record.addUsage(usage),
+  );
   const elevenLabs = createElevenLabsTts(
     () => ({
       apiKey: settings.voiceKey,
-      model: settings.tts.model,
-      voice: settings.tts.voice,
+      model: settings.tts.elevenLabsModel,
+      voice: settings.tts.elevenLabsVoice,
       volume: store.voiceVolume,
     }),
     (usage) => record.addUsage(usage),
@@ -54,7 +65,10 @@ export function useVoiceOutput(
   let nextLine = 0;
 
   function activeEngine(): TtsProvider {
-    return settings.tts.engine === 'elevenlabs' && settings.voiceKey ? elevenLabs : browser;
+    const { engine } = settings.tts;
+    if (engine === 'openai' && settings.apiKey) return openAi;
+    if (engine === 'elevenlabs' && settings.voiceKey) return elevenLabs;
+    return browser;
   }
 
   const { speak, stop } = useSpeech({
@@ -66,6 +80,7 @@ export function useVoiceOutput(
 
   function stopAll(): void {
     stop();
+    openAi.stop();
     elevenLabs.stop();
   }
 
@@ -155,6 +170,7 @@ export function useVoiceOutput(
   );
   onScopeDispose(() => {
     stopAll();
+    openAi.close?.();
     elevenLabs.close?.();
   });
 }

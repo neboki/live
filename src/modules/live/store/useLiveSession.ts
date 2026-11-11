@@ -216,7 +216,10 @@ export const useLiveSession = defineStore('live', () => {
     floating.close();
   }
 
-  /** The OpenAI model names this session will call, for the check before it starts */
+  /**
+   * The model names this session needs, for the check before it starts. The voice is left
+   * out: if its model fails, the browser voice reads instead, so it must not stop a session.
+   */
   function modelsInUse(): string[] {
     return Object.values(settings.models);
   }
