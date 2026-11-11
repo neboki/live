@@ -69,6 +69,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      # The container runs as root on a checkout it does not own; git refuses it otherwise
+      # and `lefthook install` (prepare) fails
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       # The tests take about a minute; a hang fails fast instead of eating the job
