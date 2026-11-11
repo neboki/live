@@ -40,6 +40,83 @@ export function translationTimeout(phase: 'first words' | 'stall', ms: number): 
   );
 }
 
+/**
+ * A translation with no words after this long is usually stuck behind a slow server, not
+ * long to write: a second identical request goes out, and whichever speaks first is kept
+ * (the other is cancelled). Most of the freezes that ended with captions arriving all at
+ * once were one such request holding every sentence after it.
+ */
+export const HEDGE_AFTER_MS = 1500;
+
+/**
+ * `call`, raced against a copy of itself started `afterMs` later if the first has said
+ * nothing by then. The first to give a piece of text wins and is the only one heard; the
+ * other is aborted. Fails only when every request started has failed (with the last error).
+ * A cancelled loser reports no usage, so the extra request costs a few unbilled tokens.
+ */
+export function hedged(call: TranslateCall, afterMs: number = HEDGE_AFTER_MS): TranslateCall {
+  return (signal, onDelta) =>
+    new Promise<void>((resolve, reject) => {
+      const controllers: AbortController[] = [];
+      let winner: number | null = null;
+      let failed = 0;
+      let settled = false;
+
+      const abortOthers = (keep: number | null): void =>
+        controllers.forEach((controller, index) => index !== keep && controller.abort());
+      const finish = (error?: unknown): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        signal.removeEventListener('abort', onAbort);
+        abortOthers(winner);
+        if (error === undefined) resolve();
+        else reject(error);
+      };
+      const onAbort = (): void => {
+        winner = null;
+        finish(signal.reason ?? new DOMException('aborted', 'AbortError'));
+      };
+      const launch = (): void => {
+        const index = controllers.length;
+        const controller = new AbortController();
+        controllers.push(controller);
+        call(controller.signal, (chunk) => {
+          if (settled) return;
+          if (winner === null) {
+            winner = index;
+            clearTimeout(timer);
+            abortOthers(index);
+          }
+          if (winner === index) onDelta(chunk);
+        }).then(
+          () => {
+            // An empty answer is still an answer, unless the other one is already speaking
+            if (winner === null || winner === index) {
+              winner = index;
+              finish();
+            }
+          },
+          (err: unknown) => {
+            if (winner === index) finish(err);
+            else if (winner === null && ++failed === controllers.length) finish(err);
+          },
+        );
+      };
+
+      if (signal.aborted) {
+        reject(signal.reason as unknown);
+        return;
+      }
+      // Armed before the first launch: a call that answers at once clears it
+      const timer = setTimeout(() => {
+        if (!settled && winner === null) launch();
+      }, afterMs);
+      signal.addEventListener('abort', onAbort, { once: true });
+      launch();
+    });
+}
+
 /** Worth asking again: a timeout, a network failure or a server error; never a refusal. */
 export function isRetryable(err: unknown): boolean {
   return err instanceof AppError && err.status >= 500;

@@ -5,7 +5,7 @@ import { ExternalServiceError } from '@/shared/errors';
 import type { LlmProvider, TranslateRequest } from '@/shared/providers/types';
 import { createLivePipeline } from './livePipeline';
 import { fakeLlm, fakeRecord, fakeStt } from './livePipeline.fakes';
-import { TRANSLATE_LIMITS } from './translateWatchdog';
+import { HEDGE_AFTER_MS, TRANSLATE_LIMITS } from './translateWatchdog';
 
 /** Never answers until aborted, like a stalled stream */
 function hang(request: TranslateRequest): Promise<void> {
@@ -49,7 +49,7 @@ describe('createLivePipeline with a stuck translator', () => {
     vi.restoreAllMocks();
   });
 
-  it('asks again when a translation says nothing in time', async () => {
+  it('races a second request when a translation is slow to say anything', async () => {
     const translate = vi
       .fn<LlmProvider['translate']>()
       .mockImplementationOnce(hang)
@@ -58,7 +58,7 @@ describe('createLivePipeline with a stuck translator', () => {
     await start();
 
     stt.callbacks().onFinal('Hello');
-    await vi.advanceTimersByTimeAsync(TRANSLATE_LIMITS.firstWordsMs);
+    await vi.advanceTimersByTimeAsync(HEDGE_AFTER_MS);
 
     expect(translate).toHaveBeenCalledTimes(2);
     expect(overlay.translation.text).toBe('ES:Hello');
@@ -66,11 +66,12 @@ describe('createLivePipeline with a stuck translator', () => {
   });
 
   it('moves on to the next sentence when a translation stays stuck', async () => {
+    // Every request for "Lost" hangs: both tries, and the twin raced against each
     const translate = vi
       .fn<LlmProvider['translate']>()
-      .mockImplementationOnce(hang)
-      .mockImplementationOnce(hang)
-      .mockImplementation(answer);
+      .mockImplementation((request, onDelta) =>
+        request.text === 'Lost' ? hang(request) : answer(request, onDelta),
+      );
     const { overlay, stt, record, onFatal, start } = setup(translate);
     await start();
 

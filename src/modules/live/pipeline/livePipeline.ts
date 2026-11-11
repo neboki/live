@@ -7,7 +7,7 @@ import { readLanguageTag, routeOf, speakerOf, speakerOfTag } from './conversatio
 import { routeError } from './errorRoute';
 import { introducedName } from './speakerNames';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
-import { isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
+import { hedged, isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
 import {
   activityOf,
   captionDueFrom,
@@ -159,13 +159,14 @@ export function createLivePipeline({
         overlay.appendTranslation(text);
         updateActivity(run);
       };
-      // A stuck call would hold every sentence after it: it gets a deadline and,
+      // A stuck call would hold every sentence after it: a slow one is raced by a twin
+      // (hedged), and both get a deadline and,
       // when nothing came out of it yet, one more try
       for (let attempt = 1; ; attempt++) {
         if (placing && !placing.placed) placing.raw = '';
         try {
           await watchTranslation(
-            (signal, onDelta) => llm.translate({ ...request, signal }, onDelta),
+            hedged((signal, onDelta) => llm.translate({ ...request, signal }, onDelta)),
             run.controller.signal,
             onChunk,
           );

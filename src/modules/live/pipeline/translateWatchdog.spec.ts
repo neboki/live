@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExternalServiceError, RateLimitError, UnauthorizedError } from '@/shared/errors';
 import {
+  hedged,
   isRetryable,
   translationTimeout,
   watchTranslation,
@@ -136,5 +137,88 @@ describe('isRetryable', () => {
     expect(isRetryable(new RateLimitError('slow down'))).toBe(false);
     expect(isRetryable(new UnauthorizedError('bad key'))).toBe(false);
     expect(isRetryable(new Error('bug'))).toBe(false);
+  });
+});
+
+describe('hedged', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /** A call that speaks `text` after `ms`, unless aborted first */
+  function speaksAfter(ms: number, text: string): TranslateCall {
+    return (signal, onDelta) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          onDelta(text);
+          resolve();
+        }, ms);
+        signal.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('aborted', 'AbortError'));
+        });
+      });
+  }
+
+  it('makes one request when the first answers in time', async () => {
+    const call = vi.fn(speaksAfter(500, 'Hola'));
+    const chunks: string[] = [];
+    const done = hedged(call, 1000)(new AbortController().signal, (c) => chunks.push(c));
+
+    await vi.advanceTimersByTimeAsync(2000);
+
+    await done;
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(chunks).toEqual(['Hola']);
+  });
+
+  it('races a twin when the first is slow, keeps the first to speak and aborts the other', async () => {
+    const signals: AbortSignal[] = [];
+    const calls = [speaksAfter(5000, 'lento'), speaksAfter(200, 'rápido')];
+    const call: TranslateCall = (signal, onDelta) => {
+      signals.push(signal);
+      return (calls[signals.length - 1] as TranslateCall)(signal, onDelta);
+    };
+    const chunks: string[] = [];
+    const done = hedged(call, 1000)(new AbortController().signal, (c) => chunks.push(c));
+
+    await vi.advanceTimersByTimeAsync(1200);
+
+    await done;
+    expect(chunks).toEqual(['rápido']);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
+  });
+
+  it('fails only once every request started has failed', async () => {
+    let n = 0;
+    const call: TranslateCall = (signal, onDelta) =>
+      ++n === 1
+        ? speaksAfter(1500, 'x')(signal, onDelta).then(() => {
+            throw new ExternalServiceError('first broke');
+          })
+        : Promise.reject(new ExternalServiceError('second broke'));
+    const done = hedged(call, 1000)(new AbortController().signal, () => undefined);
+    const check = expect(done).rejects.toThrow(/first broke/);
+
+    await vi.advanceTimersByTimeAsync(2000);
+
+    await check;
+  });
+
+  it('gives up at once when the caller cancels', async () => {
+    const parent = new AbortController();
+    const signals: AbortSignal[] = [];
+    const call: TranslateCall = (signal, onDelta) => {
+      signals.push(signal);
+      return hanging(signal, onDelta);
+    };
+    const done = hedged(call, 1000)(parent.signal, () => undefined);
+    const check = expect(done).rejects.toBeDefined();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    parent.abort();
+
+    await check;
+    expect(signals.every((signal) => signal.aborted)).toBe(true);
   });
 });
