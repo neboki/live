@@ -261,6 +261,8 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         <small>{{ t('overlay.cost.hint') }}</small>
       </p>
       <StartOver />
+      <!-- Changes at once: the session reconnects with the tier's models -->
+      <QualityPicker />
       <ListeningPicker />
       <div class="menu__row">
         <button class="menu__link" type="button" :disabled="!canExport" @click="onSave">

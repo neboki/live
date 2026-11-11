@@ -18,7 +18,11 @@ class FakeStream {
 }
 
 function track(settings: Record<string, unknown> = {}): MediaStreamTrack {
-  return { enabled: true, getSettings: () => settings } as unknown as MediaStreamTrack;
+  return {
+    enabled: true,
+    readyState: 'live',
+    getSettings: () => settings,
+  } as unknown as MediaStreamTrack;
 }
 
 function fakePlayback(): DelayedPlayback {
@@ -131,6 +135,39 @@ describe('createOriginalMonitor', () => {
     expect(monitor.delay(4)).toBeNull();
     expect(video.enabled).toBe(false);
     expect(console.error).toHaveBeenCalled();
+  });
+
+  it('gives the live picture, and stops capturing it once hidden', () => {
+    const video = track();
+    video.enabled = false;
+    const monitor = createOriginalMonitor([track()], video);
+
+    const picture = monitor.picture() as unknown as FakeStream;
+    expect(picture.tracks).toEqual([video]);
+    expect(video.enabled).toBe(true);
+
+    monitor.hidePicture();
+    expect(video.enabled).toBe(false);
+  });
+
+  it('keeps capturing the picture while it is delayed, whatever the live one does', () => {
+    const video = track();
+    const monitor = createOriginalMonitor([track()], video);
+    monitor.picture();
+    monitor.delay(4);
+    monitor.hidePicture();
+    expect(video.enabled).toBe(true);
+
+    monitor.picture();
+    monitor.undelay();
+    expect(video.enabled).toBe(true);
+  });
+
+  it('has no live picture without one, or once it ended', () => {
+    expect(createOriginalMonitor([track()]).picture()).toBeNull();
+    const ended = track();
+    (ended as { readyState: string }).readyState = 'ended';
+    expect(createOriginalMonitor([track()], ended).picture()).toBeNull();
   });
 
   it('ends the delay with the monitor', () => {

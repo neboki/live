@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, reactive, ref, watch } from 'vue';
 import { NEAR_SPEND_LIMIT, useFloatingWindow, useOverlayStore } from '@/modules/overlay';
 import { costUsd, hasUnpricedUsage, usdToEur, useSessionRecord } from '@/modules/session';
-import { useSettingsStore } from '@/modules/settings';
+import { useSettingsStore, type QualityTier } from '@/modules/settings';
 import { createAudioCapture } from '@/shared/audio/audioCapture';
 import { unlockAudio } from '@/shared/audio/unlockAudio';
 import { endedMessageKey, needsShare, startingMessageKey, type AudioSource } from '@/shared/audio';
@@ -17,6 +17,7 @@ import type { ModelRole } from '../pipeline/types';
 import { languageName } from '../utils/language';
 import { createAwayWatch } from '../watchers/awayWatch';
 import { createTabSilenceWatch } from '../watchers/tabSilenceWatch';
+import { createLivePicture } from '../watchers/livePicture';
 import { createVideoSync } from '../watchers/videoSync';
 
 const AUTO_DETECT = 'AUTO';
@@ -128,6 +129,13 @@ export const useLiveSession = defineStore('live', () => {
   /** Bumped by every start and stop, so a start that was overtaken knows it */
   let startToken = 0;
   let recording = false;
+  /** A tier that failed to connect is being undone: a second failure ends the session */
+  let reverting = false;
+  /** The shared tab's picture, live, above the captions in the page (not while synced) */
+  const livePicture = createLivePicture({
+    capture,
+    wanted: () => active.value && inPage.value && sync.playback.value === null,
+  });
   /** The running (or last) session is the free demo; a restart from the bar keeps it */
   const demo = ref(false);
   /** Epoch milliseconds when the demo stops itself, while one runs */
@@ -393,6 +401,30 @@ export const useLiveSession = defineStore('live', () => {
   }
 
   /**
+   * A new quality tier mid-session: the transcriber (or the interpreter) reconnects with
+   * its models while the share goes on; the sentence being translated is let go. A tier
+   * that cannot connect (the interpreter on Azure) says why and goes back to `previous`.
+   */
+  async function retune(previous: QualityTier | null): Promise<void> {
+    if (!active.value || demo.value) return;
+    const token = startToken;
+    const target = overlay.pair.to.toLowerCase();
+    const error = await connect(settings.apiKey.trim(), settings.endpoint, target);
+    if (token !== startToken || !active.value || !error) {
+      reverting = false;
+      return;
+    }
+    if (reverting || previous === null) {
+      reverting = false;
+      failWith(error);
+      return;
+    }
+    overlay.setNotice(error.userMessageKey, NOTICE_TTL_MS);
+    reverting = true;
+    settings.applyTier(previous);
+  }
+
+  /**
    * Moves the captions to the floating window, and remembers the choice. Uses the click
    * up (the window needs it), so it must run synchronously in the click handler.
    * Resolves with why the window could not open, or null.
@@ -448,6 +480,14 @@ export const useLiveSession = defineStore('live', () => {
     () => overlay.originalVolume,
     (volume) => capture.setOriginalVolume(volume),
   );
+  // A new quality tier applies at once: the session reconnects with its models
+  watch(
+    () => settings.tier,
+    (tier, was) => {
+      if (tier === null || tier === was || !active.value) return;
+      retune(was).catch((err: unknown) => failWith(logError('Changing the quality failed', err)));
+    },
+  );
   // A new target language applies from the next sentence, without restarting
   watch(
     () => settings.targetLanguage,
@@ -471,6 +511,7 @@ export const useLiveSession = defineStore('live', () => {
     startingKey,
     /** The shared tab playing behind time in the page, while the sync option is on */
     syncedTab: sync.playback,
+    livePicture,
     syncDelaySeconds: sync.delaySeconds,
     /** The synced delay is automatic and still being worked out from the first captions */
     syncCalibrating: sync.calibrating,

@@ -339,6 +339,7 @@
   "live": {
     "badge": "en directo",
     "stop": "Parar",
+    "picture": "La pestaña compartida, en directo",
     "tabSilent": "No llega sonido de lo que compartes. Si es un vídeo, dale a play en su pestaña.",
     "notice": {
       "tab": "Escuchando el audio que compartes.",

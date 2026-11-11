@@ -8,6 +8,7 @@ import type { CaptureHandlers, CaptureOptions } from '@/shared/audio/audioCaptur
 import { AppError, ExternalServiceError, UnauthorizedError } from '@/shared/errors';
 import type { DelayedPlayback } from '@/shared/media/delayedPlayback';
 import type { SttCallbacks, SttOptions, SttSession, Usage } from '@/shared/providers/types';
+import { TIER_MODELS } from '@/shared/providers/openai/config';
 import { CALIBRATION_SECONDS } from '../utils/sync';
 import { useLiveSession } from './useLiveSession';
 
@@ -65,6 +66,8 @@ vi.mock('@/shared/audio/audioCapture', () => ({
     canSyncOriginal: () => fakes.canSync.value,
     syncOriginal: fakes.syncOriginal,
     unsyncOriginal: fakes.unsyncOriginal,
+    originalPicture: () => null,
+    hideOriginalPicture: vi.fn(),
   }),
 }));
 vi.mock('@/shared/pip/useDocumentPip', async () => {
@@ -140,6 +143,39 @@ describe('useLiveSession', () => {
     });
   });
   afterEach(() => vi.restoreAllMocks());
+
+  it('reconnects with the new tier models when the quality changes mid-session', async () => {
+    const session = setup();
+    const settings = useSettingsStore();
+    settings.applyTier('low');
+    await session.start('es');
+    expect(fakes.connect).toHaveBeenCalledTimes(1);
+
+    settings.applyTier('premium');
+    await vi.waitFor(() => expect(fakes.connect).toHaveBeenCalledTimes(2));
+    expect(fakes.connect.mock.calls[1]?.[0]).toMatchObject({
+      model: TIER_MODELS.premium.transcription,
+    });
+    expect(fakes.captureStop).not.toHaveBeenCalled();
+    expect(session.active).toBe(true);
+  });
+
+  it('goes back to the last quality when the new one cannot connect, and goes on', async () => {
+    const session = setup();
+    const settings = useSettingsStore();
+    settings.applyTier('low');
+    await session.start('es');
+    fakes.connect.mockRejectedValueOnce(new ExternalServiceError('refused', 'errors.network'));
+
+    settings.applyTier('premium');
+    await vi.waitFor(() => expect(fakes.connect).toHaveBeenCalledTimes(3));
+    expect(settings.tier).toBe('low');
+    expect(fakes.connect.mock.calls[2]?.[0]).toMatchObject({
+      model: TIER_MODELS.low.transcription,
+    });
+    await nextTick();
+    expect(session.active).toBe(true);
+  });
 
   it('starts a session with the settings models and begins the record', async () => {
     const session = setup();

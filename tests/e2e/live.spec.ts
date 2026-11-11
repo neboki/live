@@ -10,7 +10,7 @@ const HEARD = 'How are you?';
 const TRANSLATED = '¿Qué tal estás?';
 const STREAMED = `data: {"choices":[{"delta":{"content":"${TRANSLATED}"}}]}\n\ndata: [DONE]\n\n`;
 
-type ShareMode = 'audio' | 'silent' | 'cancel';
+type ShareMode = 'audio' | 'silent' | 'cancel' | 'tab';
 type ChatReply = (route: Route) => Promise<void>;
 
 interface FakeOpenAi {
@@ -37,7 +37,23 @@ async function fakeScreenShare(page: Page, mode: ShareMode): Promise<void> {
   await page.addInitScript((shareMode) => {
     navigator.mediaDevices.getDisplayMedia = async () => {
       if (shareMode === 'cancel') throw new DOMException('Permission denied', 'NotAllowedError');
-      const video = document.createElement('canvas').captureStream().getVideoTracks();
+      const canvas = document.createElement('canvas');
+      const video = canvas.captureStream().getVideoTracks();
+      if (shareMode === 'tab') {
+        // A browser tab, as Chrome reports it, with something on its picture
+        const paint = canvas.getContext('2d');
+        setInterval(() => {
+          if (!paint) return;
+          paint.fillStyle = '#2a6';
+          paint.fillRect(0, 0, canvas.width, canvas.height);
+          paint.fillStyle = '#fff';
+          paint.fillText(new Date().toISOString(), 10, 20);
+        }, 100);
+        for (const track of video) {
+          const settings = track.getSettings();
+          track.getSettings = () => ({ ...settings, displaySurface: 'browser' });
+        }
+      }
       if (shareMode === 'silent') return new MediaStream(video);
       const ctx = new AudioContext();
       const tone = ctx.createOscillator();
@@ -370,6 +386,43 @@ test('shows the captions in the app when that is the chosen place, and floats th
   await win.getByRole('button', { name: 'Back to the page' }).click();
   await expect(bar).toBeVisible();
   await expect.poll(() => win.isClosed()).toBe(true);
+});
+
+test('in the app, a shared tab plays live above its captions', async ({ page }) => {
+  await fakeScreenShare(page, 'tab');
+  await fakeOpenAi(page);
+  await page.goto('./');
+  await page.locator('.lg-choice__option', { hasText: 'In the app' }).click();
+  await page.locator('#lg-api-key').fill(VALID_KEY);
+  await page.locator('.start__cta').click();
+
+  const picture = page.locator('.live .live-picture video');
+  await expect(picture).toBeVisible();
+  await expect
+    .poll(() => picture.evaluate((video: HTMLVideoElement) => video.srcObject !== null))
+    .toBe(true);
+  await speakOneSentence(page, page);
+  await expect(page.locator('.live .lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 10_000,
+  });
+  await page.screenshot({ path: 'test-results/live-picture.png' });
+
+  // The quality changes mid-session, from the bar's own options; the session goes on
+  const bar = page.locator('.live .bar');
+  await bar.getByRole('button', { name: 'Options' }).click();
+  const premium = page.getByRole('radio', { name: /Premium/ });
+  await premium.click();
+  await expect(premium).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: /Low cost/ })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  );
+  await page.screenshot({ path: 'test-results/live-quality.png' });
+  await expect(picture).toBeVisible();
+  await expect(bar.getByRole('button', { name: 'Stop' })).toBeVisible();
+
+  await bar.getByRole('button', { name: 'Stop' }).click();
+  await expect(picture).toHaveCount(0);
 });
 
 test('restarting from the error in the floating window starts again', async ({ page }) => {

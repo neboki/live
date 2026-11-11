@@ -44,6 +44,10 @@ export interface AudioCapture {
   syncOriginal: (seconds: number) => DelayedPlayback | null;
   /** Back to the live sound of the shared tab */
   unsyncOriginal: () => void;
+  /** The shared tab's picture as it plays now (see OriginalMonitor.picture); null: none */
+  originalPicture: () => MediaStream | null;
+  /** The live picture is no longer shown */
+  hideOriginalPicture: () => void;
   /** Headphones with a microphone were found when the microphone opened */
   hasHeadset: () => boolean;
 }
@@ -227,6 +231,14 @@ export function createAudioCapture(): AudioCapture {
     monitor?.undelay();
   }
 
+  function originalPicture(): MediaStream | null {
+    return monitor?.picture() ?? null;
+  }
+
+  function hideOriginalPicture(): void {
+    monitor?.hidePicture();
+  }
+
   /** Back in the app: wakes the suspended audio and waits briefly for a muted track. */
   async function recover(): Promise<boolean> {
     const ctx = context;
@@ -264,5 +276,7 @@ export function createAudioCapture(): AudioCapture {
     canSyncOriginal,
     syncOriginal,
     unsyncOriginal,
+    originalPicture,
+    hideOriginalPicture,
   };
 }

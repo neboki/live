@@ -339,6 +339,7 @@
   "live": {
     "badge": "live",
     "stop": "Stop",
+    "picture": "The shared tab, live",
     "tabSilent": "No sound is coming from what you shared. If it is a video, press play in its tab.",
     "notice": {
       "tab": "Listening to the audio you shared.",

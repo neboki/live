@@ -29,6 +29,13 @@ export interface OriginalMonitor {
   delay: (seconds: number) => DelayedPlayback | null;
   /** Back to the live sound */
   undelay: () => void;
+  /**
+   * The tab's picture as it plays now, to show without any delay (the sound stays the
+   * live one). Null without a picture. The track is captured until hidePicture()
+   */
+  picture: () => MediaStream | null;
+  /** The live picture is no longer shown: it stops being captured, unless it is delayed */
+  hidePicture: () => void;
   stop: () => void;
 }
 
@@ -55,6 +62,13 @@ export function createOriginalMonitor(
   const canDelay = video !== undefined && canDelayPlayback();
   let volume = 1;
   let delayed: DelayedPlayback | null = null;
+  /** The live picture is being shown */
+  let showing = false;
+
+  /** The picture is only captured while something shows it */
+  function capturePicture(): void {
+    if (video) video.enabled = showing || delayed !== null;
+  }
 
   function setVolume(next: number): void {
     volume = Math.min(1, Math.max(0, next));
@@ -74,7 +88,7 @@ export function createOriginalMonitor(
       delayed = createDelayedPlayback(new MediaStream([video, ...tracks]), seconds);
     } catch (err) {
       logError('Could not play the original behind time', err);
-      video.enabled = false;
+      capturePicture();
       return null;
     }
     delayed.setVolume(volume);
@@ -86,15 +100,28 @@ export function createOriginalMonitor(
     if (!delayed) return;
     delayed.stop();
     delayed = null;
-    if (video) video.enabled = false;
+    capturePicture();
     element.muted = false;
   }
 
+  function picture(): MediaStream | null {
+    if (!video || video.readyState !== 'live') return null;
+    showing = true;
+    capturePicture();
+    return new MediaStream([video]);
+  }
+
+  function hidePicture(): void {
+    showing = false;
+    capturePicture();
+  }
+
   function stop(): void {
+    showing = false;
     undelay();
     element.pause();
     element.srcObject = null;
   }
 
-  return { setVolume, canDelay, delay, undelay, stop };
+  return { setVolume, canDelay, delay, undelay, picture, hidePicture, stop };
 }
