@@ -5,7 +5,7 @@ import { CaptionBar, SettingsPanel, SYNC_DELAY_AUTO, useOverlayStore } from '@/m
 import { createScreenWakeLock } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { useLiveSession } from '../../store/useLiveSession';
-import LivePicture from '../LivePicture/LivePicture.vue';
+import LivePlayer from '../LivePlayer/LivePlayer.vue';
 import SyncedTab from '../SyncedTab/SyncedTab.vue';
 
 /**
@@ -24,7 +24,9 @@ const openError = ref<string | null>(null);
 /** The options and notes beside the captions: out of the way until asked for */
 const sideOpen = ref(false);
 /** The panel holds the options only where the bar's own menu is not at hand */
-const sideHasOptions = computed(() => !session.inPage || session.syncedTab !== null);
+const sideHasOptions = computed(
+  () => !session.inPage || session.syncedTab !== null || session.livePicture !== null,
+);
 const sideLabelKey = computed(() => (sideHasOptions.value ? 'live.side.label' : 'live.side.help'));
 /** What is being heard */
 const noticeKey = computed(() => `live.notice.${session.source}`);
@@ -119,14 +121,18 @@ onBeforeUnmount(() => wakeLock.release());
           @delay="overlay.syncDelay = $event"
         />
 
+        <!-- A shared tab plays here as it plays there, a player with the captions on it -->
+        <LivePlayer
+          v-else-if="session.inPage && session.livePicture"
+          :stream="session.livePicture"
+          :can-pop-out="session.canFloat"
+          @options="sideOpen = true"
+          @pop-out="popOut"
+          @stop="session.stop()"
+        />
+
         <!-- The bar itself, as wide as the page allows; its Float button moves it to the window -->
-        <section
-          v-else-if="session.inPage"
-          class="live__captions"
-          :class="{ 'live__captions--picture': session.livePicture }"
-        >
-          <!-- The shared tab, live: the video being followed, with its captions under it -->
-          <LivePicture v-if="session.livePicture" :stream="session.livePicture" />
+        <section v-else-if="session.inPage" class="live__captions">
           <CaptionBar
             v-show="!overlay.hidden"
             :stoppable="session.active"
@@ -288,19 +294,6 @@ onBeforeUnmount(() => wakeLock.release());
     // The bar is a fixed-width overlay elsewhere; here it fills the column
     > * {
       width: 100%;
-    }
-
-    // With the shared tab above, the picture takes the room and the bar what it needs
-    &--picture {
-      grid-template-rows: minmax(0, 1fr) auto;
-
-      // The bar is too short now to hold its options: they open above it, over the picture
-      :deep(.bar--fill .bar__panel) {
-        top: auto;
-        bottom: calc(100% + 8px);
-        max-height: min(520px, calc(100dvh - 330px));
-        transform-origin: bottom right;
-      }
     }
   }
 

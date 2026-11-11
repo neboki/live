@@ -388,7 +388,9 @@ test('shows the captions in the app when that is the chosen place, and floats th
   await expect.poll(() => win.isClosed()).toBe(true);
 });
 
-test('in the app, a shared tab plays live above its captions', async ({ page }) => {
+test('in the app, a shared tab plays live as a player with the captions on it', async ({
+  page,
+}) => {
   await fakeScreenShare(page, 'tab');
   await fakeOpenAi(page);
   await page.goto('./');
@@ -396,20 +398,32 @@ test('in the app, a shared tab plays live above its captions', async ({ page }) 
   await page.locator('#lg-api-key').fill(VALID_KEY);
   await page.locator('.start__cta').click();
 
-  const picture = page.locator('.live .live-picture video');
+  const player = page.locator('.live .live-player');
+  const picture = player.locator('video');
   await expect(picture).toBeVisible();
   await expect
     .poll(() => picture.evaluate((video: HTMLVideoElement) => video.srcObject !== null))
     .toBe(true);
-  await speakOneSentence(page, page);
-  await expect(page.locator('.live .lines__translation')).toHaveText(TRANSLATED, {
+  // No caption bar under it: the captions are on the picture
+  await expect(page.locator('.live .bar')).toHaveCount(0);
+  // No bar to read the level from: the tone plays a moment, then the sentence ends
+  await page.waitForTimeout(1500);
+  const box = await picture.boundingBox();
+  await page.evaluate(() => window.stopFakeTone?.());
+  await expect(player.locator('.live-player__line--current')).toHaveText(TRANSLATED, {
     timeout: 10_000,
   });
+  // The words never move the picture
+  expect(await picture.boundingBox()).toEqual(box);
+  await player.hover();
   await page.screenshot({ path: 'test-results/live-picture.png' });
 
-  // The quality changes mid-session, from the bar's own options; the session goes on
-  const bar = page.locator('.live .bar');
-  await bar.getByRole('button', { name: 'Options' }).click();
+  // Text size from the player's own controls
+  await player.getByRole('button', { name: /Larger/ }).click();
+  await expect(player.locator('.live-player__lines')).toHaveAttribute('style', /--scale: 1.1/);
+
+  // The quality changes mid-session, from the options; the session goes on
+  await player.getByRole('button', { name: 'Options' }).click();
   const premium = page.getByRole('radio', { name: /Premium/ });
   await premium.click();
   await expect(premium).toHaveAttribute('aria-checked', 'true');
@@ -419,9 +433,9 @@ test('in the app, a shared tab plays live above its captions', async ({ page }) 
   );
   await page.screenshot({ path: 'test-results/live-quality.png' });
   await expect(picture).toBeVisible();
-  await expect(bar.getByRole('button', { name: 'Stop' })).toBeVisible();
 
-  await bar.getByRole('button', { name: 'Stop' }).click();
+  await player.hover();
+  await player.getByRole('button', { name: 'Stop' }).click();
   await expect(picture).toHaveCount(0);
 });
 
