@@ -15,6 +15,7 @@ export default tseslint.config(
       'test-results/',
       'functions/lib/',
       'android/',
+      '.worktrees/',
     ],
   },
   js.configs.recommended,
@@ -53,7 +54,7 @@ export default tseslint.config(
     },
   })),
   {
-    files: ['*.config.{js,ts}', 'tests/**/*.ts'],
+    files: ['*.config.{js,ts}', 'tests/**/*.ts', '.claude/hooks/*.mjs'],
     languageOptions: { globals: { ...globals.node } },
     rules: { '@typescript-eslint/explicit-module-boundary-types': 'off' },
   },

@@ -8,3 +8,4 @@ functions/lib/
 android/app/build/
 android/app/src/main/assets/
 android/build/
+.worktrees/
