@@ -16,6 +16,7 @@ export {
 } from './constants';
 export { useQuickControls } from './composables/useQuickControls';
 export { default as CaptionBar } from './components/CaptionBar/CaptionBar.vue';
+export { default as ElevenLabsKeyField } from './components/ElevenLabsKeyField/ElevenLabsKeyField.vue';
 export { default as ListeningBadge } from './components/ListeningBadge/ListeningBadge.vue';
 export { default as SettingsMenu } from './components/SettingsMenu/SettingsMenu.vue';
 export { default as SettingsPanel } from './components/SettingsPanel/SettingsPanel.vue';

@@ -233,7 +233,8 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         <span class="menu__switch"></span>
       </button>
       <SoundControls :live="live" />
-      <details class="menu__section">
+      <!-- Open on the settings page, so the voices are seen without looking for them -->
+      <details class="menu__section" :open="page">
         <summary class="menu__option">{{ t('overlay.voice.title') }}</summary>
         <div class="menu__fields">
           <VoiceGallery />

@@ -119,6 +119,8 @@ watch(
 );
 
 function choose(choice: Choice): void {
+  // Picking a voice means wanting to hear it: with the voice off nothing would read
+  store.options.voice = true;
   settings.tts.engine = choice.engine;
   if (choice.engine === 'openai') settings.tts.voice = choice.voice;
   if (choice.engine === 'elevenlabs') settings.tts.elevenLabsVoice = choice.voice;
