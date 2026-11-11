@@ -1,30 +1,46 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@/modules/settings';
 import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
+import type { TtsEngine } from '@/shared/speech/types';
+import { onRadioKeydown } from '../../composables/radioGroup';
 import {
   MIN_ELEVENLABS_KEY_CHARS,
   useElevenLabsVoices,
 } from '../../composables/useElevenLabsVoices';
+import { useOverlayStore } from '../../store/useOverlayStore';
 
 type KeyState = 'empty' | 'short' | 'loading' | 'error' | 'ready';
 
+/** Off (captions only) or the engine that reads: one choice, so the state is never ambiguous */
+type VoiceChoice = 'off' | TtsEngine;
+const CHOICES: readonly VoiceChoice[] = ['off', 'openai', 'elevenlabs'];
+const CHOICE_LABEL: Readonly<Record<VoiceChoice, string>> = {
+  off: 'overlay.voice.engineOff',
+  openai: 'overlay.voice.engineOpenAi',
+  elevenlabs: 'overlay.voice.engineElevenLabs',
+};
+
+withDefaults(defineProps<{ choosable?: boolean }>(), { choosable: false });
 const emit = defineEmits<{
-  /** The key works: take the person to the voices to pick one */
+  /** Take the person to the voice gallery to pick another voice */
   choose: [];
 }>();
 
 /**
- * The optional ElevenLabs key on its own card, next to the OpenAI key, so it is found
- * without opening the voice gallery. It says at once whether the key works (by loading the
- * account's voices) and offers the way to pick one of them.
+ * Which voice reads the translation, OpenAI's or ElevenLabs', said plainly and switchable
+ * like OpenAI/Azure for the main key, with the ElevenLabs key in the same kind of box.
+ * Pasting a key that works switches to ElevenLabs; a key that does not keeps OpenAI.
  */
 const settings = useSettingsStore();
+const overlay = useOverlayStore();
 const { t } = useI18n();
 const uid = useId();
 const visible = ref(false);
 const { voices, loading, error } = useElevenLabsVoices(() => settings.voiceKey);
+/** The key was typed here: once it works, switch to ElevenLabs (a saved key does not) */
+const typed = ref(false);
 
 const state = computed<KeyState>(() => {
   const key = settings.voiceKey.trim();
@@ -34,15 +50,74 @@ const state = computed<KeyState>(() => {
   if (error.value) return 'error';
   return voices.value.length > 0 ? 'ready' : 'loading';
 });
-const using = computed(() => settings.tts.engine === 'elevenlabs');
+const engine = computed(() => settings.tts.engine);
+const current = computed<VoiceChoice>(() => (overlay.options.voice ? engine.value : 'off'));
+const voiceName = computed(() => {
+  if (engine.value === 'elevenlabs') {
+    const id = settings.tts.elevenLabsVoice;
+    return voices.value.find((voice) => voice.id === id)?.name ?? id;
+  }
+  const voice = settings.tts.voice;
+  return voice.charAt(0).toUpperCase() + voice.slice(1);
+});
+
+function use(next: VoiceChoice): void {
+  if (next === 'off') {
+    overlay.options.voice = false;
+    return;
+  }
+  if (next === 'elevenlabs' && state.value !== 'ready') {
+    document.getElementById(`${uid}-key`)?.focus();
+    return;
+  }
+  settings.tts.engine = next;
+  // Choosing a voice means wanting to hear it
+  overlay.options.voice = true;
+}
+
+watch(state, (now) => {
+  if (now === 'ready' && typed.value) {
+    typed.value = false;
+    use('elevenlabs');
+  }
+});
 </script>
 
 <template>
   <div class="eleven" :class="`eleven--${state}`">
-    <label class="eleven__label" :for="`${uid}-key`">
-      {{ t('overlay.voice.key') }}
-      <small>{{ t('overlay.voice.keyHelp') }}</small>
-    </label>
+    <span :id="`${uid}-title`" class="eleven__title">{{ t('overlay.voice.engineLabel') }}</span>
+    <div
+      class="eleven__engines"
+      role="radiogroup"
+      :aria-labelledby="`${uid}-title`"
+      @keydown="onRadioKeydown"
+    >
+      <button
+        v-for="option in CHOICES"
+        :key="option"
+        class="eleven__engine"
+        :class="{ 'eleven__engine--on': current === option }"
+        type="button"
+        role="radio"
+        :aria-checked="current === option"
+        :tabindex="current === option ? 0 : -1"
+        @click="use(option)"
+      >
+        {{ t(CHOICE_LABEL[option]) }}
+      </button>
+    </div>
+
+    <p class="eleven__using" role="status">
+      <template v-if="current === 'off'">{{ t('overlay.voice.usingNone') }}</template>
+      <template v-else-if="engine === 'elevenlabs'">
+        {{ t('overlay.voice.usingElevenLabs', { voice: voiceName }) }}
+      </template>
+      <template v-else>{{ t('overlay.voice.usingOpenAi', { voice: voiceName }) }}</template>
+      <button v-if="choosable" class="eleven__link" type="button" @click="emit('choose')">
+        {{ t('overlay.voice.chooseVoice') }}
+      </button>
+    </p>
+
     <div class="eleven__box">
       <input
         :id="`${uid}-key`"
@@ -52,9 +127,12 @@ const using = computed(() => settings.tts.engine === 'elevenlabs');
         autocomplete="off"
         spellcheck="false"
         placeholder="sk_…"
+        :aria-label="t('overlay.voice.key')"
         :aria-invalid="state === 'error'"
         :aria-describedby="`${uid}-status`"
+        @input="typed = true"
       />
+      <span class="eleven__check" aria-hidden="true">✓</span>
       <button
         class="eleven__toggle"
         type="button"
@@ -64,9 +142,9 @@ const using = computed(() => settings.tts.engine === 'elevenlabs');
         {{ visible ? t('start.key.hide') : t('start.key.show') }}
       </button>
     </div>
-    <p :id="`${uid}-status`" class="eleven__status" role="status">
+    <p :id="`${uid}-status`" class="eleven__help">
       <template v-if="state === 'empty'">
-        {{ t('overlay.voice.keySteps') }}
+        {{ t('overlay.voice.keyHelp') }}
         <a :href="KEY_PAGE" target="_blank" rel="noopener noreferrer">{{
           t('overlay.voice.getKey')
         }}</a>
@@ -75,104 +153,159 @@ const using = computed(() => settings.tts.engine === 'elevenlabs');
       <template v-else-if="state === 'loading'">{{ t('overlay.voice.loading') }}</template>
       <template v-else-if="state === 'error' && error">{{ t(error) }}</template>
       <template v-else>
-        {{
-          using
-            ? t('overlay.voice.keyInUse')
-            : t('overlay.voice.keyWorks', { count: voices.length }, voices.length)
-        }}
+        {{ t('overlay.voice.keyWorks', { count: voices.length }, voices.length) }}
       </template>
     </p>
-    <button v-if="state === 'ready'" class="eleven__choose" type="button" @click="emit('choose')">
-      {{ t('overlay.voice.chooseVoice') }}
-    </button>
   </div>
 </template>
 
 <style scoped lang="scss">
+// Same look as the main key (ApiKeyField): a segmented control, then the key box
 .eleven {
   display: grid;
   gap: 8px;
 
-  &__label {
-    display: grid;
-    gap: 2px;
+  &__title {
     color: var(--fg);
     font: 600 13px var(--font-ui);
+  }
 
-    small {
-      color: var(--muted);
-      font-weight: 400;
-      font-size: 12px;
+  &__engines {
+    display: inline-flex;
+    gap: 2px;
+    width: fit-content;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+  }
+
+  &__engine {
+    padding: 4px 10px;
+    border: 0;
+    border-radius: calc(var(--radius) - 2px);
+    background: none;
+    color: var(--muted);
+    font: 500 12px var(--font-ui);
+    cursor: pointer;
+    transition:
+      background-color 0.12s,
+      color 0.12s;
+
+    &:hover {
+      color: var(--fg);
     }
+
+    &--on,
+    &--on:hover {
+      background: var(--accent-fill);
+      box-shadow: var(--shadow-sm);
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  &__using {
+    margin: 0;
+    color: var(--fg);
+    font-size: 12.5px;
+  }
+
+  &__link {
+    margin-left: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
   }
 
   &__box {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel);
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s;
+
+    &:focus-within {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-focus);
+    }
+  }
+
+  &--ready &__box {
+    border-color: var(--success);
+  }
+
+  &--error &__box {
+    border-color: var(--danger);
   }
 
   &__input {
     flex: 1;
     min-width: 0;
-    height: 38px;
-    padding: 0 10px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius);
-    background: var(--panel);
+    height: 42px;
+    padding: 0 14px;
+    border: 0;
+    background: transparent;
     color: var(--fg);
-    font: 13px var(--font-mono);
+    font: 400 13px var(--font-mono);
+    outline: none;
 
-    // Edge adds its own reveal button; the Show button next to it does that already
+    &::placeholder {
+      color: var(--subtle);
+    }
+
+    // Edge adds its own reveal icon; the Show button does that already
     &::-ms-reveal {
       display: none;
     }
   }
 
-  &--ready &__input {
-    border-color: var(--success);
+  &__check {
+    color: var(--success);
+    font-weight: 600;
+    opacity: 0;
   }
 
-  &--error &__input {
-    border-color: var(--danger);
+  &--ready &__check {
+    opacity: 1;
   }
 
   &__toggle {
     padding: 0 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--panel-2);
-    color: var(--fg);
+    border: 0;
+    background: none;
+    color: var(--muted);
     font: 500 12px var(--font-ui);
     cursor: pointer;
+
+    &:hover {
+      color: var(--fg);
+    }
   }
 
-  &__status {
+  &__help {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 12.5px;
 
     a {
       color: var(--accent);
     }
   }
 
-  &--ready &__status {
+  &--ready &__help {
     color: var(--success);
   }
 
-  &--error &__status {
+  &--error &__help {
     color: var(--danger);
-  }
-
-  &__choose {
-    width: fit-content;
-    padding: 8px 14px;
-    border: 0;
-    border-radius: var(--radius);
-    background: var(--accent-fill);
-    color: #fff;
-    font: 600 13px var(--font-ui);
-    cursor: pointer;
   }
 }
 </style>

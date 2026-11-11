@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLiveSession } from '@/modules/live';
-import { useFloatingWindow } from '@/modules/overlay';
+import { ElevenLabsKeyField, useFloatingWindow } from '@/modules/overlay';
 import { LanguageSelect, useSettingsStore } from '@/modules/settings';
 import { needsShare } from '@/shared/audio/audioSources';
 import { PRIVACY_PATH } from '@/shared/links';
@@ -76,6 +76,11 @@ async function startDemo(): Promise<void> {
               {{ session.starting ? t(session.startingKey) : t('start.button') }}
             </button>
           </ApiKeyField>
+        </div>
+
+        <!-- The voice that reads the translation and its optional ElevenLabs key, in plain view -->
+        <div class="start__voice">
+          <ElevenLabsKeyField />
         </div>
 
         <div v-if="hasDemo" class="start__demo">
@@ -160,6 +165,11 @@ async function startDemo(): Promise<void> {
 
   &__go {
     grid-area: go;
+  }
+
+  &__voice {
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
   }
 
   &__field {

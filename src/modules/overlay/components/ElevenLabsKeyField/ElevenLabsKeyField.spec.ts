@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSettingsStore } from '@/modules/settings/store/useSettingsStore';
 import { i18n } from '@/shared/i18n';
+import { useOverlayStore } from '../../store/useOverlayStore';
 import ElevenLabsKeyField from './ElevenLabsKeyField.vue';
 
 const KEY = 'sk_0123456789abcdef0123456789abcdef';
@@ -20,6 +21,15 @@ function mountField(): ReturnType<typeof mount<typeof ElevenLabsKeyField>> {
   return mount(ElevenLabsKeyField, { global: { plugins: [i18n] } });
 }
 
+function radios(wrapper: ReturnType<typeof mountField>): {
+  openai: ReturnType<typeof wrapper.get>;
+  eleven: ReturnType<typeof wrapper.get>;
+} {
+  const [, openai, eleven] = wrapper.findAll('[role="radio"]');
+  if (!openai || !eleven) throw new Error('engine radios missing');
+  return { openai, eleven };
+}
+
 describe('ElevenLabsKeyField', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -27,44 +37,75 @@ describe('ElevenLabsKeyField', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('explains the steps and links to create a key while empty', () => {
+  it('says plainly that OpenAI reads, and links to create an ElevenLabs key', () => {
+    useOverlayStore().options.voice = true;
     const wrapper = mountField();
-    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.keySteps'));
+
+    expect(radios(wrapper).openai.attributes('aria-checked')).toBe('true');
+    expect(wrapper.text()).toContain(
+      i18n.global.t('overlay.voice.usingOpenAi', { voice: 'Marin' }),
+    );
     expect(wrapper.find('a[href*="elevenlabs"]').exists()).toBe(true);
-    expect(wrapper.find('.eleven__choose').exists()).toBe(false);
     wrapper.unmount();
   });
 
-  it('saves the key, says how many voices it unlocks and offers to pick one', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(voicesResponse(3));
-    vi.stubGlobal('fetch', fetchMock);
+  it('marks No voice, not OpenAI, while the voice is off, and turns it off from there', async () => {
+    const overlay = useOverlayStore();
+    overlay.options.voice = false;
+    const wrapper = mountField();
+    const off = wrapper.findAll('[role="radio"]')[0];
+
+    expect(off?.attributes('aria-checked')).toBe('true');
+    expect(radios(wrapper).openai.attributes('aria-checked')).toBe('false');
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.usingNone'));
+
+    await radios(wrapper).openai.trigger('click');
+    expect(overlay.options.voice).toBe(true);
+    await off?.trigger('click');
+    expect(overlay.options.voice).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('switches to ElevenLabs, voice on, once a typed key works', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(voicesResponse(3)));
     const settings = useSettingsStore();
+    const overlay = useOverlayStore();
+    overlay.options.voice = false;
+    settings.tts.elevenLabsVoice = 'v1';
     const wrapper = mountField();
 
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
 
     expect(settings.voiceKey).toBe(KEY);
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(settings.tts.engine).toBe('elevenlabs');
+    expect(overlay.options.voice).toBe(true);
+    expect(radios(wrapper).eleven.attributes('aria-checked')).toBe('true');
+    expect(wrapper.text()).toContain(
+      i18n.global.t('overlay.voice.usingElevenLabs', { voice: 'Voice 1' }),
+    );
     expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.keyWorks', { count: 3 }, 3));
-    await wrapper.get('.eleven__choose').trigger('click');
-    expect(wrapper.emitted('choose')).toHaveLength(1);
+
+    await radios(wrapper).openai.trigger('click');
+    expect(settings.tts.engine).toBe('openai');
     wrapper.unmount();
   });
 
-  it('says so when ElevenLabs refuses the key, without the pick button', async () => {
+  it('keeps OpenAI when ElevenLabs refuses the key, and will not switch to it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 401 })));
+    const settings = useSettingsStore();
     const wrapper = mountField();
 
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
+    await radios(wrapper).eleven.trigger('click');
 
     expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.keyRefused'));
-    expect(wrapper.find('.eleven__choose').exists()).toBe(false);
+    expect(settings.tts.engine).toBe('openai');
     wrapper.unmount();
   });
 
-  it('asks for the whole key when the pasted one is too short, without calling ElevenLabs', async () => {
+  it('asks for the whole key when it is too short, without calling ElevenLabs', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     const wrapper = mountField();
