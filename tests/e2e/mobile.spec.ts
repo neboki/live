@@ -30,20 +30,23 @@ test('a phone listens with one tap and shows one quiet row of controls', async (
   await pretendPhone(page);
   await page.goto('./');
   await page.locator('#lg-api-key').fill(VALID_KEY);
-  await page.locator('.home__mode--main').click();
+  await page.locator('.home__mode').first().click();
 
   const live = page.locator('.mlive');
   await expect(live).toBeVisible();
   const stop = live.getByRole('button', { name: /Stop|Parar/ });
   await expect(stop).toBeVisible();
-  // Still thumb-sized, and all on one row
+  // Still thumb-sized, and all on one row (centred: the round buttons are shorter)
   expect((await stop.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-  const tops = await live
-    .locator('.mlive__controls .mlive__btn')
-    .evaluateAll((els) => [
-      ...new Set(els.map((el) => Math.round(el.getBoundingClientRect().top))),
-    ]);
-  expect(tops).toHaveLength(1);
+  const centres = await live.locator('.mlive__controls .mlive__btn').evaluateAll((els) => [
+    ...new Set(
+      els.map((el) => {
+        const box = el.getBoundingClientRect();
+        return Math.round(box.top + box.height / 2);
+      }),
+    ),
+  ]);
+  expect(centres).toHaveLength(1);
   const width = await page.evaluate(() => document.documentElement.clientWidth);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     width,
