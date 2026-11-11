@@ -72,6 +72,7 @@ function parseUsage(value: unknown, index: number): Usage {
     outputTokens: count('outputTokens'),
   };
   if (value.audioSeconds !== undefined) usage.audioSeconds = count('audioSeconds');
+  if (value.characters !== undefined) usage.characters = count('characters');
   return usage;
 }
 

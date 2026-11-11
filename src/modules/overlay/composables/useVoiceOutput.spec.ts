@@ -12,8 +12,8 @@ const speech = vi.hoisted(() => ({
   stop: vi.fn(),
   options: null as unknown,
 }));
-const openAiStop = vi.hoisted(() => vi.fn());
-const openAiClose = vi.hoisted(() => vi.fn());
+const voiceStop = vi.hoisted(() => vi.fn());
+const voiceClose = vi.hoisted(() => vi.fn());
 const tts = vi.hoisted(() => ({ onUsage: null as unknown, addUsage: vi.fn() }));
 
 const overlay = reactive({
@@ -23,18 +23,22 @@ const overlay = reactive({
   setNotice: vi.fn(),
 });
 const settings = reactive({
-  apiKey: 'test-key',
-  tts: { engine: 'browser' as 'browser' | 'openai', model: 'gpt-4o-mini-tts', voice: 'alloy' },
+  voiceKey: 'test-key',
+  tts: {
+    engine: 'browser' as 'browser' | 'elevenlabs',
+    model: 'eleven_flash_v2_5',
+    voice: 'voice-id',
+  },
 });
 
 vi.mock('../store/useOverlayStore', () => ({ useOverlayStore: () => overlay }));
 vi.mock('@/modules/settings/store/useSettingsStore', () => ({
   useSettingsStore: () => settings,
 }));
-vi.mock('@/shared/providers/openai/tts/tts', () => ({
-  createOpenAiTts: (_config: unknown, onUsage: unknown) => {
+vi.mock('@/shared/providers/elevenlabs/tts', () => ({
+  createElevenLabsTts: (_config: unknown, onUsage: unknown) => {
     tts.onUsage = onUsage;
-    return { speak: vi.fn(), stop: openAiStop, close: openAiClose };
+    return { speak: vi.fn(), stop: voiceStop, close: voiceClose };
   },
 }));
 const record = reactive({
@@ -67,7 +71,7 @@ describe('useVoiceOutput', () => {
     overlay.translation = { id: 0, text: '', done: false };
     overlay.options.voice = true;
     overlay.paused = false;
-    settings.apiKey = 'test-key';
+    settings.voiceKey = 'test-key';
     settings.tts.engine = 'browser';
     vi.clearAllMocks();
     scope = effectScope();
@@ -91,7 +95,7 @@ describe('useVoiceOutput', () => {
     overlay.options.voice = false;
     await nextTick();
     expect(speech.stop).toHaveBeenCalled();
-    expect(openAiStop).toHaveBeenCalled();
+    expect(voiceStop).toHaveBeenCalled();
 
     await finishTranslation(1, 'Hola');
     expect(speech.speak).not.toHaveBeenCalled();
@@ -123,26 +127,27 @@ describe('useVoiceOutput', () => {
   it('stops playback and closes the audio output when the scope is disposed', () => {
     scope.stop();
     expect(speech.stop).toHaveBeenCalled();
-    expect(openAiClose).toHaveBeenCalled();
+    expect(voiceClose).toHaveBeenCalled();
   });
 
-  it('uses the OpenAI engine only when selected and a key is present', async () => {
+  it('uses the ElevenLabs engine only when selected and a key is present', async () => {
     const options = captured();
     expect(options.engine()).toBe(options.fallback);
-    settings.tts.engine = 'openai';
+    settings.tts.engine = 'elevenlabs';
     await nextTick();
     expect(speech.stop).toHaveBeenCalled();
     expect(options.engine()).not.toBe(options.fallback);
-    settings.apiKey = '';
+    settings.voiceKey = '';
     expect(options.engine()).toBe(options.fallback);
   });
 
-  it('adds the OpenAI voice usage to the session cost', () => {
+  it('adds the ElevenLabs voice usage to the session cost', () => {
     const usage = {
-      model: 'gpt-4o-mini-tts',
-      inputTokens: 1,
+      model: 'eleven_flash_v2_5',
+      inputTokens: 0,
       cachedInputTokens: 0,
       outputTokens: 0,
+      characters: 12,
     };
     (tts.onUsage as (next: typeof usage) => void)(usage);
     expect(tts.addUsage).toHaveBeenCalledWith(usage);

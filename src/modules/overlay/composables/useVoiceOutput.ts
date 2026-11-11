@@ -1,7 +1,7 @@
 import { onScopeDispose, watch } from 'vue';
 import { useSessionRecord } from '@/modules/session';
 import { useSettingsStore } from '@/modules/settings';
-import { createOpenAiTts } from '@/shared/providers/openai/tts/tts';
+import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
 import { createBrowserTts } from '@/shared/speech/browserTts';
 import { spokenUpTo } from '@/shared/speech/sentences';
 import type { TtsProvider } from '@/shared/speech/types';
@@ -37,11 +37,10 @@ export function useVoiceOutput(
   const settings = useSettingsStore();
   const record = useSessionRecord();
   const browser = createBrowserTts(() => store.voiceVolume);
-  // OpenAI speech is billed to the key, so it counts in the session cost
-  const openAi = createOpenAiTts(
+  // ElevenLabs speech is billed to the user's ElevenLabs key, so it counts in the session cost
+  const elevenLabs = createElevenLabsTts(
     () => ({
-      apiKey: settings.apiKey,
-      endpoint: settings.endpoint,
+      apiKey: settings.voiceKey,
       model: settings.tts.model,
       voice: settings.tts.voice,
       volume: store.voiceVolume,
@@ -55,7 +54,7 @@ export function useVoiceOutput(
   let nextLine = 0;
 
   function activeEngine(): TtsProvider {
-    return settings.tts.engine === 'openai' && settings.apiKey ? openAi : browser;
+    return settings.tts.engine === 'elevenlabs' && settings.voiceKey ? elevenLabs : browser;
   }
 
   const { speak, stop } = useSpeech({
@@ -67,7 +66,7 @@ export function useVoiceOutput(
 
   function stopAll(): void {
     stop();
-    openAi.stop();
+    elevenLabs.stop();
   }
 
   function voiceOn(speaker: number | null): boolean {
@@ -156,6 +155,6 @@ export function useVoiceOutput(
   );
   onScopeDispose(() => {
     stopAll();
-    openAi.close?.();
+    elevenLabs.close?.();
   });
 }

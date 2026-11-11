@@ -227,16 +227,22 @@
       "title": "Voz",
       "engine": "Motor",
       "browser": "Navegador",
-      "openai": "OpenAI (se cobra a tu clave)",
       "model": "Modelo",
       "voice": "Voz",
       "free": "Gratis",
       "recommended": "Recomendada",
       "listen": "Escuchar {voice}",
       "sample": "Hola, así sonarán las traducciones de tu reunión.",
-      "sampleFailed": "No se pudo reproducir la muestra. Revisa tu clave.",
-      "needsKey": "Pon tu clave de OpenAI para escuchar las voces",
-      "cost": "Las voces de OpenAI se cobran a tu clave (≈ 0,45 $/h); la del navegador es gratis.",
+      "sampleFailed": "No se pudo reproducir la muestra. Revisa tu clave de ElevenLabs.",
+      "yours": "Tuya",
+      "loading": "Cargando tus voces de ElevenLabs…",
+      "key": "Clave de ElevenLabs (opcional)",
+      "keyHelp": "Para voces mucho más naturales. Crea una clave solo con permiso de voz y ponle un tope de gasto.",
+      "keySet": "Elige una de tus voces de ElevenLabs. Si algo falla, lee la voz del navegador.",
+      "getKey": "Crear una clave",
+      "keyRefused": "ElevenLabs no acepta esta clave. Revisa que esté completa y activa.",
+      "loadFailed": "No se pudieron cargar tus voces de ElevenLabs. Prueba de nuevo en un momento.",
+      "cost": "Las voces de ElevenLabs se cobran a tu cuenta de ElevenLabs (≈ 1,50 $/h con voz); la del navegador es gratis.",
       "interpreter": "En modo Intérprete la voz la pone el propio modelo de traducción."
     },
     "meeting": {
@@ -318,7 +324,9 @@
     "interpreterAzure": "El modo Intérprete solo funciona con OpenAI, no con Azure. Elige otro nivel de calidad.",
     "spendLimit": "La sesión ha llegado a tu límite de gasto y se ha detenido. Súbelo en los ajustes si quieres seguir.",
     "noCredit": "Tu cuenta de OpenAI se ha quedado sin saldo. Añade saldo en la facturación de OpenAI y vuelve a empezar.",
-    "ttsFailed": "Ha fallado la voz de OpenAI, así que lee la voz del navegador.",
+    "ttsFailed": "Ha fallado la voz de ElevenLabs, así que lee la voz del navegador.",
+    "ttsKey": "ElevenLabs no acepta tu clave, así que lee la voz del navegador. Revísala en Voz.",
+    "ttsCredit": "Tu cuenta de ElevenLabs no tiene saldo, así que lee la voz del navegador.",
     "invalidEndpoint": "El endpoint de Azure no es válido. Revísalo en la página de inicio.",
     "modelNotFound": "OpenAI no tiene ningún modelo con ese nombre, o tu clave no puede usarlo. Revisa los nombres de modelo en los ajustes.",
     "badSettings": "OpenAI ha rechazado los ajustes de la petición. Revisa los nombres de modelo en los ajustes o elige un nivel de calidad.",
@@ -700,8 +708,8 @@
         },
         "tts": {
           "what": "El texto traducido",
-          "where": "OpenAI, síntesis de voz",
-          "when": "Solo si la voz usa el motor de OpenAI. Con la voz del navegador la genera tu sistema operativo y no se envía nada."
+          "where": "ElevenLabs, síntesis de voz",
+          "when": "Solo si eliges una voz de ElevenLabs. Con la voz del navegador la genera tu sistema operativo y no se envía nada."
         },
         "key": {
           "what": "Tu clave API",
@@ -715,7 +723,7 @@
       "title": "Qué se queda en este dispositivo",
       "intro": "En el almacenamiento local del navegador, solo en este dispositivo y sin enviarse a ningún sitio:",
       "items": [
-        "Tu clave API, si dejas marcado «Recordar en este dispositivo». Si lo desmarcas, vive solo en memoria y desaparece al cerrar la pestaña.",
+        "Tu clave API (y la de ElevenLabs, si la pones), si dejas marcado «Recordar en este dispositivo». Si lo desmarcas, vive solo en memoria y desaparece al cerrar la pestaña.",
         "El proveedor elegido y, con Azure, la dirección de tu recurso.",
         "Tus preferencias: idiomas, modelos, calidad, voz, límite de gasto, tema, aspecto de los subtítulos y glosario.",
         "Las pistas de la reunión que escribas (tema e idiomas). El tema es texto libre: escribe solo lo que no te importe guardar aquí.",
@@ -749,6 +757,7 @@
       "title": "Tu clave API",
       "items": [
         "Se envía solo a OpenAI (api.openai.com) o, si eliges Azure, solo al punto de conexión de tu recurso. Una clave de Azure nunca se envía a OpenAI.",
+        "La clave de ElevenLabs, si la pones, se envía solo a ElevenLabs (api.elevenlabs.io) y solo para la voz.",
         "Viaja siempre cifrada. Con OpenAI nunca aparece en una dirección web: en el audio en directo va en el protocolo de la conexión, el método que OpenAI indica para navegadores.",
         "Con Azure, el audio en directo lleva la clave en la dirección de la conexión, como indica Microsoft. Si esa conexión falla, el navegador podría mostrarla en su consola de desarrollo.",
         "Los mensajes de error se limpian para que la clave no aparezca nunca en ellos.",
@@ -760,7 +769,7 @@
       "title": "Cómo se protege",
       "items": [
         "Todas las conexiones van cifradas: HTTPS para la página y las peticiones, WSS para el audio en directo.",
-        "Una política de seguridad de contenido (CSP) solo deja que la página se conecte a sí misma, a OpenAI y a los dominios de Azure OpenAI. El navegador bloquea cualquier otra conexión, y las pruebas automáticas fallan si esa lista cambia.",
+        "Una política de seguridad de contenido (CSP) solo deja que la página se conecte a sí misma, a OpenAI, a los dominios de Azure OpenAI y a ElevenLabs. El navegador bloquea cualquier otra conexión, y las pruebas automáticas fallan si esa lista cambia.",
         "No hay scripts externos ni complementos, y los formularios no envían datos a ningún sitio.",
         "El micrófono y la captura de pantalla los pide el propio navegador con su aviso. Puedes dejar de compartir en cualquier momento.",
         "Para distinguir quién habla, la app calcula en tu dispositivo rasgos muy simples de cada voz (tono y timbre). No es un dato biométrico, no sale del navegador y se olvida al terminar la sesión.",
@@ -789,6 +798,7 @@
       "intro": "Estos son los únicos servicios externos que tocan tus datos. Cada uno tiene su propia política:",
       "openai": "OpenAI procesa el audio y el texto para transcribir, traducir y generar la voz, con tu clave y bajo tu cuenta. Según OpenAI, lo que se envía por su API no se usa para entrenar sus modelos salvo que tú lo autorices, y puede conservarse un tiempo limitado para detectar abusos.",
       "azure": "Microsoft Azure OpenAI, solo si lo eliges: se rige por tu suscripción de Azure y por los términos de Microsoft.",
+      "elevenlabs": "ElevenLabs, solo si eliges una de sus voces: recibe el texto traducido para leerlo en voz alta, con tu clave de ElevenLabs y bajo tu cuenta.",
       "google": "Google Firebase Hosting sirve la página. Como cualquier servidor web, recibe tu dirección IP y datos técnicos del navegador para poder entregarla.",
       "link": "Ver su política"
     },

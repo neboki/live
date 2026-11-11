@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PcmPlayer } from '@/shared/audio/pcmPlayer';
-import { createOpenAiTts } from './tts';
+import { createElevenLabsTts } from './tts';
 
-const config = { apiKey: 'sk-test', model: 'gpt-4o-mini-tts', voice: 'alloy' };
+/** Shaped like an ElevenLabs key, built at runtime so no key-like text sits in the repo */
+const KEY = ['sk', 'fakefakefakefakefake'].join('_');
+const config = { apiKey: KEY, model: 'eleven_flash_v2_5', voice: 'voice/1' };
 
 interface FakePlayer extends PcmPlayer {
   played: Int16Array[];
@@ -41,12 +43,11 @@ function streamed(
   };
 }
 
-/** `seconds` of silence as PCM16 bytes */
-function silence(seconds: number): number[] {
-  return new Array<number>(seconds * 24_000 * 2).fill(0);
+function sent(fetchMock: ReturnType<typeof vi.fn>, call = 0): [string, RequestInit] {
+  return fetchMock.mock.calls[call] as [string, RequestInit];
 }
 
-describe('createOpenAiTts', () => {
+describe('createElevenLabsTts', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let player: FakePlayer;
 
@@ -62,20 +63,41 @@ describe('createOpenAiTts', () => {
     vi.restoreAllMocks();
   });
 
-  it('posts model, voice and input with a Bearer header, asking for raw PCM', async () => {
-    const tts = createOpenAiTts(() => config, undefined, player);
-    await tts.speak('Hola', 'es');
+  it('posts text, model and language with the xi-api-key header, asking for 24 kHz PCM', async () => {
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await tts.speak('Hola', 'es-ES');
 
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.openai.com/v1/audio/speech');
+    const [url, init] = sent(fetchMock);
+    expect(url).toBe(
+      'https://api.elevenlabs.io/v1/text-to-speech/voice%2F1/stream?output_format=pcm_24000',
+    );
     expect(init.method).toBe('POST');
-    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-test');
+    expect((init.headers as Record<string, string>)['xi-api-key']).toBe(KEY);
     expect(JSON.parse(init.body as string)).toEqual({
-      model: 'gpt-4o-mini-tts',
-      voice: 'alloy',
-      input: 'Hola',
-      response_format: 'pcm',
+      text: 'Hola',
+      model_id: 'eleven_flash_v2_5',
+      language_code: 'es',
     });
+  });
+
+  it('passes the sentence before in the same language, for a smoother join', async () => {
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await tts.speak('Hola a todos.', 'es');
+    fetchMock.mockResolvedValueOnce(streamed([[1, 0]]).response);
+    await tts.speak('Empezamos.', 'es');
+    fetchMock.mockResolvedValueOnce(streamed([[1, 0]]).response);
+    await tts.speak('Hello.', 'en');
+
+    expect(JSON.parse(sent(fetchMock, 1)[1].body as string)).toMatchObject({
+      previous_text: 'Hola a todos.',
+    });
+    expect(JSON.parse(sent(fetchMock, 2)[1].body as string)).not.toHaveProperty('previous_text');
+  });
+
+  it('leaves the language out when the tag has no ISO 639-1 code', async () => {
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await tts.speak('Hola', 'auto');
+    expect(JSON.parse(sent(fetchMock)[1].body as string)).not.toHaveProperty('language_code');
   });
 
   it('plays the audio as it arrives, joining a sample split across reads, then waits for it', async () => {
@@ -85,33 +107,32 @@ describe('createOpenAiTts', () => {
         [0, 3, 0],
       ]).response,
     );
-    const tts = createOpenAiTts(() => config, undefined, player);
+    const tts = createElevenLabsTts(() => config, undefined, player);
     await tts.speak('Hola', 'es');
 
     expect(player.played.map((pcm) => [...pcm])).toEqual([[1], [2, 3]]);
     expect(player.whenDrained).toHaveBeenCalledTimes(1);
   });
 
-  it('reports the usage of every clip, with its exact duration once it has arrived', async () => {
-    fetchMock.mockResolvedValueOnce(streamed([silence(1), silence(0.5)]).response);
+  it('reports the characters of every clip, what ElevenLabs bills', async () => {
     const onUsage = vi.fn();
-    const tts = createOpenAiTts(() => config, onUsage, player);
+    const tts = createElevenLabsTts(() => config, onUsage, player);
     await tts.speak('Hola, ¿qué tal?', 'es');
 
     expect(onUsage).toHaveBeenCalledWith({
-      model: 'gpt-4o-mini-tts',
-      inputTokens: 4,
+      model: 'eleven_flash_v2_5',
+      inputTokens: 0,
       cachedInputTokens: 0,
       outputTokens: 0,
-      audioSeconds: 1.5,
+      characters: 15,
     });
   });
 
-  it('stop() cuts a clip still streaming and estimates what was billed from the text', async () => {
+  it('stop() cuts a clip still streaming; the clip is still billed', async () => {
     const { response, push } = streamed([[1, 0]], true);
     fetchMock.mockResolvedValueOnce(response);
     const onUsage = vi.fn();
-    const tts = createOpenAiTts(() => config, onUsage, player);
+    const tts = createElevenLabsTts(() => config, onUsage, player);
     const done = tts.speak('Adiós', 'es');
     await vi.waitFor(() => expect(player.played).toHaveLength(1));
     tts.stop();
@@ -122,40 +143,56 @@ describe('createOpenAiTts', () => {
     expect(player.stop).toHaveBeenCalled();
     expect(player.played).toHaveLength(1);
     expect(player.whenDrained).not.toHaveBeenCalled();
-    expect(onUsage).toHaveBeenCalledWith(expect.objectContaining({ audioSeconds: 5 / 15 }));
+    expect(onUsage).toHaveBeenCalledWith(expect.objectContaining({ characters: 5 }));
   });
 
   it('passes the abort signal to fetch and stops the player on abort', async () => {
     const { response } = streamed([[1, 0]], true);
     fetchMock.mockResolvedValueOnce(response);
     const controller = new AbortController();
-    const tts = createOpenAiTts(() => config, undefined, player);
+    const tts = createElevenLabsTts(() => config, undefined, player);
     const done = tts.speak('Hola', 'es', controller.signal);
     await vi.waitFor(() => expect(player.played).toHaveLength(1));
-    expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].signal).toBe(controller.signal);
+    expect(sent(fetchMock)[1].signal).toBe(controller.signal);
     controller.abort();
     await expect(done).resolves.toBeUndefined();
     expect(player.stop).toHaveBeenCalled();
   });
 
-  it('maps a 401 to the invalid key error', async () => {
+  it('tells a rejected key from an account with no credit, keeping the key out', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response('{"error":{"code":"invalid_api_key"}}', { status: 401 }),
+      new Response(`{"detail":{"status":"invalid_api_key","message":"bad ${KEY}"}}`, {
+        status: 401,
+      }),
     );
-    const tts = createOpenAiTts(() => config, undefined, player);
-    await expect(tts.speak('Hola', 'es')).rejects.toMatchObject({ status: 401 });
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    const rejected = tts.speak('Hola', 'es');
+    await expect(rejected).rejects.toMatchObject({ status: 401, userMessageKey: 'errors.ttsKey' });
+    await expect(rejected).rejects.not.toHaveProperty('message', expect.stringContaining(KEY));
+
+    fetchMock.mockResolvedValueOnce(
+      new Response('{"detail":{"status":"quota_exceeded","message":"No credits"}}', {
+        status: 401,
+      }),
+    );
+    await expect(tts.speak('Hola', 'es')).rejects.toMatchObject({
+      userMessageKey: 'errors.ttsCredit',
+    });
     expect(player.played).toHaveLength(0);
   });
 
   it('maps a network failure to an external service error', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-    const tts = createOpenAiTts(() => config, undefined, player);
-    await expect(tts.speak('Hola', 'es')).rejects.toMatchObject({ status: 502 });
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await expect(tts.speak('Hola', 'es')).rejects.toMatchObject({
+      status: 502,
+      userMessageKey: 'errors.ttsFailed',
+    });
   });
 
   it('fails when the reply has no body, and when the stream breaks', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
-    const tts = createOpenAiTts(() => config, undefined, player);
+    const tts = createElevenLabsTts(() => config, undefined, player);
     await expect(tts.speak('Hola', 'es')).rejects.toMatchObject({
       userMessageKey: 'errors.ttsFailed',
     });
@@ -170,7 +207,7 @@ describe('createOpenAiTts', () => {
   });
 
   it('skips blank text without calling the API', async () => {
-    const tts = createOpenAiTts(() => config, undefined, player);
+    const tts = createElevenLabsTts(() => config, undefined, player);
     await tts.speak('   ', 'es');
     expect(fetchMock).not.toHaveBeenCalled();
   });

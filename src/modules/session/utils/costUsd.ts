@@ -29,7 +29,8 @@ export function costUsd(usage: readonly Usage[], prices: PriceTable = PRICES): n
     const hasTokens = entry.inputTokens > 0 || entry.outputTokens > 0;
     const minutesApply = !(price.minutesUnlessTokens && hasTokens);
     const audio = minutesApply ? ((entry.audioSeconds ?? 0) / 60) * (price.audioPerMinute ?? 0) : 0;
-    return total + tokens / PER_MILLION + audio;
+    const characters = (entry.characters ?? 0) * (price.perMillionCharacters ?? 0);
+    return total + (tokens + characters) / PER_MILLION + audio;
   }, 0);
 }
 

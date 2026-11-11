@@ -1,4 +1,4 @@
-import { logError } from '@/shared/errors';
+import { AppError, logError } from '@/shared/errors';
 import { createBrowserTts } from './browserTts';
 import type { TtsProvider } from './types';
 
@@ -28,6 +28,14 @@ interface QueueItem {
 /** Pending items kept while one plays; the oldest is dropped beyond this. */
 export const MAX_BACKLOG = 3;
 const TTS_FAILED_KEY = 'errors.ttsFailed';
+/** Voice errors that say why (a refused key, no credit left) keep their own message */
+const TTS_KEY_PREFIX = 'errors.tts';
+
+function noticeKey(err: unknown): string {
+  return err instanceof AppError && err.userMessageKey.startsWith(TTS_KEY_PREFIX)
+    ? err.userMessageKey
+    : TTS_FAILED_KEY;
+}
 
 /**
  * A FIFO queue over the active TTS engine. After an engine error, the item and
@@ -60,7 +68,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
       }
       logError('Voice engine failed, falling back to the browser voice', err);
       degraded = true;
-      options.onError?.(TTS_FAILED_KEY);
+      options.onError?.(noticeKey(err));
       current = fallback;
       try {
         await fallback.speak(item.text, item.lang, signal);

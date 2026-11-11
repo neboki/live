@@ -11,6 +11,8 @@ const EXPECTED_CONNECT_SRC = [
   'https://*.openai.azure.com wss://*.openai.azure.com https://*.cognitiveservices.azure.com wss://*.cognitiveservices.azure.com https://*.services.ai.azure.com wss://*.services.ai.azure.com',
   // Firebase, for the optional Google account: Auth and Firestore
   'https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com',
+  // ElevenLabs, for the optional voice
+  'https://api.elevenlabs.io',
 ].join(' ');
 
 declare global {

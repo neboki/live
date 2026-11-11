@@ -88,7 +88,7 @@ describe('PrivacyView', () => {
     const wrapper = render();
     const links = wrapper.findAll('#privacy-providers a');
 
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(4);
     for (const link of links) {
       expect(link.attributes('href')).toMatch(/^https:\/\//);
       expect(link.attributes('rel')).toBe('noopener noreferrer');

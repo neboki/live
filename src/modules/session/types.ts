@@ -35,6 +35,8 @@ export interface ModelPrice {
   cachedInput: number;
   output: number;
   audioPerMinute?: number;
+  /** USD per 1M characters of text, for voices billed that way (ElevenLabs) */
+  perMillionCharacters?: number;
   /** The per-minute price only applies when the API reported no tokens for the audio */
   minutesUnlessTokens?: boolean;
 }

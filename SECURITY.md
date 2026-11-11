@@ -31,7 +31,7 @@ Browsers cannot set an `Authorization` header on a WebSocket, so the key travels
 
 | Call                               | OpenAI                                                  | Azure OpenAI              |
 | ---------------------------------- | ------------------------------------------------------- | ------------------------- |
-| HTTP (chat, TTS, key check)        | `Authorization: Bearer` header                          | `api-key` header          |
+| HTTP (chat, key check)             | `Authorization: Bearer` header                          | `api-key` header          |
 | Realtime WebSocket (transcription) | `Sec-WebSocket-Protocol: openai-insecure-api-key.<key>` | `api-key` query parameter |
 | Realtime WebSocket (interpreter)   | same subprotocol                                        | not offered by Azure      |
 
@@ -49,23 +49,28 @@ connection fails, so this is a risk you accept by choosing Azure.
   ([ADR 0003](docs/adr/0003-pricing-and-model-tiers.md)).
 - Like any key used in a browser, it is readable by code running in the page. The CSP below and
   the absence of third-party scripts limit what could run there.
+- The optional ElevenLabs key (voice only) goes to `api.elevenlabs.io` alone, in the
+  `xi-api-key` header of plain HTTPS requests, never in a URL. It is remembered under the same
+  "Remember on this device" choice, left out of backups and account sync, cleared by "Forget
+  key", and redacted from errors. ElevenLabs lets a key be limited to text to speech with a
+  credit cap; the app suggests doing so ([ADR 0010](docs/adr/0010-elevenlabs-voice.md)).
 
 ## Content Security Policy
 
 The app (`index.html`) sets the policy below.
 
-| Directive                    | Value                                                                         | Why                                            |
-| ---------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------- |
-| `default-src`                | `'self'`                                                                      | Nothing from other origins by default          |
-| `script-src`                 | `'self'`                                                                      | Only the app's own bundles and the worklet     |
-| `style-src`                  | `'self' 'unsafe-inline'`                                                      | Vue style bindings and the floating window     |
-| `font-src`                   | `'self'`                                                                      | Self-hosted Geist fonts                        |
-| `connect-src`                | `'self'`, `api.openai.com` and the Azure OpenAI hosts\* (`https:` and `wss:`) | OpenAI, or your own Azure resource             |
-| `media-src`                  | `'self' blob:`                                                                | The shared tab shown behind time (MediaSource) |
-| `worker-src`                 | `'self'`                                                                      | No foreign workers                             |
-| `img-src`                    | `'self' data:`                                                                | Icons                                          |
-| `object-src` / `form-action` | `'none'`                                                                      | No plugins, no form posts                      |
-| `base-uri`                   | `'self'`                                                                      | No base-tag hijacking                          |
+| Directive                    | Value                                                                                                      | Why                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `default-src`                | `'self'`                                                                                                   | Nothing from other origins by default                                 |
+| `script-src`                 | `'self'`                                                                                                   | Only the app's own bundles and the worklet                            |
+| `style-src`                  | `'self' 'unsafe-inline'`                                                                                   | Vue style bindings and the floating window                            |
+| `font-src`                   | `'self'`                                                                                                   | Self-hosted Geist fonts                                               |
+| `connect-src`                | `'self'`, `api.openai.com` and the Azure OpenAI hosts\* (`https:` and `wss:`), `https://api.elevenlabs.io` | OpenAI, or your own Azure resource; ElevenLabs for the optional voice |
+| `media-src`                  | `'self' blob:`                                                                                             | The shared tab shown behind time (MediaSource)                        |
+| `worker-src`                 | `'self'`                                                                                                   | No foreign workers                                                    |
+| `img-src`                    | `'self' data:`                                                                                             | Icons                                                                 |
+| `object-src` / `form-action` | `'none'`                                                                                                   | No plugins, no form posts                                             |
+| `base-uri`                   | `'self'`                                                                                                   | No base-tag hijacking                                                 |
 
 \* `*.openai.azure.com`, `*.cognitiveservices.azure.com` and `*.services.ai.azure.com`, the
 hosts Azure gives OpenAI resources; `endpoint.ts` accepts exactly these and nothing else.

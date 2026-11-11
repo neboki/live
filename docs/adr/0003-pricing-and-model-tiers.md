@@ -34,11 +34,11 @@ processing adds 10 %, and above 272K input tokens input doubles and output is 1.
 
 The app shows them as **Low cost**, **Medium** and **Premium**; low cost is the default.
 
-| Tier     | Speech-to-text           | Translation   | Summary / suggestions | Cost per hour\* |
-| -------- | ------------------------ | ------------- | --------------------- | --------------- |
-| Low cost | `gpt-4o-mini-transcribe` | `gpt-6-luna`  | `gpt-6-luna`          | ~$0.17          |
-| Medium   | `gpt-live-transcribe`    | `gpt-6-luna`  | `gpt-6-luna`          | ~$0.79          |
-| Premium  | `gpt-live-transcribe`    | `gpt-6.1-sol` | `gpt-6.1-sol`         | ~$2.15          |
+| Tier     | Speech-to-text        | Translation   | Summary / suggestions | Cost per hour\* |
+| -------- | --------------------- | ------------- | --------------------- | --------------- |
+| Low cost | `gpt-transcribe`      | `gpt-6-luna`  | `gpt-6-luna`          | ~$0.24          |
+| Medium   | `gpt-live-transcribe` | `gpt-6-luna`  | `gpt-6-luna`          | ~$0.79          |
+| Premium  | `gpt-live-transcribe` | `gpt-6.1-sol` | `gpt-6.1-sol`         | ~$2.15          |
 
 `gpt-6-astra` is not used: at about $6.95 per hour (Standard) it costs five times sol, and no
 test has shown that the quality is worth it.
@@ -57,7 +57,10 @@ by about ±8 %), at 150 words per minute and about 15 words per sentence, so 390
   No cache hits are counted: the fixed prompt prefix is shorter than OpenAI's caching minimum.
   That gives luna ≈ $0.04 and sol ≈ $1.40, at Standard rates (the app does not ask for Fast mode).
 
-The app's tier picker shows these figures. Voice output (`gpt-4o-mini-tts`) is optional
+_Update 2026-11-11:_ Low cost moved to `gpt-transcribe` (`gpt-4o-mini-transcribe` is retired), and the
+optional voice is now ElevenLabs, about $1.50 per hour with voice ([0010](0010-elevenlabs-voice.md)).
+
+The app's tier picker shows these figures. Voice output (`gpt-4o-mini-tts`, now retired) was optional
 and adds about $0.45 per hour, but that figure uses a $0.015/min rate that OpenAI does not
 publish (unconfirmed); the browser's free `speechSynthesis` is the default.
 

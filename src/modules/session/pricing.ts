@@ -15,7 +15,7 @@ import type { PriceTable } from './types';
 export const PRICES: PriceTable = {
   // Speech-to-text (Realtime transcription). Billed by audio tokens when the API reports
   // them, otherwise by the minutes of audio sent.
-  // Deprecated: shuts down 2027-02-26 (replacements: gpt-live-transcribe, gpt-transcribe).
+  // Retired: no longer offered (shuts down 2027-02-26); kept only to price older sessions.
   // No cached-input price is published.
   'gpt-4o-mini-transcribe': {
     input: 1.25,
@@ -33,10 +33,17 @@ export const PRICES: PriceTable = {
   'gpt-6-luna': { input: 0.1, cachedInput: 0.01, output: 0.5 },
   'gpt-6.1-sol': { input: 2, cachedInput: 0.1, output: 10 },
   'gpt-6-astra': { input: 10, cachedInput: 1, output: 50 },
-  // Optional voice output. Token prices confirmed; no cached-input price is published.
-  // Deprecated: its snapshots shut down 2027-01-06 (replacement: gpt-realtime-2.1-mini).
-  // audioPerMinute is unconfirmed: OpenAI publishes no per-minute figure for this model.
+  // Retired: no longer offered (shuts down 2027-01-06). Kept only to price sessions saved
+  // before the switch to ElevenLabs. audioPerMinute was never confirmed by OpenAI.
   'gpt-4o-mini-tts': { input: 0.6, cachedInput: 0, output: 12, audioPerMinute: 0.015 },
+  // Optional voice output, ElevenLabs, billed per character of text read. From
+  // https://elevenlabs.io/pricing/api as of 2026-11-11: $0.04 per 1K characters for Flash
+  // and v4 Turbo, $0.08 for the multilingual models. Usage beyond what the user's plan
+  // includes; the bill from ElevenLabs is the source of truth.
+  eleven_flash_v2_5: { input: 0, cachedInput: 0, output: 0, perMillionCharacters: 40 },
+  eleven_v4_turbo: { input: 0, cachedInput: 0, output: 0, perMillionCharacters: 40 },
+  eleven_multilingual_v2: { input: 0, cachedInput: 0, output: 0, perMillionCharacters: 80 },
+  eleven_v4: { input: 0, cachedInput: 0, output: 0, perMillionCharacters: 80 },
 };
 
 /**

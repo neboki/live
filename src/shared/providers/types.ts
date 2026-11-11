@@ -12,6 +12,8 @@ export interface Usage {
   outputTokens: number;
   /** Transcription billed by duration instead of tokens */
   audioSeconds?: number;
+  /** Voice billed by the characters of text read (ElevenLabs) */
+  characters?: number;
 }
 
 export type SttStatus = 'connected' | 'reconnecting';
