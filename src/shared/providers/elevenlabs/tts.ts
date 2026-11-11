@@ -15,6 +15,11 @@ export interface ElevenLabsTtsConfig {
   volume?: number;
 }
 
+/**
+ * The next sentence is asked for while this much of the current one is still to play, so
+ * it arrives in time (ElevenLabs answers in a few hundred ms) and they join without a gap.
+ */
+const PREFETCH_SECONDS = 1.2;
 /** What came before is passed for a smoother join; longer context only adds latency */
 const MAX_PREVIOUS_CHARS = 300;
 
@@ -34,7 +39,7 @@ function languageCode(lang: string): string | undefined {
 export function createElevenLabsTts(
   getConfig: () => ElevenLabsTtsConfig,
   onUsage?: (usage: Usage) => void,
-  player: PcmPlayer = createPcmPlayer(() => getConfig().volume ?? 1),
+  player: PcmPlayer = createPcmPlayer(() => getConfig().volume ?? 1, { realtime: false }),
 ): TtsProvider {
   /** Bumped by stop(): a clip still streaming then stops feeding the player */
   let run = 0;
@@ -124,7 +129,8 @@ export function createElevenLabsTts(
     });
     previous = { text, lang };
     try {
-      if (await stream(body, myRun, signal)) await player.whenDrained();
+      // Resolve just before the clip ends: the next one is fetched while this one plays
+      if (await stream(body, myRun, signal)) await player.whenLeft(PREFETCH_SECONDS);
     } catch (err) {
       if (signal?.aborted || myRun !== run) return;
       throw elevenLabsNetworkError(err);
@@ -143,5 +149,5 @@ export function createElevenLabsTts(
     player.close();
   }
 
-  return { speak, stop, close };
+  return { speak, stop, close, settle: () => player.whenDrained() };
 }

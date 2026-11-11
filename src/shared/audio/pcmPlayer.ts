@@ -15,6 +15,17 @@ export interface PcmPlayer {
   close: () => void;
   /** Resolves once everything queued has played, or was stopped */
   whenDrained: () => Promise<void>;
+  /** Resolves once at most `seconds` of queued audio is left (or it was stopped) */
+  whenLeft: (seconds: number) => Promise<void>;
+}
+
+export interface PcmPlayerOptions {
+  /**
+   * True (default) for audio that arrives as it is spoken (the interpreter): a backlog is
+   * played a little faster and a long one skipped. False for clips that arrive faster
+   * than they play (ElevenLabs): every sample plays, at its own speed and pitch.
+   */
+  realtime?: boolean;
 }
 
 /** Cushion before a stretch of audio starts; the jitter of the chunks after it is absorbed */
@@ -61,7 +72,10 @@ export function unlockAudioOutput(): void {
 /** Margin past the queued audio before whenDrained gives up on a context that does not play */
 export const DRAIN_GRACE_SECONDS = 3;
 
-export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
+export function createPcmPlayer(
+  getVolume: () => number = () => 1,
+  { realtime = true }: PcmPlayerOptions = {},
+): PcmPlayer {
   let context: AudioContext | null = null;
   /** The context is this player's own, not the shared one: close() may close it */
   let owned = false;
@@ -118,6 +132,11 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
   /** Where the next chunk starts and how fast it plays, from how much is still queued */
   function schedule(now: number): number {
     const backlog = playAt - now;
+    if (!realtime) {
+      if (backlog <= 0) playAt = now + LEAD_SECONDS;
+      rate = 1;
+      return playAt;
+    }
     if (backlog > MAX_LAG_SECONDS) cut();
     if (backlog <= 0 || backlog > MAX_LAG_SECONDS) {
       playAt = now + LEAD_SECONDS;
@@ -197,5 +216,19 @@ export function createPcmPlayer(getVolume: () => number = () => 1): PcmPlayer {
     });
   }
 
-  return { play, stop, close, whenDrained };
+  function whenLeft(seconds: number): Promise<void> {
+    const left = playAt - (context?.currentTime ?? 0);
+    if (!sources.length || left <= seconds) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(done, (left - seconds) * 1000);
+      function done(): void {
+        clearTimeout(timer);
+        drained = drained.filter((item) => item !== done);
+        resolve();
+      }
+      drained.push(done);
+    });
+  }
+
+  return { play, stop, close, whenDrained, whenLeft };
 }

@@ -136,6 +136,33 @@ describe('createPcmPlayer', () => {
     expect(ctx().sources.at(-1)?.startedAt).toBeCloseTo(LEAD_SECONDS);
   });
 
+  it('plays a clip that arrives all at once whole and at its own pitch, when not realtime', () => {
+    const player = createPcmPlayer(() => 1, { realtime: false });
+    // 8 s of an ElevenLabs sentence delivered in an instant
+    for (let i = 0; i < 40; i++) player.play(chunk(0.2));
+    const sources = ctx().sources;
+    expect(sources.some((source) => source.stopped)).toBe(false);
+    expect(sources.every((source) => source.playbackRate.value === 1)).toBe(true);
+    expect(sources.at(-1)?.startedAt).toBeCloseTo(LEAD_SECONDS + 39 * 0.2);
+  });
+
+  it('whenLeft resolves once only that much audio is still to play', async () => {
+    vi.useFakeTimers();
+    try {
+      const player = createPcmPlayer(() => 1, { realtime: false });
+      for (let i = 0; i < 10; i++) player.play(chunk(0.2));
+      let done = false;
+      void player.whenLeft(1).then(() => (done = true));
+      // LEAD + 2 s queued: 1 s left after about 1.15 s
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(done).toBe(false);
+      await vi.advanceTimersByTimeAsync(200);
+      expect(done).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reads the volume for each chunk', () => {
     let volume = 0.5;
     const player = createPcmPlayer(() => volume);

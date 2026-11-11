@@ -60,6 +60,7 @@ function fakePlayer(): PcmPlayer & { played: Int16Array[] } {
     stop: vi.fn(),
     close: vi.fn(),
     whenDrained: () => Promise.resolve(),
+    whenLeft: () => Promise.resolve(),
   };
 }
 

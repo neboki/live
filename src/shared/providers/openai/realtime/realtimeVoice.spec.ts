@@ -61,6 +61,7 @@ function fakePlayer(): FakePlayer {
     stop: vi.fn(),
     close: vi.fn(),
     whenDrained: vi.fn(() => Promise.resolve()),
+    whenLeft: vi.fn(() => Promise.resolve()),
   };
 }
 

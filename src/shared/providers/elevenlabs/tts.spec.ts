@@ -18,6 +18,7 @@ function fakePlayer(): FakePlayer {
     stop: vi.fn(),
     close: vi.fn(),
     whenDrained: vi.fn(() => Promise.resolve()),
+    whenLeft: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -111,7 +112,7 @@ describe('createElevenLabsTts', () => {
     await tts.speak('Hola', 'es');
 
     expect(player.played.map((pcm) => [...pcm])).toEqual([[1], [2, 3]]);
-    expect(player.whenDrained).toHaveBeenCalledTimes(1);
+    expect(player.whenLeft).toHaveBeenCalledTimes(1);
   });
 
   it('reports the characters of every clip, what ElevenLabs bills', async () => {
@@ -142,7 +143,7 @@ describe('createElevenLabsTts', () => {
 
     expect(player.stop).toHaveBeenCalled();
     expect(player.played).toHaveLength(1);
-    expect(player.whenDrained).not.toHaveBeenCalled();
+    expect(player.whenLeft).not.toHaveBeenCalled();
     expect(onUsage).toHaveBeenCalledWith(expect.objectContaining({ characters: 5 }));
   });
 
