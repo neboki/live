@@ -26,11 +26,11 @@ describe('createEnergyVad', () => {
     expect(closes).toEqual([false, false, false, false, true]);
   });
 
-  it('caps a long monologue at 6 seconds', () => {
+  it('caps a long monologue at 4 seconds', () => {
     const vad = createEnergyVad();
     const closes = Array.from({ length: 60 }, () => vad.feed(speech(), RATE));
 
-    expect(closes.indexOf(true)).toBe(59);
+    expect(closes.indexOf(true)).toBe(39);
   });
 
   it('closes a long sentence on a shorter pause the longer it runs', () => {
@@ -42,10 +42,10 @@ describe('createEnergyVad', () => {
     };
 
     expect(after(10)).toBe(500);
-    // 2.5 s of speech: 300 ms is enough
-    expect(after(25)).toBe(300);
-    // 4 s of speech: a 200 ms breath (two chunks reach the 180 ms step)
-    expect(after(40)).toBe(200);
+    // 2 s of speech: 300 ms is enough
+    expect(after(20)).toBe(300);
+    // 3 s of speech: a 200 ms breath (two chunks reach the 180 ms step)
+    expect(after(30)).toBe(200);
   });
 
   it('flush reports a sentence still open', () => {
@@ -79,12 +79,12 @@ describe('createEnergyVad', () => {
     expect(vad.feed(silence(), RATE)).toBe(true);
   });
 
-  it('starts counting the 6 s cap only once speech begins', () => {
+  it('starts counting the 4 s cap only once speech begins', () => {
     const vad = createEnergyVad();
     Array.from({ length: 50 }, () => vad.feed(silence(), RATE));
     const closes = Array.from({ length: 60 }, () => vad.feed(speech(), RATE));
 
-    expect(closes.indexOf(true)).toBe(59);
+    expect(closes.indexOf(true)).toBe(39);
   });
 
   it('starts fresh after closing a sentence', () => {

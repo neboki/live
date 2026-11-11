@@ -5,12 +5,14 @@
 // closed here. Measured values:
 // - 500 ms of silence closes a short sentence. 400 ms gained nothing measurable and
 //   cut sentences at natural 100–250 ms pauses.
-// - The longer a sentence runs, the shorter the pause that closes it: past 2 s a
-//   300 ms pause is enough, past 3.5 s a 180 ms breath between phrases. Waiting for a
+// - The longer a sentence runs, the shorter the pause that closes it: past 1.5 s a
+//   300 ms pause is enough, past 2.5 s a 180 ms breath between phrases. Waiting for a
 //   real full stop made people talking non-stop (videos, streams) show nothing for
 //   up to 8 s and then a whole block at once; a phrase-sized piece now reaches the
 //   translator every few seconds, and the previous lines give it the context.
-// - 6 s caps a sentence, so even speech without any breath still gets translated.
+// - 4 s caps a sentence, so even speech without any breath (or over music, which never
+//   goes quiet) still gets translated. With 6 s and 3.5 s, captions of a video came
+//   five to eight seconds after the words: too late to follow (2026-11-11).
 
 import { rms } from './pcm';
 
@@ -27,11 +29,11 @@ export interface EnergyVad {
 const SPEECH_RMS = 0.01;
 /** Pause that closes a sentence, by how long the sentence has run so far (ms) */
 const SILENCE_STEPS: readonly { after: number; silence: number }[] = [
-  { after: 3500, silence: 180 },
-  { after: 2000, silence: 300 },
+  { after: 2500, silence: 180 },
+  { after: 1500, silence: 300 },
   { after: 0, silence: 500 },
 ];
-const MAX_UTTERANCE_MS = 6000;
+const MAX_UTTERANCE_MS = 4000;
 
 function silenceToClose(utteranceMs: number): number {
   return SILENCE_STEPS.find((step) => utteranceMs >= step.after)?.silence ?? 500;

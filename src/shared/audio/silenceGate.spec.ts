@@ -84,18 +84,18 @@ describe('createSilenceGate', () => {
     expect(step.commit).toBe(false);
   });
 
-  it('closes a monologue at 6 s and sends the speech that follows without a gap', () => {
+  it('closes a monologue at 4 s and sends the speech that follows without a gap', () => {
     const gate = createSilenceGate(RATE);
-    const steps = Array.from({ length: 61 }, () => gate.push(speech()));
+    const steps = Array.from({ length: 41 }, () => gate.push(speech()));
 
-    expect(steps.findIndex((step) => step.commit)).toBe(59);
+    expect(steps.findIndex((step) => step.commit)).toBe(39);
     expect(steps.every((step) => step.audio.length === 1)).toBe(true);
     expect(gate.isIdle()).toBe(false);
   });
 
-  it('holds silence that follows a monologue closed at 6 s', () => {
+  it('holds silence that follows a monologue closed at 4 s', () => {
     const gate = createSilenceGate(RATE);
-    for (let i = 0; i < 60; i++) gate.push(speech());
+    for (let i = 0; i < 40; i++) gate.push(speech());
 
     expect(gate.push(quiet(0)).audio).toEqual([]);
   });
