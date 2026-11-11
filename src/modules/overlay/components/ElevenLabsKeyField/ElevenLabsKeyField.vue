@@ -38,7 +38,7 @@ const overlay = useOverlayStore();
 const { t } = useI18n();
 const uid = useId();
 const visible = ref(false);
-const { voices, loading, error } = useElevenLabsVoices(() => settings.voiceKey);
+const { voices, loading, error, limited } = useElevenLabsVoices(() => settings.voiceKey);
 /** The key was typed here: once it works, switch to ElevenLabs (a saved key does not) */
 const typed = ref(false);
 
@@ -152,6 +152,7 @@ watch(state, (now) => {
       <template v-else-if="state === 'short'">{{ t('overlay.voice.keyShort') }}</template>
       <template v-else-if="state === 'loading'">{{ t('overlay.voice.loading') }}</template>
       <template v-else-if="state === 'error' && error">{{ t(error) }}</template>
+      <template v-else-if="limited">{{ t('overlay.voice.keyLimited') }}</template>
       <template v-else>
         {{ t('overlay.voice.keyWorks', { count: voices.length }, voices.length) }}
       </template>

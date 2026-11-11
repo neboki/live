@@ -105,6 +105,28 @@ describe('ElevenLabsKeyField', () => {
     wrapper.unmount();
   });
 
+  it('accepts a key restricted to text to speech and offers the standard voices', async () => {
+    const body =
+      '{"detail":{"status":"missing_permissions","message":"The API key you used is missing the permission voices_read to execute this operation."}}';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 401 })));
+    const settings = useSettingsStore();
+    const overlay = useOverlayStore();
+    overlay.options.voice = false;
+    const wrapper = mountField();
+
+    await wrapper.get('input').setValue(KEY);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain(i18n.global.t('overlay.voice.keyRefused'));
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.keyLimited'));
+    expect(settings.tts.engine).toBe('elevenlabs');
+    expect(overlay.options.voice).toBe(true);
+    expect(wrapper.text()).toContain(
+      i18n.global.t('overlay.voice.usingElevenLabs', { voice: 'George' }),
+    );
+    wrapper.unmount();
+  });
+
   it('asks for the whole key when it is too short, without calling ElevenLabs', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

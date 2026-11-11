@@ -4,6 +4,7 @@
 import {
   type AppError,
   ExternalServiceError,
+  ForbiddenError,
   RateLimitError,
   UnauthorizedError,
   isAbortError,
@@ -19,6 +20,8 @@ const KEY_PATTERN = /sk_[A-Za-z0-9]{6,}/g;
 const MAX_DETAIL_CHARS = 300;
 /** Statuses ElevenLabs sends when the account has no credit left */
 const NO_CREDIT_STATUSES = ['quota_exceeded', 'payment_required', 'insufficient_credits'];
+/** A valid key that lacks the permission the request needs (e.g. voices_read) */
+const MISSING_PERMISSIONS = 'missing_permissions';
 const STATUS_UNAUTHORIZED = 401;
 const STATUS_PAYMENT = 402;
 const STATUS_TOO_MANY = 429;
@@ -51,6 +54,12 @@ export function elevenLabsError(httpStatus: number, bodyText: string, apiKey?: s
   const clean = redactElevenLabsKey(message, apiKey).slice(0, MAX_DETAIL_CHARS);
   if (NO_CREDIT_STATUSES.includes(status) || httpStatus === STATUS_PAYMENT) {
     return new RateLimitError(`ElevenLabs has no credit left: ${clean}`, 'errors.ttsCredit');
+  }
+  if (status === MISSING_PERMISSIONS) {
+    return new ForbiddenError(
+      `ElevenLabs key lacks a permission: ${clean}`,
+      'errors.ttsPermission',
+    );
   }
   if (httpStatus === STATUS_UNAUTHORIZED) {
     return new UnauthorizedError(`ElevenLabs rejected the key: ${clean}`, 'errors.ttsKey');
