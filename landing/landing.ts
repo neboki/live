@@ -59,6 +59,53 @@ const ES: Texts = {
   hybridTitle: 'Las dos a la vez',
   hybridText:
     'Reuniones híbridas: la gente de la llamada y la de la sala, mezcladas en una sola transcripción.',
+  navCases: 'Casos de uso',
+  casesEyebrow: 'Para el trabajo',
+  casesTitle1: 'Cuando no entender cuesta dinero,',
+  casesTitle2: 'entiéndelo todo.',
+  casesLead:
+    'Para las reuniones, llamadas y eventos en los que un intérprete tarda días en llegar y cuesta demasiado. La abres, pulsas Empezar y lees.',
+  filterAll: 'Todos',
+  forCompanies: 'Empresas',
+  forFreelancers: 'Freelances',
+  forEvents: 'Eventos',
+  case1Cap: 'Si entregáis antes del viernes, firmamos hoy.',
+  case1Title: 'Reuniones con clientes extranjeros',
+  case1Text: 'Capta cada matiz de la negociación mientras hablan, y responde en el momento.',
+  case2Cap: 'Aplazamos el lanzamiento al martes que viene.',
+  case2Title: 'Equipos internacionales',
+  case2Text:
+    'Dailies y comités donde cada uno habla en su idioma y lee en el suyo, con el resumen ya escrito.',
+  case3Cap: 'Esta línea fabrica cuatrocientas piezas por hora.',
+  case3Title: 'Visitas a fábrica y auditorías',
+  case3Text:
+    'El técnico habla y tú lees en el móvil mientras recorres la planta. Sin traer a un intérprete.',
+  case4Cap: 'Antes de cualquier intervención, cortad siempre la corriente.',
+  case4Title: 'Formación y webinars',
+  case4Text:
+    'Un solo formador para plantillas de varios países: cada persona sigue la sesión en su idioma.',
+  case5Cap: '¿Cuál es tu tarifa por el proyecto completo?',
+  case5Title: 'Llamadas con clientes de fuera',
+  case5Text:
+    'Acepta los proyectos que antes descartabas por el idioma. Además te sugiere qué responder, en el suyo.',
+  case6Cap: 'Háblame de un proyecto del que estés orgulloso.',
+  case6Title: 'Entrevistas de trabajo y selección',
+  case6Text:
+    'Para el candidato y para quien selecciona: nadie pierde el hilo, ni el talento, por un idioma.',
+  case7Cap: 'Si pedís más de mil unidades, os hacemos un diez por ciento de descuento.',
+  case7Title: 'Proveedores y negociación',
+  case7Text:
+    'Trata con la fábrica directamente, sin intermediario, y quédate con toda la llamada por escrito.',
+  case8Cap: 'Gracias a todos, empezamos con los resultados de este año.',
+  case8Title: 'Conferencias, ferias y eventos online',
+  case8Text:
+    'Subtítulos en la pantalla grande para toda la sala, o la traducción leída en tus auriculares.',
+  bandTitle: 'Un intérprete se reserva con días de antelación. Esto se enciende en un minuto.',
+  bandFact1: 'Nadie más instala nada',
+  bandFact2: 'Más de 20 idiomas, también mezclados en la misma reunión',
+  bandFrom: 'Desde',
+  bandHour: 'la hora, sin suscripción',
+  bandCta: 'Pruébala en tu próxima reunión',
   mobileEyebrow: 'En el móvil',
   mobileTitle: 'Un intérprete de bolsillo, con tres botones grandes',
   mobileLead:
@@ -275,6 +322,7 @@ function applyLanguage(): void {
   }
   updateTotal();
   showDemoLine(demoIndex, true);
+  resetCases();
 }
 
 // #endregion
@@ -345,6 +393,112 @@ function nextDemoLine(): void {
   }
   demoIndex = (demoIndex + 1) % DEMO.length;
   showDemoLine(demoIndex);
+}
+
+// #endregion
+
+// #region Use cases
+
+// One case at a time is "live": its card lights up and its caption is typed, as in the app.
+// Without the script, or with reduced motion, every card simply shows its caption.
+
+const CASE_HOLD_MS = 2200;
+const casesRoot = document.querySelector('[data-cases]');
+const caseCards = [...document.querySelectorAll<HTMLElement>('[data-case]')];
+const caseFilters = document.querySelector<HTMLElement>('[data-case-filters]');
+const filterButtons = document.querySelectorAll<HTMLElement>('[data-case-filter]');
+let liveCase: HTMLElement | undefined;
+let caseTimer: number | undefined;
+let casesInView = false;
+let caseHeld = false;
+
+function captionOf(card: HTMLElement): string {
+  return (card.querySelector('.case__full')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function spotlightCase(card: HTMLElement): void {
+  window.clearTimeout(caseTimer);
+  liveCase = card;
+  for (const other of caseCards) {
+    other.classList.toggle('is-live', other === card);
+    const rest = other.querySelector('[data-case-typed]');
+    if (rest && other !== card) rest.textContent = captionOf(other);
+  }
+  const typed = card.querySelector('[data-case-typed]');
+  if (!typed) return;
+
+  const words = captionOf(card).split(' ');
+  let shown = 0;
+  const typeNext = (): void => {
+    shown += 1;
+    typed.textContent = words.slice(0, shown).join(' ');
+    caseTimer =
+      shown < words.length
+        ? window.setTimeout(typeNext, TYPE_MS + Math.random() * TYPE_MS)
+        : window.setTimeout(nextCase, CASE_HOLD_MS);
+  };
+  typed.textContent = '';
+  caseTimer = window.setTimeout(typeNext, 350);
+}
+
+function nextCase(): void {
+  const shown = caseCards.filter((card) => !card.hidden);
+  // Waits while nobody is looking, and while the reader keeps the pointer on a card
+  if (!casesInView || caseHeld || document.hidden || shown.length === 0) {
+    caseTimer = window.setTimeout(nextCase, 1000);
+    return;
+  }
+  const current = liveCase ? shown.indexOf(liveCase) : -1;
+  const next = shown[(current + 1) % shown.length];
+  if (next) spotlightCase(next);
+}
+
+/** Back to every caption in full, in the current language; then the round starts again */
+function resetCases(): void {
+  if (!casesRoot?.classList.contains('is-animated')) return;
+  window.clearTimeout(caseTimer);
+  liveCase = undefined;
+  for (const card of caseCards) {
+    card.classList.remove('is-live');
+    const typed = card.querySelector('[data-case-typed]');
+    if (typed) typed.textContent = captionOf(card);
+  }
+  caseTimer = window.setTimeout(nextCase, 600);
+}
+
+function selectFilter(button: HTMLElement): void {
+  const group = button.dataset.caseFilter ?? 'all';
+  filterButtons.forEach((other) => {
+    other.setAttribute('aria-pressed', String(other === button));
+  });
+  for (const card of caseCards) {
+    card.hidden = group !== 'all' && card.dataset.case !== group;
+  }
+  resetCases();
+}
+
+if (caseFilters) caseFilters.hidden = false;
+filterButtons.forEach((button) => {
+  button.addEventListener('click', () => selectFilter(button));
+});
+
+if (casesRoot && !reducedMotion.matches && 'IntersectionObserver' in window) {
+  casesRoot.classList.add('is-animated');
+  new IntersectionObserver(
+    (entries) => {
+      casesInView = entries.some((entry) => entry.isIntersecting);
+    },
+    { threshold: 0.15 },
+  ).observe(casesRoot);
+  for (const card of caseCards) {
+    card.addEventListener('pointerenter', () => {
+      caseHeld = true;
+      if (liveCase !== card) spotlightCase(card);
+    });
+    card.addEventListener('pointerleave', () => {
+      caseHeld = false;
+    });
+  }
 }
 
 // #endregion
