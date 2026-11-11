@@ -158,7 +158,7 @@ describe('useLiveSession', () => {
     );
   });
 
-  it('shows the capture error and does not connect', async () => {
+  it('shows the capture error, closes the connection opened meanwhile and keeps the last record', async () => {
     fakes.captureStart.mockResolvedValue(
       new AppError('no', { userMessageKey: 'errors.shareCancelled' }),
     );
@@ -168,7 +168,22 @@ describe('useLiveSession', () => {
 
     expect(session.errorKey).toBe('errors.shareCancelled');
     expect(session.active).toBe(false);
-    expect(fakes.connect).not.toHaveBeenCalled();
+    expect(fakes.sessionClose).toHaveBeenCalled();
+    expect(fakes.record.begin).not.toHaveBeenCalled();
+  });
+
+  it('connects the transcriber while the share dialog is still open', async () => {
+    let share: (value: null) => void = () => undefined;
+    fakes.captureStart.mockReturnValue(new Promise((resolve) => (share = resolve)));
+    const session = setup();
+
+    const started = session.start('es');
+    await Promise.resolve();
+    expect(fakes.connect).toHaveBeenCalledTimes(1);
+
+    share(null);
+    await expect(started).resolves.toBe(true);
+    expect(fakes.record.begin).toHaveBeenCalledTimes(1);
   });
 
   it('shows a rejected key and stops the capture', async () => {
@@ -214,7 +229,7 @@ describe('useLiveSession', () => {
     expect(session.active).toBe(false);
     expect(session.starting).toBe(false);
     expect(session.errorKey).toBe('errors.audioEnded');
-    expect(fakes.connect).not.toHaveBeenCalled();
+    expect(fakes.sessionClose).toHaveBeenCalled();
   });
 
   it('resets starting when something throws', async () => {

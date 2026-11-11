@@ -237,13 +237,17 @@ export const useLiveSession = defineStore('live', () => {
     return chosen;
   }
 
+  /** The record starts once the session does: a cancelled share keeps the last one shown */
+  function beginRecord(): void {
+    recording = true;
+    record.begin({ pair: { ...overlay.pair }, startedAt: Date.now(), glossary: overlay.glossary });
+  }
+
   async function connect(
     apiKey: string,
     endpoint: string | undefined,
     target: string,
   ): Promise<AppError | null> {
-    recording = true;
-    record.begin({ pair: { ...overlay.pair }, startedAt: Date.now(), glossary: overlay.glossary });
     const other = partner.value;
     return pipeline.start({
       apiKey,
@@ -303,7 +307,7 @@ export const useLiveSession = defineStore('live', () => {
       pipeline.abort();
       overlay.reset({ from: AUTO_DETECT, to: target.toUpperCase() });
       overlay.hidden = false;
-      let apiKey = settings.apiKey.trim();
+      const apiKey = settings.apiKey.trim();
       const endpoint = demo.value ? DEMO_API : settings.endpoint;
 
       // The share dialog opens first: the floating window uses the click up, so it goes
@@ -334,19 +338,31 @@ export const useLiveSession = defineStore('live', () => {
       const access: Promise<DemoGrant | AppError | null> = demo.value
         ? requestDemo()
         : verifyApiKey({ apiKey, endpoint });
-      const [captureError, granted] = await Promise.all([sharing, access, opening]);
+      // The transcriber connects while the user picks what to share, not after it: the
+      // first caption no longer waits for the connection, and what is said meanwhile waits
+      // in the pipeline. The demo's needs the key its server hands out first
+      const connecting: Promise<AppError | null> = demo.value
+        ? access.then((granted) =>
+            granted && 'key' in granted ? connect(granted.key, endpoint, target) : null,
+          )
+        : connect(apiKey, endpoint, target);
+      const [captureError, granted, , connectError] = await Promise.all([
+        sharing,
+        access,
+        opening,
+        connecting,
+      ]);
       if (overtaken(token)) return false;
       let keyError: AppError | null = null;
       let grant: DemoGrant | null = null;
       if (granted && 'key' in granted) grant = granted;
       else keyError = granted;
-      if (grant) apiKey = grant.key;
-      const startError = captureError ?? keyError ?? (await connect(apiKey, endpoint, target));
-      if (overtaken(token)) return false;
+      const startError = captureError ?? keyError ?? connectError;
       if (startError) {
         failWith(startError);
         return false;
       }
+      beginRecord();
       overlay.canHearOriginal = capture.canControlOriginal();
       headset.value = capture.hasHeadset();
       sync.started();
