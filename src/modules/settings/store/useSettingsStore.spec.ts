@@ -155,8 +155,8 @@ describe('useSettingsStore', () => {
   });
 
   describe('quality tier', () => {
-    it('starts on low cost', () => {
-      expect(freshStore().tier).toBe('low');
+    it('starts on medium, with captions while people speak', () => {
+      expect(freshStore().tier).toBe('medium');
     });
 
     it('applyTier sets every model of the tier and persists them', async () => {

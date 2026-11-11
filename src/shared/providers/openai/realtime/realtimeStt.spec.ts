@@ -8,6 +8,7 @@ import {
   MODELS,
   REALTIME_TRANSCRIPTION_URL,
   STABLE_CONNECTION_MS,
+  TRANSCRIPTION_DELAY,
 } from '../config';
 import { openAiRealtimeStt } from './realtimeStt';
 
@@ -150,7 +151,7 @@ describe('connecting', () => {
     expect(update.type).toBe('session.update');
     expect(update.session.audio.input).toEqual({
       format: { type: 'audio/pcm', rate: INPUT_SAMPLE_RATE },
-      transcription: { model: MODELS.transcription },
+      transcription: { model: MODELS.transcription, delay: TRANSCRIPTION_DELAY },
       turn_detection: null,
     });
   });

@@ -78,7 +78,7 @@ export const TIER_COST_PER_HOUR: Readonly<Record<QualityTier, number>> = {
   interpreter: 2.34,
 };
 
-export const DEFAULT_TIER: QualityTier = 'low';
+export const DEFAULT_TIER: QualityTier = 'medium';
 export const MODELS: Readonly<TierModels> = TIER_MODELS[DEFAULT_TIER];
 
 /** Transcription models that take the glossary as a text `prompt`, not as `keywords` */
