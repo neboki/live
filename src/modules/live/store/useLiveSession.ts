@@ -216,10 +216,9 @@ export const useLiveSession = defineStore('live', () => {
     floating.close();
   }
 
-  /** The model names this session will call, for the check before it starts */
+  /** The OpenAI model names this session will call, for the check before it starts */
   function modelsInUse(): string[] {
-    const models = Object.values(settings.models);
-    return settings.tts.engine === 'openai' ? [...models, settings.tts.model] : models;
+    return Object.values(settings.models);
   }
 
   /** stop() or fail() ran while start() was waiting: clean up what it left behind. */

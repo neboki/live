@@ -6,11 +6,14 @@ export interface TtsProvider {
   close?(): void;
 }
 
-export type TtsEngine = 'browser' | 'openai';
+/** The browser's own voice (free) or ElevenLabs' (billed to the user's ElevenLabs key) */
+export type TtsEngine = 'browser' | 'elevenlabs';
 
 /** Voice settings as the settings store keeps them. */
 export interface TtsSettings {
   engine: TtsEngine;
+  /** ElevenLabs model id */
   model: string;
+  /** ElevenLabs voice id */
   voice: string;
 }

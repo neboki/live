@@ -227,16 +227,22 @@
       "title": "Voice",
       "engine": "Engine",
       "browser": "Browser",
-      "openai": "OpenAI (billed to your key)",
       "model": "Model",
       "voice": "Voice",
       "free": "Free",
       "recommended": "Recommended",
       "listen": "Listen to {voice}",
       "sample": "Hello, this is how the translations of your meeting will sound.",
-      "sampleFailed": "The sample could not be played. Check your key.",
-      "needsKey": "Enter your OpenAI key to hear the voices",
-      "cost": "OpenAI voices are billed to your key (≈ $0.45/h); the browser voice is free.",
+      "sampleFailed": "The sample could not be played. Check your ElevenLabs key.",
+      "yours": "Yours",
+      "loading": "Loading your ElevenLabs voices…",
+      "key": "ElevenLabs key (optional)",
+      "keyHelp": "For far more natural voices. Create a key with voice access only and give it a spending cap.",
+      "keySet": "Pick one of your ElevenLabs voices. If anything fails, the browser voice reads instead.",
+      "getKey": "Create a key",
+      "keyRefused": "ElevenLabs refused this key. Check that it is complete and active.",
+      "loadFailed": "Your ElevenLabs voices could not be loaded. Try again in a moment.",
+      "cost": "ElevenLabs voices are billed to your ElevenLabs account (≈ $1.50/h with voice); the browser voice is free.",
       "interpreter": "In Interpreter mode the translation model speaks with its own voice."
     },
     "meeting": {
@@ -318,7 +324,9 @@
     "interpreterAzure": "Interpreter mode works with OpenAI only, not Azure. Pick another quality level.",
     "spendLimit": "The session reached your spending limit and stopped. Raise it in the settings to go on.",
     "noCredit": "Your OpenAI account has no credit left. Add credit in your OpenAI billing settings and start again.",
-    "ttsFailed": "The OpenAI voice failed, so your browser's voice is reading instead.",
+    "ttsFailed": "The ElevenLabs voice failed, so your browser's voice is reading instead.",
+    "ttsKey": "ElevenLabs refused your key, so your browser's voice is reading instead. Check it under Voice.",
+    "ttsCredit": "Your ElevenLabs account has no credit left, so your browser's voice is reading instead.",
     "invalidEndpoint": "That Azure endpoint isn't valid. Check it on the home page.",
     "deploymentNotFound": "Azure has no deployment with that name. Check the model names in settings: they must match your deployments.",
     "modelNotFound": "OpenAI has no model with that name, or your key can’t use it. Check the model names in settings.",
@@ -700,8 +708,8 @@
         },
         "tts": {
           "what": "The translated text",
-          "where": "OpenAI text-to-speech",
-          "when": "Only if the voice uses the OpenAI engine. With the browser voice, your operating system speaks and nothing is sent."
+          "where": "ElevenLabs text-to-speech",
+          "when": "Only if you pick an ElevenLabs voice. With the browser voice, your operating system speaks and nothing is sent."
         },
         "key": {
           "what": "Your API key",
@@ -715,7 +723,7 @@
       "title": "What stays on this device",
       "intro": "In the browser's local storage, on this device only, and never sent anywhere:",
       "items": [
-        "Your API key, if “Remember on this device” stays ticked. Untick it and the key lives in memory only, gone when you close the tab.",
+        "Your API key (and your ElevenLabs key, if you add one), if “Remember on this device” stays ticked. Untick it and the key lives in memory only, gone when you close the tab.",
         "The provider you chose and, for Azure, your resource's address.",
         "Your preferences: languages, models, quality, voice, spending limit, theme, caption look and glossary.",
         "The meeting hints you type (topic and languages). The topic is free text: only write there what you are happy to keep here.",
@@ -749,6 +757,7 @@
       "title": "Your API key",
       "items": [
         "It is sent only to OpenAI (api.openai.com) or, if you choose Azure, only to your resource's endpoint. An Azure key is never sent to OpenAI.",
+        "Your ElevenLabs key, if you add one, is sent only to ElevenLabs (api.elevenlabs.io) and only for the voice.",
         "It always travels encrypted. With OpenAI it never appears in a web address: for live audio it goes in the connection's protocol, the method OpenAI documents for browsers.",
         "With Azure, live audio carries the key in the connection's address, as Microsoft documents. If that connection fails, the browser may show it in its developer console.",
         "Error messages are cleaned so the key never appears in them.",
@@ -760,7 +769,7 @@
       "title": "How it is protected",
       "items": [
         "Every connection is encrypted: HTTPS for the page and requests, WSS for live audio.",
-        "A Content Security Policy (CSP) only lets the page connect to itself, to OpenAI and to Azure OpenAI domains. The browser blocks any other connection, and the automated tests fail if that list changes.",
+        "A Content Security Policy (CSP) only lets the page connect to itself, to OpenAI, to Azure OpenAI domains and to ElevenLabs. The browser blocks any other connection, and the automated tests fail if that list changes.",
         "There are no external scripts or plugins, and forms send data nowhere.",
         "The browser itself asks for the microphone and screen capture, with its own prompt. You can stop sharing at any time.",
         "To tell who is speaking, the app computes very simple traits of each voice (pitch and timbre) on your device. It is not biometric data, it never leaves the browser and it is forgotten when the session ends.",
@@ -789,6 +798,7 @@
       "intro": "These are the only outside services that touch your data. Each has its own policy:",
       "openai": "OpenAI processes the audio and text to transcribe, translate and speak, with your key and under your account. According to OpenAI, data sent through its API is not used to train its models unless you opt in, and may be kept for a limited time to detect abuse.",
       "azure": "Microsoft Azure OpenAI, only if you choose it: governed by your Azure subscription and Microsoft's terms.",
+      "elevenlabs": "ElevenLabs, only if you pick one of its voices: it receives the translated text to read it aloud, with your ElevenLabs key and under your account.",
       "google": "Google Firebase Hosting serves the page. Like any web server, it receives your IP address and technical browser data in order to deliver it.",
       "link": "Read their policy"
     },

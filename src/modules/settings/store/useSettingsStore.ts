@@ -7,7 +7,9 @@ import {
   TIER_MODELS,
   type QualityTier,
 } from '@/shared/providers/openai/config';
+import { DEFAULT_VOICE_ID, DEFAULT_VOICE_MODEL } from '@/shared/providers/elevenlabs/config';
 import { normalizeAzureEndpoint } from '@/shared/providers/openai/endpoint';
+import { isRetiredModel } from '@/shared/providers/retiredModels';
 import type { TtsEngine, TtsSettings } from '@/shared/speech/types';
 import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
 import { defaultTargetLanguage, isLanguageChoice } from '../languages';
@@ -23,6 +25,7 @@ export type { TtsEngine, TtsSettings };
 export type { QualityTier };
 
 const STORAGE_API_KEY = 'openai-key';
+const STORAGE_VOICE_KEY = 'elevenlabs-key';
 const STORAGE_REMEMBER = 'remember-key';
 const STORAGE_MODELS = 'models';
 const STORAGE_TTS = 'tts';
@@ -40,15 +43,17 @@ const MODEL_ROLES: readonly ModelRole[] = [
   'summary',
   'suggestions',
 ];
-const TTS_ENGINES: readonly TtsEngine[] = ['browser', 'openai'];
+const TTS_ENGINES: readonly TtsEngine[] = ['browser', 'elevenlabs'];
 export const API_PROVIDERS: readonly ApiProvider[] = ['openai', 'azure'];
 
-/** gpt-4o-mini-tts is the voice model priced in ADR 0003; marin is OpenAI's best voice. */
+/** The browser's free voice until the user adds an ElevenLabs key (ADR 0010) */
 export const DEFAULT_TTS: Readonly<TtsSettings> = {
   engine: 'browser',
-  model: 'gpt-4o-mini-tts',
-  voice: 'marin',
+  model: DEFAULT_VOICE_MODEL,
+  voice: DEFAULT_VOICE_ID,
 };
+/** ElevenLabs model ids; anything else stored (OpenAI's retired voice) is replaced */
+const ELEVENLABS_MODEL = /^eleven_[a-z0-9_]+$/;
 
 function defaultModels(): ModelSettings {
   return { ...TIER_MODELS[DEFAULT_TIER] };
@@ -89,13 +94,20 @@ function loadModels(): ModelSettings {
   return models;
 }
 
+/**
+ * The stored voice. OpenAI's voice was retired (ADR 0010): whoever had it chosen gets the
+ * browser's voice, and its model and voice names give way to ElevenLabs' defaults.
+ */
 function loadTts(): TtsSettings {
   const stored = readJson(STORAGE_TTS);
   const engine = TTS_ENGINES.find((candidate) => candidate === stored.engine);
+  const model = nonEmptyString(stored.model);
+  const voice = engine === 'elevenlabs' ? nonEmptyString(stored.voice) : null;
   return {
     engine: engine ?? DEFAULT_TTS.engine,
-    model: nonEmptyString(stored.model) ?? DEFAULT_TTS.model,
-    voice: nonEmptyString(stored.voice) ?? DEFAULT_TTS.voice,
+    model:
+      model && ELEVENLABS_MODEL.test(model) && !isRetiredModel(model) ? model : DEFAULT_TTS.model,
+    voice: voice ?? DEFAULT_TTS.voice,
   };
 }
 
@@ -127,6 +139,11 @@ function writeKey(key: string, keep: boolean): void {
   writeStorage(STORAGE_API_KEY, keep && key ? key.trim() : null);
 }
 
+/** The ElevenLabs key follows the same "remember on this device" choice as the main key */
+function writeVoiceKey(key: string, keep: boolean): void {
+  writeStorage(STORAGE_VOICE_KEY, keep && key ? key.trim() : null);
+}
+
 /**
  * The user's own API key, remembered on this device unless they turn that off
  * (then kept in memory only), plus provider, Azure endpoint, model and voice preferences, which are not
@@ -135,6 +152,8 @@ function writeKey(key: string, keep: boolean): void {
 export const useSettingsStore = defineStore('settings', () => {
   const remember = ref(loadRemember());
   const apiKey = ref(remember.value ? (readStorage(STORAGE_API_KEY) ?? '') : '');
+  /** Optional: the user's ElevenLabs key, only for the voice */
+  const voiceKey = ref(remember.value ? (readStorage(STORAGE_VOICE_KEY) ?? '') : '');
   const provider = ref<ApiProvider>(loadProvider());
   const azureEndpoint = ref(readStorage(STORAGE_AZURE_ENDPOINT) ?? '');
   /** What the providers take: undefined means OpenAI itself */
@@ -167,9 +186,11 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function forgetKey(): void {
     apiKey.value = '';
+    voiceKey.value = '';
     remember.value = false;
     // Written right away, not on the next tick, so nothing is left behind if the tab closes
     writeKey('', false);
+    writeVoiceKey('', false);
   }
 
   function resetModels(): void {
@@ -186,6 +207,11 @@ export const useSettingsStore = defineStore('settings', () => {
     if (clean !== key) apiKey.value = clean;
   });
   watch([apiKey, remember], ([key, keep]) => writeKey(key, keep));
+  watch(voiceKey, (key) => {
+    const clean = normalizeApiKey(key);
+    if (clean !== key) voiceKey.value = clean;
+  });
+  watch([voiceKey, remember], ([key, keep]) => writeVoiceKey(key, keep));
   // The portal URL may carry a path ("/openai/v1/"); only the origin is kept
   watch(azureEndpoint, (value) => {
     const origin = normalizeAzureEndpoint(value);
@@ -209,6 +235,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     apiKey,
+    voiceKey,
     remember,
     provider,
     azureEndpoint,

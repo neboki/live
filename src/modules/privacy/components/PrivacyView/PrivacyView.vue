@@ -14,7 +14,7 @@ import { ACCOUNTS_ENABLED } from '../../buildFeatures';
  */
 
 /** Day this page last changed (ISO date) */
-const UPDATED_AT = '2026-11-09';
+const UPDATED_AT = '2026-11-11';
 /** Rows of the "what is sent" table, in the order of a session */
 const DATA_ROWS = ['audio', 'interpreter', 'hints', 'text', 'extras', 'tts', 'key'] as const;
 const PROVIDERS = [
@@ -23,6 +23,7 @@ const PROVIDERS = [
     id: 'azure',
     url: 'https://learn.microsoft.com/legal/cognitive-services/openai/data-privacy',
   },
+  { id: 'elevenlabs', url: 'https://elevenlabs.io/privacy-policy' },
   { id: 'google', url: 'https://firebase.google.com/support/privacy' },
 ] as const;
 

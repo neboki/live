@@ -237,7 +237,7 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
         <summary class="menu__option">{{ t('overlay.voice.title') }}</summary>
         <div class="menu__fields">
           <VoiceGallery />
-          <label v-if="page && settings.tts.engine === 'openai'" class="menu__field">
+          <label v-if="page && settings.tts.engine === 'elevenlabs'" class="menu__field">
             {{ t('overlay.voice.model') }}
             <input v-model.trim="settings.tts.model" type="text" spellcheck="false" />
           </label>

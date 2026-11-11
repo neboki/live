@@ -12,6 +12,9 @@ function mergeUsage(current: Usage, next: Usage): Usage {
   if (current.audioSeconds !== undefined || next.audioSeconds !== undefined) {
     merged.audioSeconds = (current.audioSeconds ?? 0) + (next.audioSeconds ?? 0);
   }
+  if (current.characters !== undefined || next.characters !== undefined) {
+    merged.characters = (current.characters ?? 0) + (next.characters ?? 0);
+  }
   return merged;
 }
 

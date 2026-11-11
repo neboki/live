@@ -17,7 +17,7 @@ getDisplayMedia (shared tab / screen audio)
                          └─ overlay store (Pinia) ─ CaptionBar, in the live page or teleported
                                                     into a Document Picture-in-Picture window
                          └─ session record ─ export (.md) and cost estimate
-                         └─ voice output (browser speechSynthesis or OpenAI TTS streamed as
+                         └─ voice output (browser speechSynthesis or ElevenLabs TTS streamed as
                                           PCM into pcmPlayer), optional
                          └─ video sync (delayedPlayback): the shared tab shown in the page a few
                                           seconds behind, in step with the captions, optional
@@ -62,7 +62,7 @@ src/
 └─ shared/                 reusable, UI-free pieces
    ├─ audio/               capture, worklet, PCM helpers, energy VAD
    ├─ providers/           SttProvider / LlmProvider types and the OpenAI implementation
-   ├─ speech/              voice output (browser and OpenAI TTS)
+   ├─ speech/              voice output (browser and ElevenLabs TTS)
    ├─ media/               delayed playback of the shared tab (video sync)
    ├─ pip/                 Document Picture-in-Picture
    ├─ device/              install prompt, screen wake lock
@@ -110,7 +110,7 @@ module to mock or set it up. In `src/shared/`, folders with an `index.ts` (`audi
   callbacks for partial/final text, status and usage) and `LlmProvider` (translate, summarise,
   suggest; each takes an `AbortSignal` and reports `Usage`). A new vendor implements these and is
   wired in the live pipeline; the UI does not change.
-- **Voice** — `src/shared/speech/types.ts` defines `TtsProvider`; browser and OpenAI engines exist.
+- **Voice** — `src/shared/speech/types.ts` defines `TtsProvider`; browser and ElevenLabs engines exist ([ADR 0010](adr/0010-elevenlabs-voice.md)).
 - **Models** — model IDs default to `MODELS` in `providers/openai/config.ts` and can be changed in
   the settings menu. Prices for the cost estimate live in `src/modules/session/pricing.ts`
   ([ADR 0003](adr/0003-pricing-and-model-tiers.md)).
@@ -132,7 +132,7 @@ The app sets a Content Security Policy in `index.html`:
 
 ```text
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self';
-connect-src 'self' https://api.openai.com wss://api.openai.com <Azure OpenAI hosts, https and wss>;
+connect-src 'self' https://api.openai.com wss://api.openai.com <Azure OpenAI hosts, https and wss> https://api.elevenlabs.io;
 media-src 'self' blob:;
 worker-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'
 ```
@@ -141,7 +141,7 @@ The Azure hosts are `*.openai.azure.com`, `*.cognitiveservices.azure.com` and
 `*.services.ai.azure.com`, the same list `endpoint.ts` accepts as a resource endpoint.
 `'unsafe-inline'` for styles is needed by Vue's style bindings and by the PiP window, which gets
 the styles as inline `<style>` copies. `blob:` media is the MediaSource URL of the video-sync player
-(`delayedPlayback.ts`, [ADR 0008](adr/0008-video-sync.md)); the OpenAI voice no longer needs it, it
+(`delayedPlayback.ts`, [ADR 0008](adr/0008-video-sync.md)); the voice no longer needs it, it
 goes through Web Audio ([ADR 0007](adr/0007-voice-latency.md)). `'self'` in
 `connect-src` also covers Vite's HMR WebSocket in development. `tests/e2e/csp.spec.ts` fails on
 any violation or any request to another origin. Key handling is described in
