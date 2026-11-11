@@ -39,3 +39,6 @@ firebase-debug.log
 
 # Firebase Functions build
 functions/lib/
+
+# Isolated worktrees, one per Claude session (skill /dev)
+.worktrees/

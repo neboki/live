@@ -1,7 +1,8 @@
 name: Release
 
-# Keeps a release PR open on main; merging it tags the version and creates the GitHub release.
-# It reads the Conventional Commits on main to pick the version and write CHANGELOG.md.
+# Keeps a release PR open on main; merging it (/publicar) tags the version, creates the GitHub
+# release and puts that version on the live site. It reads the Conventional Commits on main to
+# pick the version and write CHANGELOG.md.
 on:
   push:
     branches: [main]
@@ -9,6 +10,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: release-please
@@ -20,6 +22,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        id: release
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      # A release made with GITHUB_TOKEN starts no other workflow, but workflow_dispatch is the
+      # exception, so the live deploy is started here. The tag goes through env, not the script.
+      - name: Put the new version on the live site
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh workflow run firebase.yml --ref main -f tag="$TAG"
