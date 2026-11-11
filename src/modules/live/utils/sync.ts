@@ -11,11 +11,13 @@ import type { SessionLine } from '@/modules/session';
 /** Captions timed before an automatic delay is settled */
 export const CALIBRATION_LINES = 3;
 /**
- * Seconds the picture is held at first while the delay is automatic: the longest the
- * user waits for it. The delay is usually settled sooner, as soon as a few captions
- * were timed, and the picture then starts or glides to it
+ * Seconds the picture starts behind while the delay is automatic and not settled yet:
+ * enough for a short sentence and its caption, so the picture shows soon. Once a few
+ * captions were timed the delay is settled from them: the picture holds once to reach a
+ * longer one, or glides to a shorter one. (It used to wait up to 20 s, which made every
+ * synced start feel stuck.)
  */
-export const CALIBRATION_SECONDS = 20;
+export const CALIBRATION_SECONDS = 6;
 /** Room left on top of the captions' measured wait: for the voice to start, and jitter */
 const AUTO_HEADROOM_MS = 1500;
 /** Bounds of an automatic delay, in seconds */

@@ -24,6 +24,11 @@ import { clampTo } from '../utils/range';
 
 /** The floating window can't be smaller than this */
 const MIN_PIP = 160;
+/**
+ * Stored name of the synced-picture choice. It was on by default and saved as `syncVideo`,
+ * so a stored `true` there may never have been chosen; under this name it always was
+ */
+export const SYNC_VIDEO_KEY = 'syncPicture';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -81,7 +86,8 @@ export function loadPrefs(): OverlayPrefs {
     prefs.theme = OVERLAY_THEMES.find((theme) => theme === parsed.theme) ?? prefs.theme;
     prefs.size = readSize(parsed.size);
     prefs.pipSize = readPipSize(parsed.pipSize);
-    if (typeof parsed.syncVideo === 'boolean') prefs.syncVideo = parsed.syncVideo;
+    const syncVideo = parsed[SYNC_VIDEO_KEY];
+    if (typeof syncVideo === 'boolean') prefs.syncVideo = syncVideo;
     prefs.syncDelay =
       [SYNC_DELAY_AUTO, ...SYNC_DELAY_CHOICES].find((seconds) => seconds === parsed.syncDelay) ??
       prefs.syncDelay;
@@ -92,4 +98,10 @@ export function loadPrefs(): OverlayPrefs {
     console.warn(`[Neboki Live] Ignoring unreadable "${PREFS_STORAGE_KEY}"`, err);
   }
   return prefs;
+}
+
+/** What is stored for `prefs`: the synced-picture choice under its own name */
+export function storedPrefs(prefs: Readonly<OverlayPrefs>): Record<string, unknown> {
+  const { syncVideo, ...rest } = prefs;
+  return { ...rest, [SYNC_VIDEO_KEY]: syncVideo };
 }

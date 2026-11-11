@@ -314,13 +314,12 @@ describe('createVideoSync', () => {
     now.value = 107_500;
     vi.advanceTimersByTime(PACE_MS);
 
-    // 3 s + room = 4.5 s; 7.5 s are already held, so the picture starts there
+    // 3 s + room = 4.5 s; the picture already holds its starting delay, so it starts there
     expect(sync.calibrating.value).toBe(false);
-    expect(playback.setDelay).toHaveBeenLastCalledWith(7.5);
-    expect(sync.delaySeconds.value).toBe(7.5);
+    expect(sync.delaySeconds.value).toBe(CALIBRATION_SECONDS);
 
     // Playing: it glides down to the settled delay, once, and stays there
-    playback.lag = 7.5;
+    playback.lag = CALIBRATION_SECONDS;
     vi.advanceTimersByTime(PACE_MS);
     expect(playback.glideTo).toHaveBeenCalledWith(4.5);
     expect(sync.delaySeconds.value).toBe(4.5);

@@ -17,7 +17,7 @@ import type {
   Translation,
 } from '../types';
 import { clampTo } from '../utils/range';
-import { loadPrefs } from './overlayPrefs';
+import { loadPrefs, storedPrefs } from './overlayPrefs';
 
 const MAX_HISTORY = 50;
 const MAX_SUMMARY_POINTS = 4;
@@ -247,7 +247,7 @@ export const useOverlayStore = defineStore('overlay', () => {
         syncWait: syncWait.value,
         placement: placement.value,
       };
-      writeStorage(PREFS_STORAGE_KEY, JSON.stringify(prefs));
+      writeStorage(PREFS_STORAGE_KEY, JSON.stringify(storedPrefs(prefs)));
     },
     { deep: true },
   );

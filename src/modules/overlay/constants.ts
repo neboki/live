@@ -68,7 +68,8 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   originalLevel: 1,
   size: { width: null, height: null },
   pipSize: null,
-  syncVideo: true,
+  // Off: it holds the captions to the picture's pace and costs CPU; one switch turns it on
+  syncVideo: false,
   syncDelay: SYNC_DELAY_AUTO,
   // Off: a stop for every late caption makes a monologue's picture skip (ADR 0008)
   syncWait: false,
