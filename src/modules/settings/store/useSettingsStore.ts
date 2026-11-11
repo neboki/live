@@ -46,7 +46,8 @@ const MODEL_ROLES: readonly ModelRole[] = [
   'summary',
   'suggestions',
 ];
-const TTS_ENGINES: readonly TtsEngine[] = ['openai', 'elevenlabs', 'browser'];
+/** "browser", stored by older versions, is no longer a choice and reads as OpenAI's voice */
+const TTS_ENGINES: readonly TtsEngine[] = ['openai', 'elevenlabs'];
 export const API_PROVIDERS: readonly ApiProvider[] = ['openai', 'azure'];
 
 /** OpenAI's voice by default; ElevenLabs only if the user adds its key (ADR 0010) */

@@ -245,7 +245,7 @@
       "getKey": "Create a key",
       "keyRefused": "ElevenLabs refused this key. Check that it is complete and active.",
       "loadFailed": "Your ElevenLabs voices could not be loaded. Try again in a moment.",
-      "cost": "The OpenAI voice is billed to your OpenAI key (≈ $1/h with voice) and ElevenLabs voices to your ElevenLabs account (≈ $1.50/h). The browser voice is free, and reads if the others fail.",
+      "cost": "The OpenAI voice is billed to your OpenAI key (≈ $1/h with voice) and ElevenLabs voices to your ElevenLabs account (≈ $1.50/h). If the chosen voice fails, the browser's voice reads instead.",
       "interpreter": "In Interpreter mode the translation model speaks with its own voice."
     },
     "meeting": {

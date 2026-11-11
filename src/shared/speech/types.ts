@@ -7,10 +7,11 @@ export interface TtsProvider {
 }
 
 /**
- * OpenAI's voice (the default, billed to the OpenAI key), ElevenLabs' (optional, billed to
- * the user's ElevenLabs key) or the browser's own (free, and the fallback when the others fail)
+ * OpenAI's voice (the default, billed to the OpenAI key) or ElevenLabs' (optional, billed to
+ * the user's ElevenLabs key). The browser's own voice is not a choice: it only reads when
+ * the chosen one fails or has no key.
  */
-export type TtsEngine = 'openai' | 'elevenlabs' | 'browser';
+export type TtsEngine = 'openai' | 'elevenlabs';
 
 /** Voice settings as the settings store keeps them. */
 export interface TtsSettings {

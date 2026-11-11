@@ -214,6 +214,12 @@ describe('useSettingsStore', () => {
       expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, voice: 'cedar' });
     });
 
+    it('gives whoever had picked the browser voice the default one', () => {
+      store('tts', JSON.stringify({ engine: 'browser', voice: 'cedar' }));
+
+      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, voice: 'cedar' });
+    });
+
     it('moves whoever had the retired OpenAI voice model to the current one', () => {
       store('tts', JSON.stringify({ engine: 'openai', model: 'gpt-4o-mini-tts', voice: 'cedar' }));
 
