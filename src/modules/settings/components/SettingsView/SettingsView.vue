@@ -3,7 +3,12 @@ import { computed, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ACCOUNTS_ENABLED, AccountCard } from '@/modules/account';
 import { ApiKeyField, AudioSourcePicker, PlacementPicker } from '@/modules/onboarding';
-import { SettingsMenu, useFloatingWindow, useOverlayStore } from '@/modules/overlay';
+import {
+  ElevenLabsKeyField,
+  SettingsMenu,
+  useFloatingWindow,
+  useOverlayStore,
+} from '@/modules/overlay';
 import { isPhoneLayout } from '@/shared/device';
 import BrandEditor from '../BrandEditor/BrandEditor.vue';
 import LanguageSelect from '../LanguageSelect/LanguageSelect.vue';
@@ -191,6 +196,10 @@ watch(active, (id) => {
           <template v-else-if="active === 'connection'">
             <div class="lg-card settings-view__card">
               <ApiKeyField />
+            </div>
+            <!-- The optional voice key beside the main one, where people look for keys -->
+            <div class="lg-card settings-view__card">
+              <ElevenLabsKeyField @choose="active = 'audio'" />
             </div>
             <SettingsMenu class="settings-view__menu" popped page only="quality" />
           </template>

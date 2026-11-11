@@ -244,6 +244,11 @@
       "keySet": "Tus voces de ElevenLabs ya aparecen arriba para elegir.",
       "getKey": "Crear una clave",
       "keyRefused": "ElevenLabs no acepta esta clave. Revisa que esté completa y activa.",
+      "keySteps": "Tres pasos: crea la clave en ElevenLabs, pégala aquí y elige una voz.",
+      "keyShort": "Parece incompleta: pega la clave entera.",
+      "keyWorks": "Clave correcta: {count} voz lista para elegir. | Clave correcta: {count} voces listas para elegir.",
+      "keyInUse": "Clave correcta: ya lees con una voz de ElevenLabs.",
+      "chooseVoice": "Elegir voz de ElevenLabs →",
       "loadFailed": "No se pudieron cargar tus voces de ElevenLabs. Prueba de nuevo en un momento.",
       "cost": "La voz de OpenAI se cobra a tu clave de OpenAI (≈ 1 $/h con voz) y las de ElevenLabs a tu cuenta de ElevenLabs (≈ 1,50 $/h). Si la voz elegida falla, lee la del navegador.",
       "interpreter": "En modo Intérprete la voz la pone el propio modelo de traducción."
