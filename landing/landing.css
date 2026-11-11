@@ -37,6 +37,11 @@
   --radius: 18px;
   --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* The page uses the screen's width: a wide cap only so lines don't stretch on
+     ultrawide monitors, and side margins that grow with the screen */
+  --page-max: 1760px;
+  --gutter: clamp(20px, 4vw, 72px);
 }
 
 *,
@@ -80,10 +85,10 @@ a {
 }
 
 .wrap {
-  width: min(1180px, 100%);
+  width: min(var(--page-max), 100%);
   margin-inline: auto;
-  padding-inline: max(20px, env(safe-area-inset-left, 0px))
-    max(20px, env(safe-area-inset-right, 0px));
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px))
+    max(var(--gutter), env(safe-area-inset-right, 0px));
 }
 
 .skip {
@@ -210,10 +215,11 @@ a {
   gap: 24px;
   align-items: center;
   justify-content: space-between;
-  width: min(1180px, 100%);
+  width: min(var(--page-max), 100%);
   height: 64px;
   margin-inline: auto;
-  padding-inline: 20px;
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px))
+    max(var(--gutter), env(safe-area-inset-right, 0px));
 }
 
 .brand {

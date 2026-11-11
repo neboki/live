@@ -32,7 +32,7 @@ import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
 import { useAppPage } from '../../store/useAppPage';
 import BrandMark from '../BrandMark/BrandMark.vue';
 import { brand } from '@/shared/brand/brand';
-import { HOME_URL, PRIVACY_PATH, REPO_URL } from '@/shared/links';
+import { HOME_URL, PRIVACY_PATH, REPO_URL, SITE_URL } from '@/shared/links';
 
 /** Which page the main area shows, mirrored from App's own choice */
 type Page =
@@ -503,12 +503,40 @@ onBeforeUnmount(() => {
           </svg>
           <span class="shell__label">{{ t('nav.privacy') }}</span>
         </a>
+
+        <!-- Folded, the footer is hidden: its links to the website and GitHub stay here -->
+        <template v-if="compact">
+          <a class="shell__item shell__item--site" :href="SITE_URL" :title="tip(t('nav.website'))">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <circle cx="10" cy="10" r="7" />
+              <path
+                d="M3 10h14M10 3c2 2 2.8 4.4 2.8 7s-.8 5-2.8 7c-2-2-2.8-4.4-2.8-7s.8-5 2.8-7z"
+              />
+            </svg>
+            <span class="shell__label">{{ t('nav.website') }}</span>
+          </a>
+          <a
+            class="shell__item"
+            :href="REPO_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            :title="tip(t('nav.github'))"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="M7.5 16.5c-3.5 1-3.5-1.8-5-2.3m10 4.3v-2.8c0-.8.1-1.2-.4-1.7 2.2-.3 4.4-1 4.4-4.8 0-1-.4-1.9-1-2.6.3-.9.3-1.9-.1-2.8 0 0-.8-.3-2.7 1a9 9 0 0 0-4.8 0C6 3.5 5.2 3.8 5.2 3.8c-.4.9-.4 1.9-.1 2.8-.6.7-1 1.6-1 2.6 0 3.8 2.2 4.5 4.4 4.8-.5.5-.5 1-.4 1.7v2.8"
+              />
+            </svg>
+            <span class="shell__label">{{ t('nav.github') }}</span>
+          </a>
+        </template>
       </nav>
 
       <footer v-if="!compact" class="shell__foot">
         <UiLocaleSelect class="shell__locale" />
         <UiThemeSelect class="shell__locale" />
         <UiBrandSelect class="shell__locale" />
+        <a class="shell__link" :href="SITE_URL">{{ t('nav.website') }}</a>
         <a class="shell__link" :href="REPO_URL" target="_blank" rel="noopener noreferrer">
           {{ t('nav.github') }}
         </a>
@@ -958,7 +986,8 @@ $drawer-at: 900px;
     padding: 7px 0;
   }
 
-  &--compact &__item--settings {
+  &--compact &__item--settings,
+  &--compact &__item--site {
     margin-top: 12px;
   }
 
