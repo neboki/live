@@ -6,6 +6,7 @@ import { BusinessError, ValidationError } from '@/shared/errors';
 import {
   DEMO_API,
   OPENAI_API,
+  REALTIME_URL,
   REALTIME_TRANSCRIPTION_URL,
   REALTIME_TRANSLATION_URL,
 } from './config';
@@ -83,6 +84,27 @@ export function transcriptionSocket(access: OpenAiAccess): SocketTarget {
   }
   const url = new URL(`${azure.replace(/^https:/, 'wss:')}/openai/v1/realtime`);
   url.searchParams.set('intent', 'transcription');
+  url.searchParams.set('api-key', access.apiKey);
+  return { url: url.href, protocols: [] };
+}
+
+/**
+ * The voice socket: a Realtime session with `model` that reads text aloud, keyed like the
+ * transcription one. On Azure `model` is the deployment name. The free demo has no voice.
+ */
+export function voiceSocket(access: OpenAiAccess, model: string): SocketTarget {
+  if (isDemo(access)) {
+    throw new BusinessError('The demo only writes captions', 'errors.demoUnavailable');
+  }
+  const azure = azureOrigin(access);
+  if (!azure) {
+    return {
+      url: `${REALTIME_URL}?model=${encodeURIComponent(model)}`,
+      protocols: ['realtime', `openai-insecure-api-key.${access.apiKey}`],
+    };
+  }
+  const url = new URL(`${azure.replace(/^https:/, 'wss:')}/openai/v1/realtime`);
+  url.searchParams.set('model', model);
   url.searchParams.set('api-key', access.apiKey);
   return { url: url.href, protocols: [] };
 }

@@ -5,6 +5,9 @@ import {
   DEFAULT_TIER,
   QUALITY_TIERS,
   TIER_MODELS,
+  VOICES,
+  VOICE_DEFAULT,
+  VOICE_MODEL,
   type QualityTier,
 } from '@/shared/providers/openai/config';
 import { DEFAULT_VOICE_ID, DEFAULT_VOICE_MODEL } from '@/shared/providers/elevenlabs/config';
@@ -43,17 +46,20 @@ const MODEL_ROLES: readonly ModelRole[] = [
   'summary',
   'suggestions',
 ];
-const TTS_ENGINES: readonly TtsEngine[] = ['browser', 'elevenlabs'];
+const TTS_ENGINES: readonly TtsEngine[] = ['openai', 'elevenlabs', 'browser'];
 export const API_PROVIDERS: readonly ApiProvider[] = ['openai', 'azure'];
 
-/** The browser's free voice until the user adds an ElevenLabs key (ADR 0010) */
+/** OpenAI's voice by default; ElevenLabs only if the user adds its key (ADR 0010) */
 export const DEFAULT_TTS: Readonly<TtsSettings> = {
-  engine: 'browser',
-  model: DEFAULT_VOICE_MODEL,
-  voice: DEFAULT_VOICE_ID,
+  engine: 'openai',
+  model: VOICE_MODEL,
+  voice: VOICE_DEFAULT,
+  elevenLabsModel: DEFAULT_VOICE_MODEL,
+  elevenLabsVoice: DEFAULT_VOICE_ID,
 };
-/** ElevenLabs model ids; anything else stored (OpenAI's retired voice) is replaced */
+/** ElevenLabs model ids */
 const ELEVENLABS_MODEL = /^eleven_[a-z0-9_]+$/;
+const OPENAI_VOICES: ReadonlySet<string> = new Set(VOICES);
 
 function defaultModels(): ModelSettings {
   return { ...TIER_MODELS[DEFAULT_TIER] };
@@ -95,19 +101,26 @@ function loadModels(): ModelSettings {
 }
 
 /**
- * The stored voice. OpenAI's voice was retired (ADR 0010): whoever had it chosen gets the
- * browser's voice, and its model and voice names give way to ElevenLabs' defaults.
+ * The stored voice. A retired model (OpenAI's old speech models) gives way to the current
+ * one, and a voice the Realtime models don't have (fable, nova, onyx) to the default
+ * (ADR 0010). Another model name is kept: on Azure it is the deployment's.
  */
 function loadTts(): TtsSettings {
   const stored = readJson(STORAGE_TTS);
   const engine = TTS_ENGINES.find((candidate) => candidate === stored.engine);
   const model = nonEmptyString(stored.model);
-  const voice = engine === 'elevenlabs' ? nonEmptyString(stored.voice) : null;
+  const voice = nonEmptyString(stored.voice);
+  const elevenLabsModel = nonEmptyString(stored.elevenLabsModel);
+  const usable = (name: string | null): name is string => name !== null && !isRetiredModel(name);
   return {
     engine: engine ?? DEFAULT_TTS.engine,
-    model:
-      model && ELEVENLABS_MODEL.test(model) && !isRetiredModel(model) ? model : DEFAULT_TTS.model,
-    voice: voice ?? DEFAULT_TTS.voice,
+    model: usable(model) && !ELEVENLABS_MODEL.test(model) ? model : DEFAULT_TTS.model,
+    voice: voice && OPENAI_VOICES.has(voice) ? voice : DEFAULT_TTS.voice,
+    elevenLabsModel:
+      usable(elevenLabsModel) && ELEVENLABS_MODEL.test(elevenLabsModel)
+        ? elevenLabsModel
+        : DEFAULT_TTS.elevenLabsModel,
+    elevenLabsVoice: nonEmptyString(stored.elevenLabsVoice) ?? DEFAULT_TTS.elevenLabsVoice,
   };
 }
 

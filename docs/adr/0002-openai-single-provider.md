@@ -15,9 +15,8 @@ Use OpenAI for everything by default:
 
 - Realtime API in transcription mode (WebSocket) for live speech-to-text.
 - Chat Completions (streaming) for translation, summary and suggestions.
-- Browser `speechSynthesis` for voice, with OpenAI TTS as an option. _Superseded for the voice by
-  [0010](0010-elevenlabs-voice.md): OpenAI retired its speech models, and the optional voice is
-  now ElevenLabs, with its own optional key._
+- Browser `speechSynthesis` for voice, with OpenAI TTS as an option. _Updated by [0010](0010-elevenlabs-voice.md): OpenAI retired its speech models, so the
+  default voice is now `gpt-realtime-2.1-mini` in a Realtime session; ElevenLabs is optional._
 
 All calls go through `SttProvider` and `LlmProvider` interfaces, so other providers can be added
 without touching the UI.

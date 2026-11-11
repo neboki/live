@@ -6,14 +6,21 @@ export interface TtsProvider {
   close?(): void;
 }
 
-/** The browser's own voice (free) or ElevenLabs' (billed to the user's ElevenLabs key) */
-export type TtsEngine = 'browser' | 'elevenlabs';
+/**
+ * OpenAI's voice (the default, billed to the OpenAI key), ElevenLabs' (optional, billed to
+ * the user's ElevenLabs key) or the browser's own (free, and the fallback when the others fail)
+ */
+export type TtsEngine = 'openai' | 'elevenlabs' | 'browser';
 
 /** Voice settings as the settings store keeps them. */
 export interface TtsSettings {
   engine: TtsEngine;
-  /** ElevenLabs model id */
+  /** OpenAI voice model (on Azure, the deployment name) */
   model: string;
-  /** ElevenLabs voice id */
+  /** OpenAI voice name */
   voice: string;
+  /** ElevenLabs model id */
+  elevenLabsModel: string;
+  /** ElevenLabs voice id */
+  elevenLabsVoice: string;
 }

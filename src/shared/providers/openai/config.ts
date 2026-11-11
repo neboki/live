@@ -5,7 +5,31 @@ import { TARGET_SAMPLE_RATE } from '@/shared/audio/pcm';
 
 export const OPENAI_API = 'https://api.openai.com/v1';
 /** The key never goes here: it travels in the WebSocket subprotocol */
-export const REALTIME_TRANSCRIPTION_URL = 'wss://api.openai.com/v1/realtime?intent=transcription';
+export const REALTIME_URL = 'wss://api.openai.com/v1/realtime';
+export const REALTIME_TRANSCRIPTION_URL = `${REALTIME_URL}?intent=transcription`;
+
+/**
+ * OpenAI's voice: the replacement OpenAI names for its retired speech models (ADR 0010).
+ * It only runs in a Realtime session, asked to say each sentence word for word.
+ */
+export const VOICE_MODEL = 'gpt-realtime-2.1-mini';
+/** marin and cedar sound best, per OpenAI */
+export const VOICE_DEFAULT = 'marin';
+/** The voices of the Realtime models, best first */
+export const VOICES = [
+  'marin',
+  'cedar',
+  'alloy',
+  'ash',
+  'ballad',
+  'coral',
+  'echo',
+  'sage',
+  'shimmer',
+  'verse',
+] as const;
+/** Give up on a sentence whose voice has not finished after this long */
+export const VOICE_TIMEOUT_MS = 20_000;
 
 /**
  * The free demo's server (functions/, behind Firebase Hosting), or '' where the build has

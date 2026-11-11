@@ -227,22 +227,25 @@
       "title": "Voz",
       "engine": "Motor",
       "browser": "Navegador",
+      "openai": "OpenAI · predeterminada",
+      "elevenlabs": "ElevenLabs · opcional",
       "model": "Modelo",
       "voice": "Voz",
       "free": "Gratis",
       "recommended": "Recomendada",
       "listen": "Escuchar {voice}",
       "sample": "Hola, así sonarán las traducciones de tu reunión.",
-      "sampleFailed": "No se pudo reproducir la muestra. Revisa tu clave de ElevenLabs.",
+      "sampleFailed": "No se pudo reproducir la muestra. Revisa la clave de esa voz.",
+      "needsKey": "Pon tu clave de OpenAI para escuchar sus voces",
       "yours": "Tuya",
       "loading": "Cargando tus voces de ElevenLabs…",
       "key": "Clave de ElevenLabs (opcional)",
       "keyHelp": "Para voces mucho más naturales. Crea una clave solo con permiso de voz y ponle un tope de gasto.",
-      "keySet": "Elige una de tus voces de ElevenLabs. Si algo falla, lee la voz del navegador.",
+      "keySet": "Tus voces de ElevenLabs ya aparecen arriba para elegir.",
       "getKey": "Crear una clave",
       "keyRefused": "ElevenLabs no acepta esta clave. Revisa que esté completa y activa.",
       "loadFailed": "No se pudieron cargar tus voces de ElevenLabs. Prueba de nuevo en un momento.",
-      "cost": "Las voces de ElevenLabs se cobran a tu cuenta de ElevenLabs (≈ 1,50 $/h con voz); la del navegador es gratis.",
+      "cost": "La voz de OpenAI se cobra a tu clave de OpenAI (≈ 1 $/h con voz) y las de ElevenLabs a tu cuenta de ElevenLabs (≈ 1,50 $/h). La del navegador es gratis, y lee si las otras fallan.",
       "interpreter": "En modo Intérprete la voz la pone el propio modelo de traducción."
     },
     "meeting": {
@@ -324,7 +327,7 @@
     "interpreterAzure": "El modo Intérprete solo funciona con OpenAI, no con Azure. Elige otro nivel de calidad.",
     "spendLimit": "La sesión ha llegado a tu límite de gasto y se ha detenido. Súbelo en los ajustes si quieres seguir.",
     "noCredit": "Tu cuenta de OpenAI se ha quedado sin saldo. Añade saldo en la facturación de OpenAI y vuelve a empezar.",
-    "ttsFailed": "Ha fallado la voz de ElevenLabs, así que lee la voz del navegador.",
+    "ttsFailed": "Ha fallado la voz elegida, así que lee la voz del navegador.",
     "ttsKey": "ElevenLabs no acepta tu clave, así que lee la voz del navegador. Revísala en Voz.",
     "ttsCredit": "Tu cuenta de ElevenLabs no tiene saldo, así que lee la voz del navegador.",
     "invalidEndpoint": "El endpoint de Azure no es válido. Revísalo en la página de inicio.",
@@ -708,8 +711,8 @@
         },
         "tts": {
           "what": "El texto traducido",
-          "where": "ElevenLabs, síntesis de voz",
-          "when": "Solo si eliges una voz de ElevenLabs. Con la voz del navegador la genera tu sistema operativo y no se envía nada."
+          "where": "OpenAI Realtime (voz predeterminada) o ElevenLabs, síntesis de voz",
+          "when": "Solo con la voz activada: a OpenAI con su voz, a ElevenLabs solo si eliges una de sus voces. Con la voz del navegador la genera tu sistema operativo y no se envía nada."
         },
         "key": {
           "what": "Tu clave API",

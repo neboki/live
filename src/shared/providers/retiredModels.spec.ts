@@ -26,5 +26,6 @@ describe('retired models', () => {
   it('are not the default voice', () => {
     expect(isRetiredModel(DEFAULT_VOICE_MODEL)).toBe(false);
     expect(isRetiredModel(DEFAULT_TTS.model)).toBe(false);
+    expect(isRetiredModel(DEFAULT_TTS.elevenLabsModel)).toBe(false);
   });
 });

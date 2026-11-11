@@ -185,42 +185,51 @@ describe('useSettingsStore', () => {
   });
 
   describe('tts', () => {
-    it('defaults to the browser voice', () => {
+    it('defaults to the OpenAI voice', () => {
       expect(freshStore().tts).toEqual({
-        engine: 'browser',
-        model: 'eleven_flash_v2_5',
-        voice: 'JBFqnCBsd6RMkjVDRZzb',
+        engine: 'openai',
+        model: 'gpt-realtime-2.1-mini',
+        voice: 'marin',
+        elevenLabsModel: 'eleven_flash_v2_5',
+        elevenLabsVoice: 'JBFqnCBsd6RMkjVDRZzb',
       });
     });
 
     it('persists changes and restores them', async () => {
       const settings = freshStore();
       settings.tts.engine = 'elevenlabs';
-      settings.tts.voice = 'voice-id';
+      settings.tts.elevenLabsVoice = 'voice-id';
       await nextTick();
 
-      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, engine: 'elevenlabs', voice: 'voice-id' });
+      expect(freshStore().tts).toEqual({
+        ...DEFAULT_TTS,
+        engine: 'elevenlabs',
+        elevenLabsVoice: 'voice-id',
+      });
     });
 
     it('rejects an unknown engine', () => {
-      store('tts', JSON.stringify({ engine: 'robot', model: 'eleven_v4', voice: 'v' }));
+      store('tts', JSON.stringify({ engine: 'robot', voice: 'cedar' }));
 
-      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, model: 'eleven_v4' });
+      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, voice: 'cedar' });
     });
 
-    it('moves whoever had the retired OpenAI voice to the browser voice', () => {
-      store('tts', JSON.stringify({ engine: 'openai', model: 'gpt-4o-mini-tts', voice: 'marin' }));
+    it('moves whoever had the retired OpenAI voice model to the current one', () => {
+      store('tts', JSON.stringify({ engine: 'openai', model: 'gpt-4o-mini-tts', voice: 'cedar' }));
 
-      expect(freshStore().tts).toEqual(DEFAULT_TTS);
+      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, voice: 'cedar' });
+    });
+
+    it('replaces a voice the Realtime models lack, and keeps an Azure deployment name', () => {
+      store('tts', JSON.stringify({ engine: 'openai', model: 'my-voice', voice: 'nova' }));
+
+      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, model: 'my-voice' });
     });
 
     it('replaces a retired ElevenLabs model with the default one', () => {
-      store(
-        'tts',
-        JSON.stringify({ engine: 'elevenlabs', model: 'eleven_turbo_v2_5', voice: 'v' }),
-      );
+      store('tts', JSON.stringify({ engine: 'elevenlabs', elevenLabsModel: 'eleven_turbo_v2_5' }));
 
-      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, engine: 'elevenlabs', voice: 'v' });
+      expect(freshStore().tts).toEqual({ ...DEFAULT_TTS, engine: 'elevenlabs' });
     });
 
     it('never stores the key alongside the preferences', async () => {

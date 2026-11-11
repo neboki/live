@@ -17,7 +17,7 @@ getDisplayMedia (shared tab / screen audio)
                          └─ overlay store (Pinia) ─ CaptionBar, in the live page or teleported
                                                     into a Document Picture-in-Picture window
                          └─ session record ─ export (.md) and cost estimate
-                         └─ voice output (browser speechSynthesis or ElevenLabs TTS streamed as
+                         └─ voice output (OpenAI Realtime voice by default, ElevenLabs or browser speechSynthesis; streamed as
                                           PCM into pcmPlayer), optional
                          └─ video sync (delayedPlayback): the shared tab shown in the page a few
                                           seconds behind, in step with the captions, optional
@@ -62,7 +62,7 @@ src/
 └─ shared/                 reusable, UI-free pieces
    ├─ audio/               capture, worklet, PCM helpers, energy VAD
    ├─ providers/           SttProvider / LlmProvider types and the OpenAI implementation
-   ├─ speech/              voice output (browser and ElevenLabs TTS)
+   ├─ speech/              voice output (OpenAI Realtime, ElevenLabs and browser)
    ├─ media/               delayed playback of the shared tab (video sync)
    ├─ pip/                 Document Picture-in-Picture
    ├─ device/              install prompt, screen wake lock
@@ -110,7 +110,7 @@ module to mock or set it up. In `src/shared/`, folders with an `index.ts` (`audi
   callbacks for partial/final text, status and usage) and `LlmProvider` (translate, summarise,
   suggest; each takes an `AbortSignal` and reports `Usage`). A new vendor implements these and is
   wired in the live pipeline; the UI does not change.
-- **Voice** — `src/shared/speech/types.ts` defines `TtsProvider`; browser and ElevenLabs engines exist ([ADR 0010](adr/0010-elevenlabs-voice.md)).
+- **Voice** — `src/shared/speech/types.ts` defines `TtsProvider`; OpenAI Realtime (default), ElevenLabs and browser engines exist ([ADR 0010](adr/0010-elevenlabs-voice.md)).
 - **Models** — model IDs default to `MODELS` in `providers/openai/config.ts` and can be changed in
   the settings menu. Prices for the cost estimate live in `src/modules/session/pricing.ts`
   ([ADR 0003](adr/0003-pricing-and-model-tiers.md)).
