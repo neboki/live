@@ -7,7 +7,16 @@ import tseslint from 'typescript-eslint';
 const MODULES = ['core', 'live', 'onboarding', 'overlay', 'session', 'settings'];
 
 export default tseslint.config(
-  { ignores: ['dist/', 'coverage/', 'playwright-report/', 'test-results/', 'functions/lib/', 'android/'] },
+  {
+    ignores: [
+      'dist/',
+      'coverage/',
+      'playwright-report/',
+      'test-results/',
+      'functions/lib/',
+      'android/',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strict,
   ...vue.configs['flat/recommended'],
