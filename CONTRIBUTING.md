@@ -17,6 +17,20 @@ pnpm install   # installs dependencies and git hooks (lefthook)
 4. Pull requests are squash-merged; the PR title becomes the commit message, so it must follow the
    format below.
 
+## Licence of your contributions
+
+Neboki Live is published under the AGPL-3.0, and Neboki may also offer it under other terms (for
+example a commercial licence or a paid hosted plan). So that this stays possible, by opening a
+pull request you confirm that:
+
+- you wrote the contribution yourself, or have the right to submit it;
+- you license it to everyone under the AGPL-3.0, like the rest of the project; and
+- you grant Neboki a perpetual, worldwide, non-exclusive, royalty-free, irrevocable licence to
+  use, modify, distribute and sublicense your contribution under any other licence terms,
+  including commercial ones.
+
+You keep the copyright of your contribution.
+
 ## Commit messages
 
 [Conventional Commits](https://www.conventionalcommits.org): `type(optional scope): description`
