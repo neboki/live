@@ -50,7 +50,7 @@ function header(record: SessionSnapshot, labels: MarkdownLabels, locale: string)
     : formatEur(costUsd(record.usage), locale);
 
   return [
-    `# ${escapeMarkdown(labels.title)}`,
+    `# ${escapeMarkdown(record.title || labels.title)}`,
     '',
     `- **${escapeMarkdown(labels.date)}:** ${date}`,
     `- **${escapeMarkdown(labels.pair)}:** ${from} → ${to}`,

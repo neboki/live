@@ -19,6 +19,13 @@ export const SESSION_FILE_EXTENSION = '.neboki-live.json';
 /** Hours of conversation are a few MB; anything far bigger is not one of ours */
 export const MAX_SESSION_FILE_BYTES = 20 * 1024 * 1024;
 const USER_MESSAGE_KEY = 'errors.sessionFile';
+/** Longest name of a conversation (kept in step with firestore.rules) */
+export const TITLE_MAX = 120;
+
+/** A name as it is kept: on one line, trimmed, at most TITLE_MAX characters */
+export function cleanTitle(title: string): string {
+  return title.replace(/\s+/g, ' ').trim().slice(0, TITLE_MAX);
+}
 
 function invalid(reason: string): ValidationError {
   return new ValidationError(`Not a Neboki Live session file: ${reason}`, USER_MESSAGE_KEY);
@@ -80,7 +87,9 @@ function parseUsage(value: unknown, index: number): Usage {
 export function parseSnapshot(value: unknown): SessionSnapshot {
   if (!isObject(value)) throw invalid('no session');
   const pair = isObject(value.pair) ? value.pair : {};
+  const title = typeof value.title === 'string' ? cleanTitle(value.title) : '';
   return {
+    ...(title ? { title } : {}),
     startedAt: time(value.startedAt, 'start'),
     endedAt:
       value.endedAt === null || value.endedAt === undefined ? null : time(value.endedAt, 'end'),
@@ -98,6 +107,7 @@ export function parseSnapshot(value: unknown): SessionSnapshot {
 /** Plain copy of a snapshot (store refs and proxies are left behind). */
 export function cloneSnapshot(record: SessionSnapshot): SessionSnapshot {
   return {
+    ...(record.title ? { title: record.title } : {}),
     startedAt: record.startedAt,
     endedAt: record.endedAt,
     pair: { ...record.pair },

@@ -307,7 +307,9 @@ test('stopping mid-sentence still records the last translation', async ({ page }
   await page.getByRole('button', { name: /last conversation/i }).click();
 
   const download = page.waitForEvent('download');
-  await page.locator('.session').getByRole('button', { name: /\.md/ }).click();
+  // The formats are behind the one Download button of the page
+  await page.locator('.session .download__toggle').click();
+  await page.locator('.session').getByRole('menuitem', { name: /\.md/ }).click();
   const file = await (await download).path();
   expect(await readFile(file, 'utf8')).toContain(TRANSLATED);
 });

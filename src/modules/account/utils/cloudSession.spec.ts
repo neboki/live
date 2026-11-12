@@ -5,6 +5,7 @@ import {
   chunkLines,
   chunksToWrite,
   cloudSessionId,
+  fromCloudSession,
   toCloudSessionDoc,
 } from './cloudSession';
 
@@ -69,5 +70,28 @@ describe('toCloudSessionDoc', () => {
       chunkSize: CHUNK_SIZE,
     });
     expect(cloudSessionId(1000)).toBe('1000');
+  });
+
+  it('carries the name only once there is one, so a save never erases another', () => {
+    const source = {
+      endedAt: null,
+      pair: { from: 'en', to: 'es' },
+      lines: lines(1),
+      summary: [],
+      glossary: '',
+      usage: [],
+    };
+
+    expect(toCloudSessionDoc({ ...source, title: ' Budget  review ' }, 1000).title).toBe(
+      'Budget review',
+    );
+    expect(toCloudSessionDoc({ ...source, title: '' }, 1000)).not.toHaveProperty('title');
+    expect(toCloudSessionDoc(source, 1000)).not.toHaveProperty('title');
+  });
+
+  it('gives the name back with the conversation read from the account', () => {
+    const read = fromCloudSession({ startedAt: 1000, title: 'Budget review' }, []);
+
+    expect(read).toMatchObject({ startedAt: 1000, title: 'Budget review', lines: [] });
   });
 });

@@ -450,7 +450,51 @@
       "search": "Search the conversation",
       "noMatch": "No sentence matches the search.",
       "noLines": "No sentence was heard.",
-      "speaker": "Voice {n}"
+      "speaker": "Voice {n}",
+      "markdownHint": "To read or paste into a document",
+      "subtitlesHint": "To put over a recording",
+      "file": "Neboki Live file",
+      "fileHint": "To open it here again",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyLine": "Copy this sentence",
+      "searchTerm": "Search “{term}” in the conversation",
+      "voices": "All voices",
+      "show": {
+        "label": "Which text to show",
+        "both": "Translation and original",
+        "translation": "Translation only",
+        "source": "Original only"
+      },
+      "rename": "Name of the conversation",
+      "generateName": "Have the AI write another name",
+      "naming": "Naming it…",
+      "side": "Summary & AI",
+      "tabs": {
+        "summary": "Summary",
+        "assistant": "Assistant"
+      },
+      "noSummary": "This conversation has no summary.",
+      "createSummary": "Create summary",
+      "regenerate": "Regenerate",
+      "creatingSummary": "Summarising…",
+      "summaryEmpty": "There was nothing to summarise.",
+      "aiCost": "Done with your key; what it costs is added to the conversation.",
+      "assistant": {
+        "ready": "Ready-made requests",
+        "placeholder": "Ask or request anything about what was said…",
+        "send": "Send",
+        "stop": "Stop",
+        "hint": "Get minutes, notes or the tasks with one click, or ask anything.",
+        "writing": "Writing…",
+        "failed": "It could not answer.",
+        "actions": {
+          "minutes": "Meeting minutes",
+          "notes": "Notes",
+          "tasks": "Tasks",
+          "email": "Follow-up email"
+        }
+      }
     }
   },
   "language": {
