@@ -37,7 +37,7 @@ describe('ElevenLabsKeyField', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('says plainly that OpenAI reads, and links to create an ElevenLabs key', () => {
+  it('says plainly that OpenAI reads, without an ElevenLabs key box under it', () => {
     useOverlayStore().options.voice = true;
     const wrapper = mountField();
 
@@ -45,7 +45,27 @@ describe('ElevenLabsKeyField', () => {
     expect(wrapper.text()).toContain(
       i18n.global.t('overlay.voice.usingOpenAi', { voice: 'Marin' }),
     );
+    expect(wrapper.find('input').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('opens the ElevenLabs key, labelled, only under ElevenLabs, and OpenAI keeps reading', async () => {
+    const settings = useSettingsStore();
+    const overlay = useOverlayStore();
+    overlay.options.voice = true;
+    const wrapper = mountField();
+
+    await radios(wrapper).eleven.trigger('click');
+
+    expect(radios(wrapper).eleven.attributes('aria-checked')).toBe('true');
+    expect(wrapper.get('label').text()).toBe(i18n.global.t('overlay.voice.keyLabel'));
     expect(wrapper.find('a[href*="elevenlabs"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsKeyMeanwhile'));
+    expect(settings.tts.engine).toBe('openai');
+    expect(overlay.options.voice).toBe(true);
+
+    await radios(wrapper).openai.trigger('click');
+    expect(wrapper.find('input').exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -74,6 +94,8 @@ describe('ElevenLabsKeyField', () => {
     settings.tts.elevenLabsVoice = 'v1';
     const wrapper = mountField();
 
+    await radios(wrapper).eleven.trigger('click');
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsKey'));
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
 
@@ -96,9 +118,9 @@ describe('ElevenLabsKeyField', () => {
     const settings = useSettingsStore();
     const wrapper = mountField();
 
+    await radios(wrapper).eleven.trigger('click');
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
-    await radios(wrapper).eleven.trigger('click');
 
     expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.keyRefused'));
     expect(settings.tts.engine).toBe('openai');
@@ -114,6 +136,7 @@ describe('ElevenLabsKeyField', () => {
     overlay.options.voice = false;
     const wrapper = mountField();
 
+    await radios(wrapper).eleven.trigger('click');
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
 
@@ -132,6 +155,7 @@ describe('ElevenLabsKeyField', () => {
     vi.stubGlobal('fetch', fetchMock);
     const wrapper = mountField();
 
+    await radios(wrapper).eleven.trigger('click');
     await wrapper.get('input').setValue('sk_123');
     await flushPromises();
 

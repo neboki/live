@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue';
+import { computed, nextTick, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@/modules/settings';
 import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
@@ -30,8 +30,9 @@ const emit = defineEmits<{
 
 /**
  * Which voice reads the translation, OpenAI's or ElevenLabs', said plainly and switchable
- * like OpenAI/Azure for the main key, with the ElevenLabs key in the same kind of box.
- * Pasting a key that works switches to ElevenLabs; a key that does not keeps OpenAI.
+ * like OpenAI/Azure for the main key. The ElevenLabs key box only shows under ElevenLabs, so
+ * it is never read as part of OpenAI. A key that works switches the voice to ElevenLabs; until
+ * then whatever was reading keeps reading.
  */
 const settings = useSettingsStore();
 const overlay = useOverlayStore();
@@ -39,8 +40,6 @@ const { t } = useI18n();
 const uid = useId();
 const visible = ref(false);
 const { voices, loading, error, limited } = useElevenLabsVoices(() => settings.voiceKey);
-/** The key was typed here: once it works, switch to ElevenLabs (a saved key does not) */
-const typed = ref(false);
 
 const state = computed<KeyState>(() => {
   const key = settings.voiceKey.trim();
@@ -52,6 +51,9 @@ const state = computed<KeyState>(() => {
 });
 const engine = computed(() => settings.tts.engine);
 const current = computed<VoiceChoice>(() => (overlay.options.voice ? engine.value : 'off'));
+/** The tab in view: ElevenLabs can be open, asking for its key, before it reads anything */
+const picked = ref<VoiceChoice>(current.value);
+const waitingForKey = computed(() => picked.value === 'elevenlabs' && state.value !== 'ready');
 const voiceName = computed(() => {
   if (engine.value === 'elevenlabs') {
     const id = settings.tts.elevenLabsVoice;
@@ -62,12 +64,14 @@ const voiceName = computed(() => {
 });
 
 function use(next: VoiceChoice): void {
+  picked.value = next;
   if (next === 'off') {
     overlay.options.voice = false;
     return;
   }
   if (next === 'elevenlabs' && state.value !== 'ready') {
-    document.getElementById(`${uid}-key`)?.focus();
+    // No working key yet: show its box and wait there; nothing changes in what reads
+    void nextTick(() => document.getElementById(`${uid}-key`)?.focus());
     return;
   }
   settings.tts.engine = next;
@@ -75,11 +79,13 @@ function use(next: VoiceChoice): void {
   overlay.options.voice = true;
 }
 
+// The key started to work while ElevenLabs was open: now it can read
 watch(state, (now) => {
-  if (now === 'ready' && typed.value) {
-    typed.value = false;
-    use('elevenlabs');
-  }
+  if (now === 'ready' && picked.value === 'elevenlabs') use('elevenlabs');
+});
+// Follow a change made elsewhere (the voice gallery, Settings), unless a key is being typed
+watch(current, (now) => {
+  if (!waitingForKey.value) picked.value = now;
 });
 </script>
 
@@ -96,11 +102,11 @@ watch(state, (now) => {
         v-for="option in CHOICES"
         :key="option"
         class="eleven__engine"
-        :class="{ 'eleven__engine--on': current === option }"
+        :class="{ 'eleven__engine--on': picked === option }"
         type="button"
         role="radio"
-        :aria-checked="current === option"
-        :tabindex="current === option ? 0 : -1"
+        :aria-checked="picked === option"
+        :tabindex="picked === option ? 0 : -1"
         @click="use(option)"
       >
         {{ t(CHOICE_LABEL[option]) }}
@@ -108,55 +114,64 @@ watch(state, (now) => {
     </div>
 
     <p class="eleven__using" role="status">
-      <template v-if="current === 'off'">{{ t('overlay.voice.usingNone') }}</template>
+      <template v-if="waitingForKey">
+        {{ t(current === 'off' ? 'overlay.voice.needsKey' : 'overlay.voice.needsKeyMeanwhile') }}
+      </template>
+      <template v-else-if="current === 'off'">{{ t('overlay.voice.usingNone') }}</template>
       <template v-else-if="engine === 'elevenlabs'">
         {{ t('overlay.voice.usingElevenLabs', { voice: voiceName }) }}
       </template>
       <template v-else>{{ t('overlay.voice.usingOpenAi', { voice: voiceName }) }}</template>
-      <button v-if="choosable" class="eleven__link" type="button" @click="emit('choose')">
+      <button
+        v-if="choosable && !waitingForKey"
+        class="eleven__link"
+        type="button"
+        @click="emit('choose')"
+      >
         {{ t('overlay.voice.chooseVoice') }}
       </button>
     </p>
 
-    <div class="eleven__box">
-      <input
-        :id="`${uid}-key`"
-        v-model.trim="settings.voiceKey"
-        class="eleven__input"
-        :type="visible ? 'text' : 'password'"
-        autocomplete="off"
-        spellcheck="false"
-        placeholder="sk_…"
-        :aria-label="t('overlay.voice.key')"
-        :aria-invalid="state === 'error'"
-        :aria-describedby="`${uid}-status`"
-        @input="typed = true"
-      />
-      <span class="eleven__check" aria-hidden="true">✓</span>
-      <button
-        class="eleven__toggle"
-        type="button"
-        :aria-pressed="visible"
-        @click="visible = !visible"
-      >
-        {{ visible ? t('start.key.hide') : t('start.key.show') }}
-      </button>
-    </div>
-    <p :id="`${uid}-status`" class="eleven__help">
-      <template v-if="state === 'empty'">
-        {{ t('overlay.voice.keyHelp') }}
-        <a :href="KEY_PAGE" target="_blank" rel="noopener noreferrer">{{
-          t('overlay.voice.getKey')
-        }}</a>
-      </template>
-      <template v-else-if="state === 'short'">{{ t('overlay.voice.keyShort') }}</template>
-      <template v-else-if="state === 'loading'">{{ t('overlay.voice.loading') }}</template>
-      <template v-else-if="state === 'error' && error">{{ t(error) }}</template>
-      <template v-else-if="limited">{{ t('overlay.voice.keyLimited') }}</template>
-      <template v-else>
-        {{ t('overlay.voice.keyWorks', { count: voices.length }, voices.length) }}
-      </template>
-    </p>
+    <template v-if="picked === 'elevenlabs'">
+      <label class="eleven__label" :for="`${uid}-key`">{{ t('overlay.voice.keyLabel') }}</label>
+      <div class="eleven__box">
+        <input
+          :id="`${uid}-key`"
+          v-model.trim="settings.voiceKey"
+          class="eleven__input"
+          :type="visible ? 'text' : 'password'"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="sk_…"
+          :aria-invalid="state === 'error'"
+          :aria-describedby="`${uid}-status`"
+        />
+        <span class="eleven__check" aria-hidden="true">✓</span>
+        <button
+          class="eleven__toggle"
+          type="button"
+          :aria-pressed="visible"
+          @click="visible = !visible"
+        >
+          {{ visible ? t('start.key.hide') : t('start.key.show') }}
+        </button>
+      </div>
+      <p :id="`${uid}-status`" class="eleven__help">
+        <template v-if="state === 'empty'">
+          {{ t('overlay.voice.keyHelp') }}
+          <a :href="KEY_PAGE" target="_blank" rel="noopener noreferrer">{{
+            t('overlay.voice.getKey')
+          }}</a>
+        </template>
+        <template v-else-if="state === 'short'">{{ t('overlay.voice.keyShort') }}</template>
+        <template v-else-if="state === 'loading'">{{ t('overlay.voice.loading') }}</template>
+        <template v-else-if="state === 'error' && error">{{ t(error) }}</template>
+        <template v-else-if="limited">{{ t('overlay.voice.keyLimited') }}</template>
+        <template v-else>
+          {{ t('overlay.voice.keyWorks', { count: voices.length }, voices.length) }}
+        </template>
+      </p>
+    </template>
   </div>
 </template>
 
@@ -204,6 +219,12 @@ watch(state, (now) => {
       color: #fff;
       font-weight: 600;
     }
+  }
+
+  &__label {
+    margin-top: 4px;
+    color: var(--fg);
+    font: 600 12.5px var(--font-ui);
   }
 
   &__using {

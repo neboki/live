@@ -12,3 +12,19 @@ test('the app validates the key before it can start', async ({ page }) => {
   await page.locator('#lg-api-key').fill(['sk', 'FAKExFAKExFAKExFAKExFAKEx'].join('-'));
   await expect(start).toBeEnabled();
 });
+
+test('the ElevenLabs key box only shows under ElevenLabs, with its own label', async ({ page }) => {
+  await page.goto('./');
+
+  const voice = page.locator('.start__voice');
+  await voice.getByRole('radio', { name: 'OpenAI' }).click();
+  await expect(voice.getByText('reads, with your OpenAI key')).toBeVisible();
+  await expect(voice.locator('input')).toHaveCount(0);
+
+  await voice.getByRole('radio', { name: 'ElevenLabs' }).click();
+  await expect(voice.getByLabel('ElevenLabs key')).toBeFocused();
+  await expect(voice.getByText('Until then OpenAI')).toBeVisible();
+
+  await voice.getByRole('radio', { name: 'No voice' }).click();
+  await expect(voice.locator('input')).toHaveCount(0);
+});
