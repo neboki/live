@@ -39,6 +39,7 @@
         </a>
         <nav class="nav__links" aria-label="Sections">
           <a href="#where" data-t="navWhere">Where it works</a>
+          <a href="#cases" data-t="navCases">Use cases</a>
           <a href="#mobile" data-t="navMobile">Mobile</a>
           <a href="#pricing" data-t="navPricing">Pricing</a>
           <a href="#privacy" data-t="navPrivacy">Privacy</a>
@@ -252,6 +253,295 @@
                 transcript.
               </p>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────── Cases ───────────── -->
+      <section class="section section--cases" id="cases">
+        <div class="wrap">
+          <header class="head head--center reveal">
+            <p class="eyebrow" data-t="casesEyebrow">For work</p>
+            <h2>
+              <span data-t="casesTitle1">When not understanding costs money,</span>
+              <span class="grad" data-t="casesTitle2">understand everything.</span>
+            </h2>
+            <p class="head__lead" data-t="casesLead">
+              For the meetings, calls and events where an interpreter takes days to book and costs
+              too much to keep. Open it, press Start and read.
+            </p>
+          </header>
+
+          <!-- Shown by the script: without it, every case is simply on the page -->
+          <div class="filters" role="group" aria-label="Audience" data-case-filters hidden>
+            <button type="button" aria-pressed="true" data-case-filter="all" data-t="filterAll">
+              All
+            </button>
+            <button
+              type="button"
+              aria-pressed="false"
+              data-case-filter="company"
+              data-t="forCompanies"
+            >
+              Companies
+            </button>
+            <button
+              type="button"
+              aria-pressed="false"
+              data-case-filter="freelance"
+              data-t="forFreelancers"
+            >
+              Freelancers
+            </button>
+            <button type="button" aria-pressed="false" data-case-filter="events" data-t="forEvents">
+              Events
+            </button>
+          </div>
+
+          <div class="cases" data-cases>
+            <article class="case reveal" data-case="company">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Hr. Weber</span>
+                  <span class="case__lang">DE</span>
+                  <span lang="de">Wenn Sie bis Freitag liefern, unterschreiben wir heute.</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case1Cap"
+                    >If you deliver by Friday, we sign today.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forCompanies">Companies</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case1Title">Meetings with foreign clients</h3>
+              <p class="case__text" data-t="case1Text">
+                Catch every nuance of the negotiation while they speak, and answer on the spot.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.79">$0.79</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="company">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Yuki</span>
+                  <span class="case__lang">JA</span>
+                  <span lang="ja">リリースは来週の火曜日に延期します。</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case2Cap"
+                    >We are moving the release to next Tuesday.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forCompanies">Companies</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case2Title">International teams</h3>
+              <p class="case__text" data-t="case2Text">
+                Dailies and committees where everyone speaks their own language and reads in theirs,
+                with the summary already written.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.24">$0.24</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="company">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Mr Chen</span>
+                  <span class="case__lang">ZH</span>
+                  <span lang="zh">这条生产线每小时生产四百件。</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case3Cap"
+                    >This line makes four hundred units an hour.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forCompanies">Companies</span>
+                <span class="case__mode" data-t="tagMic">Microphone</span>
+              </p>
+              <h3 data-t="case3Title">Factory visits and audits</h3>
+              <p class="case__text" data-t="case3Text">
+                The technician talks and you read on your phone as you walk the plant. No
+                interpreter to fly in.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.79">$0.79</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="company">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Camille</span>
+                  <span class="case__lang">FR</span>
+                  <span lang="fr">Avant toute intervention, coupez toujours l’alimentation.</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case4Cap"
+                    >Before any work, always cut the power.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forCompanies">Companies</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case4Title">Training and webinars</h3>
+              <p class="case__text" data-t="case4Text">
+                One trainer for staff in several countries: each person follows the session in their
+                own language.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.24">$0.24</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="freelance">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Sanne</span>
+                  <span class="case__lang">NL</span>
+                  <span lang="nl">Wat is uw tarief voor het hele project?</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case5Cap"
+                    >What is your rate for the whole project?</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forFreelancers">Freelancers</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case5Title">Calls with clients abroad</h3>
+              <p class="case__text" data-t="case5Text">
+                Take the projects you used to turn down because of the language. It also suggests
+                what to reply, in theirs.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.79">$0.79</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="freelance">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Inês</span>
+                  <span class="case__lang">PT</span>
+                  <span lang="pt">Fale-me de um projeto de que se orgulha.</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case6Cap"
+                    >Tell me about a project you are proud of.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forFreelancers">Freelancers</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case6Title">Job interviews and hiring</h3>
+              <p class="case__text" data-t="case6Text">
+                For the candidate and for the recruiter: nobody loses the thread, or the talent,
+                over a language.
+              </p>
+              <p class="case__cost">
+                <b data-price="2.15">$2.15</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="freelance">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Emre</span>
+                  <span class="case__lang">TR</span>
+                  <span lang="tr"
+                    >Bin adetten fazla sipariş verirseniz yüzde on indirim yaparız.</span
+                  >
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case7Cap"
+                    >Order more than a thousand units and we take ten percent off.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forFreelancers">Freelancers</span>
+                <span class="case__mode" data-t="tagTab">Shared tab</span>
+              </p>
+              <h3 data-t="case7Title">Suppliers and negotiation</h3>
+              <p class="case__text" data-t="case7Text">
+                Deal with the factory directly, with no agent in the middle, and keep the whole call
+                in writing.
+              </p>
+              <p class="case__cost">
+                <b data-price="0.79">$0.79</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+
+            <article class="case reveal" data-case="events">
+              <div class="case__scene" aria-hidden="true">
+                <p class="case__said">
+                  <span class="case__name">Giulia</span>
+                  <span class="case__lang">IT</span>
+                  <span lang="it">Grazie a tutti, cominciamo con i risultati di quest’anno.</span>
+                </p>
+                <p class="case__cap">
+                  <span class="case__full" data-t="case8Cap"
+                    >Thank you all, let’s begin with this year’s results.</span
+                  >
+                  <span class="case__typed" data-case-typed></span>
+                </p>
+              </div>
+              <p class="case__meta">
+                <span class="case__who" data-t="forEvents">Events</span>
+                <span class="case__mode" data-t="tagMic">Microphone</span>
+              </p>
+              <h3 data-t="case8Title">Conferences, fairs and online events</h3>
+              <p class="case__text" data-t="case8Text">
+                Captions on the big screen for the whole room, or the translation read aloud in your
+                headphones.
+              </p>
+              <p class="case__cost">
+                <b data-price="2.34">$2.34</b> <span data-t="perHour">/ hour</span>
+              </p>
+            </article>
+          </div>
+
+          <div class="band reveal">
+            <div class="band__text">
+              <h3 data-t="bandTitle">
+                An interpreter is booked days ahead. This is on in a minute.
+              </h3>
+              <ul class="band__facts">
+                <li data-t="bandFact1">Nobody else installs anything</li>
+                <li data-t="bandFact2">20+ languages, even mixed in one meeting</li>
+                <li>
+                  <span data-t="bandFrom">From</span> <b data-price="0.24">$0.24</b>
+                  <span data-t="bandHour">an hour, no subscription</span>
+                </li>
+              </ul>
+            </div>
+            <a class="btn btn--lg btn--light" href="/app/" data-t="bandCta"
+              >Try it in your next meeting</a
+            >
           </div>
         </div>
       </section>
