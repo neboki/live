@@ -9,6 +9,33 @@ export interface ElevenLabsVoice {
   category: string;
 }
 
+/**
+ * ElevenLabs' premade voices, the same for every account. Used when the key may speak but
+ * may not list voices (a key restricted to text to speech, as the app recommends).
+ */
+export const STANDARD_ELEVENLABS_VOICES: readonly ElevenLabsVoice[] = (
+  [
+    ['JBFqnCBsd6RMkjVDRZzb', 'George'],
+    ['EXAVITQu4vr4xnSDxMaL', 'Sarah'],
+    ['FGY2WhTYpPnrIDTpsKH4', 'Laura'],
+    ['IKne3meq5aSn9XLyUdCD', 'Charlie'],
+    ['onwK4e9ZLuTAKqWW03F9', 'Daniel'],
+    ['pFZP5JQG7iQjIQuC4Bku', 'Lily'],
+    ['nPczCjzI2devNBz1zQrb', 'Brian'],
+    ['Xb7hH8MSUJpSbSDYk0k2', 'Alice'],
+    ['XrExE9yKIg1WjnnlVkGX', 'Matilda'],
+    ['cgSgspJ2msm6clMCkdW9', 'Jessica'],
+    ['TX3LPaxmHKxFdv7VOQHJ', 'Liam'],
+    ['bIHbv24MWmeRgasZH58o', 'Will'],
+    ['iP95p4xoKVk53GoZ742B', 'Chris'],
+    ['cjVigY5qzO86Huf0OWal', 'Eric'],
+  ] as const satisfies readonly (readonly [string, string])[]
+).map(([id, name]) => ({
+  id,
+  name,
+  category: 'premade',
+}));
+
 interface VoicesBody {
   voices?: unknown;
 }

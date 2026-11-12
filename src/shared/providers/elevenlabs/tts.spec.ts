@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PcmPlayer } from '@/shared/audio/pcmPlayer';
-import { createElevenLabsTts } from './tts';
+import { CATCH_UP_SPEED, createElevenLabsTts } from './tts';
 
 /** Shaped like an ElevenLabs key, built at runtime so no key-like text sits in the repo */
 const KEY = ['sk', 'fakefakefakefakefake'].join('_');
@@ -18,6 +18,7 @@ function fakePlayer(): FakePlayer {
     stop: vi.fn(),
     close: vi.fn(),
     whenDrained: vi.fn(() => Promise.resolve()),
+    whenLeft: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -94,6 +95,18 @@ describe('createElevenLabsTts', () => {
     expect(JSON.parse(sent(fetchMock, 2)[1].body as string)).not.toHaveProperty('previous_text');
   });
 
+  it('reads a backlog of joined sentences a little faster, a single sentence at its pace', async () => {
+    const tts = createElevenLabsTts(() => config, undefined, player);
+    await tts.speak('Una frase corta.', 'es');
+    fetchMock.mockResolvedValueOnce(streamed([[1, 0]]).response);
+    await tts.speak('Frase pendiente. '.repeat(10), 'es');
+
+    expect(JSON.parse(sent(fetchMock, 0)[1].body as string)).not.toHaveProperty('voice_settings');
+    expect(JSON.parse(sent(fetchMock, 1)[1].body as string)).toMatchObject({
+      voice_settings: { speed: CATCH_UP_SPEED },
+    });
+  });
+
   it('leaves the language out when the tag has no ISO 639-1 code', async () => {
     const tts = createElevenLabsTts(() => config, undefined, player);
     await tts.speak('Hola', 'auto');
@@ -111,7 +124,7 @@ describe('createElevenLabsTts', () => {
     await tts.speak('Hola', 'es');
 
     expect(player.played.map((pcm) => [...pcm])).toEqual([[1], [2, 3]]);
-    expect(player.whenDrained).toHaveBeenCalledTimes(1);
+    expect(player.whenLeft).toHaveBeenCalledTimes(1);
   });
 
   it('reports the characters of every clip, what ElevenLabs bills', async () => {
@@ -142,7 +155,7 @@ describe('createElevenLabsTts', () => {
 
     expect(player.stop).toHaveBeenCalled();
     expect(player.played).toHaveLength(1);
-    expect(player.whenDrained).not.toHaveBeenCalled();
+    expect(player.whenLeft).not.toHaveBeenCalled();
     expect(onUsage).toHaveBeenCalledWith(expect.objectContaining({ characters: 5 }));
   });
 

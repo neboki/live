@@ -15,6 +15,17 @@ export interface ElevenLabsTtsConfig {
   volume?: number;
 }
 
+/**
+ * The next sentence is asked for while this much of the current one is still to play, so
+ * it arrives in time (ElevenLabs answers in a few hundred ms) and they join without a gap.
+ */
+const PREFETCH_SECONDS = 1.2;
+/**
+ * A clip this long is a backlog of joined sentences: it is read a little faster, as an
+ * interpreter catches up. ElevenLabs changes the pace, not the pitch (0.7..1.2).
+ */
+export const BACKLOG_CHARS = 120;
+export const CATCH_UP_SPEED = 1.12;
 /** What came before is passed for a smoother join; longer context only adds latency */
 const MAX_PREVIOUS_CHARS = 300;
 
@@ -34,7 +45,7 @@ function languageCode(lang: string): string | undefined {
 export function createElevenLabsTts(
   getConfig: () => ElevenLabsTtsConfig,
   onUsage?: (usage: Usage) => void,
-  player: PcmPlayer = createPcmPlayer(() => getConfig().volume ?? 1),
+  player: PcmPlayer = createPcmPlayer(() => getConfig().volume ?? 1, { realtime: false }),
 ): TtsProvider {
   /** Bumped by stop(): a clip still streaming then stops feeding the player */
   let run = 0;
@@ -55,6 +66,7 @@ export function createElevenLabsTts(
     const body: Record<string, unknown> = { text, model_id: config.model };
     const code = languageCode(lang);
     if (code) body.language_code = code;
+    if (text.length > BACKLOG_CHARS) body.voice_settings = { speed: CATCH_UP_SPEED };
     if (previous && previous.lang === lang) {
       body.previous_text = previous.text.slice(-MAX_PREVIOUS_CHARS);
     }
@@ -124,7 +136,8 @@ export function createElevenLabsTts(
     });
     previous = { text, lang };
     try {
-      if (await stream(body, myRun, signal)) await player.whenDrained();
+      // Resolve just before the clip ends: the next one is fetched while this one plays
+      if (await stream(body, myRun, signal)) await player.whenLeft(PREFETCH_SECONDS);
     } catch (err) {
       if (signal?.aborted || myRun !== run) return;
       throw elevenLabsNetworkError(err);
@@ -143,5 +156,5 @@ export function createElevenLabsTts(
     player.close();
   }
 
-  return { speak, stop, close };
+  return { speak, stop, close, settle: () => player.whenDrained() };
 }

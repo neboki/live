@@ -199,7 +199,7 @@ watch(active, (id) => {
             </div>
             <!-- The optional voice key beside the main one, where people look for keys -->
             <div class="lg-card settings-view__card">
-              <ElevenLabsKeyField @choose="active = 'audio'" />
+              <ElevenLabsKeyField choosable @choose="active = 'audio'" />
             </div>
             <SettingsMenu class="settings-view__menu" popped page only="quality" />
           </template>

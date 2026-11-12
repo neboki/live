@@ -1,6 +1,8 @@
 /** Something that can read text aloud. `speak` resolves when playback ends. */
 export interface TtsProvider {
   speak(text: string, lang: string, signal?: AbortSignal): Promise<void>;
+  /** Resolves once the audio is over, for engines whose speak() returns a little early */
+  settle?(): Promise<void>;
   stop(): void;
   /** Releases what the engine holds (an audio output); nothing can be spoken afterwards */
   close?(): void;

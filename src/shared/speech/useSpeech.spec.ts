@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createBrowserTts } from './browserTts';
 import type { TtsProvider } from './types';
-import { MAX_BACKLOG, useSpeech } from './useSpeech';
+import { MAX_BACKLOG, MAX_PENDING_CHARS, useSpeech } from './useSpeech';
 
 interface FakeEngine extends TtsProvider {
   spoken: string[];
@@ -55,18 +55,49 @@ describe('useSpeech', () => {
     expect(engine.stopMock).not.toHaveBeenCalled();
   });
 
-  it('drops the oldest pending items beyond the backlog cap', async () => {
+  it('reads every waiting sentence, joined into one clip, instead of dropping any', async () => {
     const engine = fakeEngine();
     const speech = useSpeech({ engine: () => engine, fallback: engine });
     speech.speak('playing', 'es');
     await flush();
     for (let i = 1; i <= MAX_BACKLOG + 2; i++) speech.speak(`p${i}`, 'es');
 
-    for (let i = 0; i <= MAX_BACKLOG; i++) {
-      engine.finish();
-      await flush();
-    }
-    expect(engine.spoken).toEqual(['playing', 'p3', 'p4', 'p5']);
+    engine.finish();
+    await flush();
+    engine.finish();
+    await flush();
+    expect(engine.spoken).toEqual(['playing', 'p1 p2 p3 p4 p5']);
+  });
+
+  it('keeps only the most recent text when far too much is waiting', async () => {
+    const engine = fakeEngine();
+    const speech = useSpeech({ engine: () => engine, fallback: engine });
+    speech.speak('playing', 'es');
+    await flush();
+    const words = Array.from({ length: 400 }, (_, i) => `w${i}`);
+    words.forEach((word) => speech.speak(word, 'es'));
+
+    engine.finish();
+    await flush();
+    const waiting = engine.spoken[1] ?? '';
+    expect(waiting.length).toBeLessThanOrEqual(MAX_PENDING_CHARS);
+    expect(waiting.endsWith('w399')).toBe(true);
+    expect(waiting.split(' ')[0]).toMatch(/^w\d+$/);
+  });
+
+  it('skips to the latest whole sentences when the voice falls too far behind', async () => {
+    const engine = fakeEngine();
+    const speech = useSpeech({ engine: () => engine, fallback: engine });
+    speech.speak('playing', 'es');
+    await flush();
+    for (let i = 1; i <= 20; i++) speech.speak(`Esta es la frase número ${i}.`, 'es');
+
+    engine.finish();
+    await flush();
+    const waiting = engine.spoken[1] ?? '';
+    expect(waiting.length).toBeLessThanOrEqual(MAX_PENDING_CHARS);
+    expect(waiting.startsWith('Esta es la frase')).toBe(true);
+    expect(waiting.endsWith('número 20.')).toBe(true);
   });
 
   it('stop() empties the queue and stops the engine', async () => {
