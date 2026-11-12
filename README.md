@@ -10,7 +10,7 @@ sentence. No server and no account: your audio goes straight to OpenAI with your
 
 **[Open the app](https://neboki-live.web.app/)** · works on desktop and on your phone
 
-<!-- TODO: add a GIF (docs/demo.gif) once recorded -->
+![A call in German with the English captions appearing on the picture, sentence by sentence](docs/demo.gif)
 
 > **Status:** working pre-release (v1.0.0 in preparation). Feedback is welcome.
 
