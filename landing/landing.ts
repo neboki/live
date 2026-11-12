@@ -1,6 +1,6 @@
 // The landing page is written in English; this swaps in Spanish for Spanish readers, or
 // when the reader asks for it (remembered in this browser). It also plays the caption
-// demo in the hero, runs the cost calculator and formats prices for the reader's language.
+// reading demo, runs the cost calculator and formats prices for the reader's language.
 
 type Texts = Readonly<Record<string, string>>;
 
@@ -18,6 +18,24 @@ const TYPE_MS = 70;
 const HOLD_MS = 2600;
 
 const ES: Texts = {
+  photoCallAlt: 'Neboki Live traduce una videollamada en francés al inglés en un portátil.',
+  photoTrainingAlt: 'Subtítulos traducidos al inglés sobre un vídeo de formación en alemán.',
+  photoRoomAlt: 'Dos compañeros usan Neboki Live en el móvil para traducir del japonés al inglés.',
+  photoHybridAlt: 'Una reunión híbrida con traducción del portugués al inglés en el portátil.',
+  photoTalkAlt:
+    'Un móvil entre dos personas muestra español e inglés en sentidos opuestos para una conversación cara a cara.',
+  photoClassAlt:
+    'Una clase en línea en español con Neboki Live traduciendo la explicación al inglés.',
+  photoCallLabel: 'Una conversación, sin la barrera del idioma',
+  photoTalkEyebrow: 'Cara a cara',
+  photoTalkTitle: 'Dos idiomas. Una conversación.',
+  photoTalkText:
+    'Deja el móvil entre los dos. Cada persona lee en su idioma, con una mitad de la pantalla orientada hacia cada lado.',
+  photoTalkAction: 'Empieza una conversación →',
+  photoClassLabel: 'Sigue la clase, en tu idioma.',
+  photoDemoEyebrow: 'Sigue la conversación',
+  photoDemoTitle: 'La voz original. Tu idioma.',
+  photoDemoText: 'Lee unas frases de ejemplo mientras la conversación pasa de un idioma a otro.',
   skip: 'Ir al contenido',
   navWhere: 'Dónde funciona',
   navMobile: 'Móvil',
@@ -262,7 +280,7 @@ const DEMO: readonly DemoLine[] = [
   },
 ];
 
-/** The English text of every element, read once from the page as written */
+/** English text and image descriptions, read once from the page as written. */
 const english = new Map<Element, string>();
 let spanish = prefersSpanish();
 
@@ -311,6 +329,11 @@ function applyLanguage(): void {
     element.textContent = spanish
       ? (ES[key] ?? english.get(element) ?? '')
       : (english.get(element) ?? '');
+  }
+  for (const image of document.querySelectorAll<HTMLImageElement>('img[data-alt]')) {
+    if (!english.has(image)) english.set(image, image.alt);
+    const key = image.dataset.alt ?? '';
+    image.alt = spanish ? (ES[key] ?? english.get(image) ?? '') : (english.get(image) ?? '');
   }
   for (const element of document.querySelectorAll<HTMLElement>('[data-price]')) {
     element.textContent = money(Number(element.dataset.price));

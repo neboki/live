@@ -26,6 +26,7 @@
     <link rel="icon" href="/app/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
     <link rel="stylesheet" href="./landing.css" />
+    <link rel="stylesheet" href="./scenes.css" />
     <script type="module" src="./landing.ts"></script>
   </head>
   <body>
@@ -101,62 +102,44 @@
               </a>
               <a class="btn btn--ghost btn--lg" href="#how" data-t="seeHow">See how it works</a>
             </div>
-            <ul class="hero__facts">
-              <li><b>≈ 1 s</b> <span data-t="factDelay">from voice to caption</span></li>
-              <li><b>20+</b> <span data-t="factLangs">languages</span></li>
-              <li>
-                <b data-price="0.24">$0.24</b> <span data-t="factCost">an hour, cheapest tier</span>
-              </li>
-            </ul>
           </div>
 
-          <!-- The product, drawn: a call in a browser window, the floating captions over it,
-               and the phone version beside it -->
-          <div class="stage" aria-hidden="true">
-            <div class="win">
-              <div class="win__bar">
-                <span class="win__dots"><i></i><i></i><i></i></span>
-                <span class="win__url">meet · Weekly sync</span>
-              </div>
-              <div class="call">
-                <div class="tile tile--a" data-speaker="0"><span>JK</span><em>Jonas</em></div>
-                <div class="tile tile--b" data-speaker="1"><span>YS</span><em>Yuki</em></div>
-                <div class="tile tile--c" data-speaker="2"><span>CM</span><em>Camille</em></div>
-                <div class="tile tile--d" data-speaker="3"><span>GR</span><em>Giulia</em></div>
-              </div>
-              <div class="win__controls"><i></i><i></i><i class="hang"></i><i></i></div>
+          <figure class="hero-visual">
+            <div class="scene-frame scene-frame--hero">
+              <img
+                class="scene-image"
+                src="./images/video-call-960.jpg"
+                srcset="
+                  ./images/video-call-640.jpg   640w,
+                  ./images/video-call-960.jpg   960w,
+                  ./images/video-call-1440.jpg 1440w
+                "
+                sizes="(max-width: 980px) 92vw, 48vw"
+                width="1440"
+                height="960"
+                alt="Neboki Live translates a French video call into English on a laptop."
+                data-alt="photoCallAlt"
+                fetchpriority="high"
+                loading="eager"
+                decoding="async"
+              />
             </div>
-
-            <div class="cap">
-              <div class="cap__bar">
-                <span class="cap__live" data-t="live">Live</span>
-                <span class="cap__pair" data-demo-pair>AUTO → EN</span>
-              </div>
-              <p class="cap__prev" data-demo-prev>Yes, from three o'clock works well for me.</p>
-              <p class="cap__src">
-                <span class="cap__who" data-demo-who>Yuki</span>
-                <span class="cap__lang" data-demo-lang>JA</span>
-                <span data-demo-src>来週までに見積もりを送ります。</span>
-              </p>
-              <p class="cap__now">
-                <span data-demo-now>I'll send the quote by next week.</span><i class="caret"></i>
-              </p>
-            </div>
-
-            <div class="phone phone--hero">
-              <div class="phone__screen talk">
-                <div class="talk__half talk__half--top">
-                  <small data-t="forCamille">For Camille</small>
-                  <p lang="fr">Bien sûr, on commence par le budget.</p>
-                </div>
-                <div class="talk__mid"><span class="rec"></span></div>
-                <div class="talk__half">
-                  <small>Camille</small>
-                  <p data-t="heroTalkBottom">Can we go over the timeline first?</p>
-                </div>
-              </div>
-            </div>
-          </div>
+            <figcaption>
+              <span class="scene-label"
+                ><span class="scene-dot" aria-hidden="true"></span
+                ><span data-t="photoCallLabel"
+                  >A conversation, without the language barrier</span
+                ></span
+              ><span class="scene-language" lang="en">FR → EN</span>
+            </figcaption>
+          </figure>
+          <ul class="hero__facts">
+            <li><b>≈ 1 s</b> <span data-t="factDelay">from voice to caption</span></li>
+            <li><b>20+</b> <span data-t="factLangs">languages</span></li>
+            <li>
+              <b data-price="0.24">$0.24</b> <span data-t="factCost">an hour, cheapest tier</span>
+            </li>
+          </ul>
         </div>
 
         <div class="wrap marquee" aria-label="Works with">
@@ -204,12 +187,23 @@
 
           <div class="uses">
             <article class="use reveal">
-              <div class="use__art use__art--pc" aria-hidden="true">
-                <div class="mini-win"><i></i><i></i><i></i><i></i></div>
-                <div class="mini-cap">
-                  <b></b>
-                  <span></span>
-                </div>
+              <div class="scene-frame scene-frame--card">
+                <img
+                  class="scene-image"
+                  src="./images/training-960.jpg"
+                  srcset="
+                    ./images/training-640.jpg   640w,
+                    ./images/training-960.jpg   960w,
+                    ./images/training-1440.jpg 1440w
+                  "
+                  sizes="(max-width: 900px) 92vw, 31vw"
+                  width="1440"
+                  height="960"
+                  alt="English translated captions over a German training video."
+                  data-alt="photoTrainingAlt"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <p class="use__tag" data-t="tagTab">Shared tab</p>
               <h3 data-t="computerTitle">On your computer</h3>
@@ -220,15 +214,23 @@
             </article>
 
             <article class="use reveal">
-              <div class="use__art use__art--room" aria-hidden="true">
-                <div class="table">
-                  <span class="person p1"></span>
-                  <span class="person p2"></span>
-                  <span class="person p3"></span>
-                  <div class="mini-phone">
-                    <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
-                  </div>
-                </div>
+              <div class="scene-frame scene-frame--card">
+                <img
+                  class="scene-image"
+                  src="./images/in-person-960.jpg"
+                  srcset="
+                    ./images/in-person-640.jpg   640w,
+                    ./images/in-person-960.jpg   960w,
+                    ./images/in-person-1440.jpg 1440w
+                  "
+                  sizes="(max-width: 900px) 92vw, 31vw"
+                  width="1440"
+                  height="960"
+                  alt="Two colleagues use Neboki Live on a phone to translate Japanese speech into English."
+                  data-alt="photoRoomAlt"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <p class="use__tag" data-t="tagMic">Microphone</p>
               <h3 data-t="roomTitle">In the room</h3>
@@ -239,12 +241,23 @@
             </article>
 
             <article class="use reveal">
-              <div class="use__art use__art--mix" aria-hidden="true">
-                <span class="mix mix--a" data-t="mixTab">Tab</span>
-                <span class="mix__plus">+</span>
-                <span class="mix mix--b" data-t="mixMic">Mic</span>
-                <span class="mix__eq">=</span>
-                <span class="mix mix--c" data-t="mixAll">Everyone</span>
+              <div class="scene-frame scene-frame--card">
+                <img
+                  class="scene-image"
+                  src="./images/hybrid-960.jpg"
+                  srcset="
+                    ./images/hybrid-640.jpg   640w,
+                    ./images/hybrid-960.jpg   960w,
+                    ./images/hybrid-1440.jpg 1440w
+                  "
+                  sizes="(max-width: 900px) 92vw, 31vw"
+                  width="1440"
+                  height="960"
+                  alt="A hybrid meeting with Portuguese speech translated into English on a laptop."
+                  data-alt="photoHybridAlt"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
               <p class="use__tag" data-t="tagBoth">Tab + microphone</p>
               <h3 data-t="hybridTitle">Both at once</h3>
@@ -558,6 +571,37 @@
             </p>
           </header>
 
+          <div class="conversation-story reveal">
+            <figure class="conversation-story__image scene-frame">
+              <img
+                class="scene-image"
+                src="./images/face-to-face-960.jpg"
+                srcset="
+                  ./images/face-to-face-640.jpg   640w,
+                  ./images/face-to-face-960.jpg   960w,
+                  ./images/face-to-face-1440.jpg 1440w
+                "
+                sizes="(max-width: 900px) 92vw, 56vw"
+                width="1440"
+                height="960"
+                alt="A phone between two people displays Spanish and English in opposite directions for a face-to-face conversation."
+                data-alt="photoTalkAlt"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+            <div class="conversation-story__text">
+              <p class="eyebrow" data-t="photoTalkEyebrow">Face to face</p>
+              <h3 data-t="photoTalkTitle">Two languages. One conversation.</h3>
+              <p data-t="photoTalkText">
+                Put your phone between you. Each person reads in their own language, with one half
+                of the screen facing each way.
+              </p>
+              <span class="scene-language" lang="en">ES → EN</span>
+              <a class="scene-link" href="/app/" data-t="photoTalkAction">Start a conversation →</a>
+            </div>
+          </div>
+
           <div class="phones">
             <figure class="phone-card reveal">
               <div class="phone">
@@ -733,6 +777,50 @@
             <p class="eyebrow" data-t="howEyebrow">How it works</p>
             <h2 data-t="howTitle">From sound to caption, in about a second</h2>
           </header>
+
+          <div class="learning-story reveal">
+            <figure class="learning-story__image scene-frame">
+              <img
+                class="scene-image"
+                src="./images/online-class-960.jpg"
+                srcset="
+                  ./images/online-class-640.jpg   640w,
+                  ./images/online-class-960.jpg   960w,
+                  ./images/online-class-1440.jpg 1440w
+                "
+                sizes="(max-width: 900px) 92vw, 52vw"
+                width="1440"
+                height="960"
+                alt="An online class in Spanish with Neboki Live translating the lesson into English."
+                data-alt="photoClassAlt"
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption data-t="photoClassLabel">Follow the lesson, in your language.</figcaption>
+            </figure>
+            <div class="caption-demo">
+              <p class="eyebrow" data-t="photoDemoEyebrow">Try reading along</p>
+              <h3 data-t="photoDemoTitle">The original voice. Your language.</h3>
+              <p class="caption-demo__lead" data-t="photoDemoText">
+                Follow a few example lines as the conversation moves between languages.
+              </p>
+              <div class="cap">
+                <div class="cap__bar">
+                  <span class="cap__live" data-t="live">Live</span>
+                  <span class="cap__pair" data-demo-pair>AUTO → EN</span>
+                </div>
+                <p class="cap__prev" data-demo-prev>Yes, from three o'clock works well for me.</p>
+                <p class="cap__src">
+                  <span class="cap__who" data-demo-who>Yuki</span>
+                  <span class="cap__lang" data-demo-lang>JA</span>
+                  <span data-demo-src>来週までに見積もりを送ります。</span>
+                </p>
+                <p class="cap__now">
+                  <span data-demo-now>I'll send the quote by next week.</span><i class="caret"></i>
+                </p>
+              </div>
+            </div>
+          </div>
 
           <ol class="flow reveal">
             <li>
