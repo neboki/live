@@ -6,15 +6,17 @@
 //   users/{uid}/sessions/{sessionId}/chunks/{n} { lines: SessionLine[] } (CHUNK_SIZE each)
 
 import {
+  cleanTitle,
   parseSnapshot,
+  TITLE_MAX,
   type SessionLine,
   type SessionPair,
   type SessionSnapshot,
   type Usage,
 } from '@/modules/session';
 
-/** Longest name a person can give a conversation (kept in step with firestore.rules) */
-export const TITLE_MAX = 120;
+// The name of a conversation and its limits belong to the session module
+export { cleanTitle, TITLE_MAX };
 
 /** Sentences per chunk: even long sentences and their translations stay far below 1 MiB */
 export const CHUNK_SIZE = 200;
@@ -32,11 +34,13 @@ export interface CloudSessionDoc {
   usage: Usage[];
   lineCount: number;
   chunkSize: number;
+  /** Only once the conversation has a name, so a save never erases one given elsewhere */
+  title?: string;
 }
 
 export type CloudSessionSource = Pick<
   SessionSnapshot,
-  'endedAt' | 'pair' | 'lines' | 'summary' | 'glossary' | 'usage'
+  'endedAt' | 'pair' | 'lines' | 'summary' | 'glossary' | 'usage' | 'title'
 >;
 
 /** A conversation is named after when it began: one person starts one at a time */
@@ -55,6 +59,7 @@ export function toCloudSessionDoc(source: CloudSessionSource, startedAt: number)
     usage: source.usage.map((entry) => ({ ...entry })),
     lineCount: source.lines.length,
     chunkSize: CHUNK_SIZE,
+    ...(source.title ? { title: cleanTitle(source.title) } : {}),
   };
 }
 
@@ -128,11 +133,6 @@ export function toHistoryItem(id: string, data: unknown): CloudHistoryItem | nul
   };
 }
 
-/** A name as it is kept: on one line, trimmed, at most TITLE_MAX characters */
-export function cleanTitle(title: string): string {
-  return title.replace(/\s+/g, ' ').trim().slice(0, TITLE_MAX);
-}
-
 /**
  * The plain session a conversation document and its chunks (in order) make up, ready
  * for the session module to check like a session file.
@@ -143,6 +143,7 @@ export function fromCloudSession(data: unknown, chunks: readonly unknown[]): unk
     isRecord(chunk) && Array.isArray(chunk.lines) ? (chunk.lines as unknown[]) : [],
   );
   return {
+    title: doc.title,
     startedAt: doc.startedAt,
     endedAt: doc.endedAt ?? null,
     pair: doc.pair,

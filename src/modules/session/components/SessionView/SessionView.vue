@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   downloadMarkdown,
@@ -7,6 +7,8 @@ import {
   downloadSubtitles,
 } from '../../composables/useExportSession';
 import { useSettingsStore } from '@/modules/settings';
+import { readStorage, writeStorage } from '@/shared/storage/safeStorage';
+import { useSessionAi } from '../../composables/useSessionAi';
 import { useSessionViewer, type ViewerSource } from '../../store/useSessionViewer';
 import type { SessionSnapshot } from '../../types';
 import {
@@ -18,11 +20,20 @@ import {
 } from '../../utils/costUsd';
 import { formatEur } from '../../utils/formatCost';
 import { elapsed, sessionDuration } from '../../utils/toMarkdown';
+import SessionDownloadMenu, {
+  type DownloadKind,
+} from '../SessionDownloadMenu/SessionDownloadMenu.vue';
+import SessionSide from '../SessionSide/SessionSide.vue';
+import SessionTitle from '../SessionTitle/SessionTitle.vue';
 import SessionTranscript from '../SessionTranscript/SessionTranscript.vue';
 
-type Saved = 'file' | 'markdown' | 'srt' | 'vtt' | null;
+const emit = defineEmits<{
+  /** Its name, its summary or what it cost changed here: whoever keeps it can save it */
+  changed: [];
+}>();
 
 const SAVED_FEEDBACK_MS = 2500;
+const SIDE_HIDDEN_KEY = 'session-side-hidden';
 /** The page title, by where the conversation came from */
 const TITLES: Readonly<Record<ViewerSource, string>> = {
   recent: 'session.view.ended',
@@ -43,8 +54,12 @@ const EMPTY: SessionSnapshot = {
 const viewer = useSessionViewer();
 const settings = useSettingsStore();
 const { t, locale } = useI18n();
-const saved = ref<Saved>(null);
+const ai = useSessionAi(() => emit('changed'));
+const saved = ref(false);
 const failed = ref(false);
+const sideHidden = ref(readStorage(SIDE_HIDDEN_KEY) === 'true');
+/** The search of the transcript: typed there, or set by pressing a term */
+const query = ref('');
 let feedbackTimer: ReturnType<typeof setTimeout> | undefined;
 
 const session = computed<SessionSnapshot>(() => viewer.snapshot ?? EMPTY);
@@ -89,28 +104,61 @@ const terms = computed(() =>
     .map((term) => term.trim())
     .filter(Boolean),
 );
+/** The side panel only exists when there is something to put in it, or the AI to ask */
+const hasSide = computed(
+  () => session.value.summary.length > 0 || terms.value.length > 0 || ai.ready.value,
+);
+const sideOpen = computed(() => hasSide.value && !sideHidden.value);
+const sideLabel = computed(() => {
+  if (ai.ready.value) return t('session.view.side');
+  return session.value.summary.length ? t('session.md.summary') : t('session.md.glossary');
+});
 
-function feedback(kind: Exclude<Saved, null>, ok: boolean): void {
-  saved.value = ok ? kind : null;
+/** Why the last download or summary failed, for the reader */
+const errorLabel = computed(() => {
+  if (failed.value) return t('session.view.downloadFailed');
+  return ai.errorKey.value ? t(ai.errorKey.value) : null;
+});
+
+/** Shown or hidden as the reader left it last time */
+function toggleSide(): void {
+  sideHidden.value = !sideHidden.value;
+  writeStorage(SIDE_HIDDEN_KEY, sideHidden.value ? 'true' : null);
+}
+
+function download(kind: DownloadKind): void {
+  const ok =
+    kind === 'file'
+      ? downloadSessionFile(session.value)
+      : kind === 'markdown'
+        ? downloadMarkdown(session.value)
+        : downloadSubtitles(session.value, kind);
+  saved.value = ok;
   failed.value = !ok;
   clearTimeout(feedbackTimer);
   feedbackTimer = setTimeout(() => {
-    saved.value = null;
+    saved.value = false;
     failed.value = false;
   }, SAVED_FEEDBACK_MS);
 }
 
-function saveFile(): void {
-  feedback('file', downloadSessionFile(session.value));
+function rename(title: string): void {
+  viewer.setTitle(title);
+  emit('changed');
 }
 
-function saveMarkdown(): void {
-  feedback('markdown', downloadMarkdown(session.value));
-}
-
-function saveSubtitles(format: 'srt' | 'vtt'): void {
-  feedback(format, downloadSubtitles(session.value, format));
-}
+// A conversation gets its name as soon as it is on screen: the one that just ended, or an
+// older one from the account that never had one. A file is only named when asked to: its
+// name would be gone with the page.
+watch(
+  () => [viewer.snapshot?.startedAt, ai.canName.value] as const,
+  () => {
+    if (viewer.snapshot && !viewer.snapshot.title && viewer.source !== 'file') {
+      void ai.name({ quiet: true });
+    }
+  },
+  { immediate: true },
+);
 
 function close(): void {
   viewer.close();
@@ -132,30 +180,19 @@ onBeforeUnmount(() => {
 <template>
   <main class="session">
     <header class="lg-head">
-      <h1 class="lg-head__title">
-        {{ t(TITLES[viewer.source]) }}
-      </h1>
+      <SessionTitle
+        :title="session.title ?? ''"
+        :fallback="t(TITLES[viewer.source])"
+        :can-generate="ai.canName.value"
+        :generating="ai.naming.value"
+        @rename="rename"
+        @generate="ai.name()"
+      />
       <div class="lg-head__actions">
-        <span v-if="failed" class="session__failed" role="alert">
-          {{ t('session.view.downloadFailed') }}
-        </span>
+        <span v-if="errorLabel" class="session__failed" role="alert">{{ errorLabel }}</span>
         <!-- What other modules add for their own conversations (deleting one from the account) -->
         <slot name="actions" />
-        <button class="lg-btn" type="button" @click="saveMarkdown">
-          {{ saved === 'markdown' ? t('session.view.saved') : t('session.view.markdown') }}
-        </button>
-        <button class="lg-btn" type="button" @click="saveSubtitles('srt')">
-          {{ saved === 'srt' ? t('session.view.saved') : t('session.view.srt') }}
-        </button>
-        <button class="lg-btn" type="button" @click="saveSubtitles('vtt')">
-          {{ saved === 'vtt' ? t('session.view.saved') : t('session.view.vtt') }}
-        </button>
-        <button class="lg-btn session__download" type="button" @click="saveFile">
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M8 2.5v8M4.8 7.5 8 10.7l3.2-3.2M3 13.5h10" />
-          </svg>
-          {{ saved === 'file' ? t('session.view.saved') : t('session.view.download') }}
-        </button>
+        <SessionDownloadMenu :saved="saved" @pick="download" />
       </div>
     </header>
 
@@ -203,23 +240,42 @@ onBeforeUnmount(() => {
         </ul>
       </section>
 
-      <div class="session__grid">
-        <aside class="session__side">
-          <section v-if="session.summary.length" class="session__card">
-            <h2 class="lg-label">{{ t('session.md.summary') }}</h2>
-            <ul class="session__points">
-              <li v-for="(point, i) in session.summary" :key="i">{{ point }}</li>
-            </ul>
-          </section>
-          <section v-if="terms.length" class="session__card">
-            <h2 class="lg-label">{{ t('session.md.glossary') }}</h2>
-            <ul class="session__terms">
-              <li v-for="term in terms" :key="term">{{ term }}</li>
-            </ul>
-          </section>
-        </aside>
+      <div class="session__grid" :class="{ 'session__grid--side': sideOpen }">
+        <SessionSide
+          v-if="sideOpen"
+          id="session-side"
+          class="session__side"
+          :summary="session.summary"
+          :terms="terms"
+          :assistant="ai.ready.value"
+          :can-summarize="ai.canSummarize.value"
+          :summarizing="ai.summarizing.value"
+          :turns="ai.turns.value"
+          :asking="ai.asking.value"
+          :started-at="session.startedAt"
+          @term="query = $event"
+          @summarize="ai.summarize()"
+          @ask="(request, label) => ai.ask(request, label)"
+          @stop="ai.stop()"
+        />
 
-        <SessionTranscript :lines="session.lines" />
+        <SessionTranscript v-model:query="query" class="session__transcript" :lines="session.lines">
+          <template v-if="hasSide" #tools>
+            <button
+              class="lg-btn session__toggle"
+              type="button"
+              aria-controls="session-side"
+              :aria-expanded="sideOpen"
+              @click="toggleSide"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="2" y="3" width="12" height="10" rx="2" />
+                <path d="M10 3v10" />
+              </svg>
+              {{ sideLabel }}
+            </button>
+          </template>
+        </SessionTranscript>
       </div>
     </div>
   </main>
@@ -251,28 +307,6 @@ $fixed-at: '(width >= 900px) and (height >= 560px)';
       grid-template-rows: auto minmax(0, 1fr);
       min-height: 0;
       padding-bottom: clamp(16px, 3vw, 32px);
-    }
-  }
-
-  &__download {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-
-    &:hover:not(:disabled) {
-      border-color: var(--accent-strong);
-      background: var(--accent-strong);
-      color: #fff;
-    }
-
-    svg {
-      width: 14px;
-      height: 14px;
-      fill: none;
-      stroke: currentcolor;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.6;
     }
   }
 
@@ -365,8 +399,12 @@ $fixed-at: '(width >= 900px) and (height >= 560px)';
     gap: 20px;
     align-items: start;
 
+    // The summary sits to the right of the transcript, and only takes a column when shown:
+    // a conversation without one gives the transcript the whole width
     @media (width >= 860px) {
-      grid-template-columns: 340px minmax(0, 1fr);
+      &--side {
+        grid-template-columns: minmax(0, 1fr) clamp(340px, 28vw, 440px);
+      }
     }
 
     @media #{$fixed-at} {
@@ -375,66 +413,43 @@ $fixed-at: '(width >= 900px) and (height >= 560px)';
     }
   }
 
-  &__side {
-    display: grid;
-    gap: 20px;
-    align-content: start;
+  // First in the page on a narrow screen (summary before a long transcript), right when wide
+  &__transcript {
+    @media (width >= 860px) {
+      grid-row: 1;
+      grid-column: 1;
+    }
+  }
 
+  &__toggle {
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentcolor;
+      stroke-linejoin: round;
+      stroke-width: 1.4;
+    }
+
+    &[aria-expanded='true'] {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  }
+
+  // Where the side panel goes; what is in it is SessionSide's own business
+  &__side {
     @media (width >= 860px) {
       position: sticky;
       top: 84px;
+      grid-row: 1;
+      grid-column: 2;
     }
 
     @media #{$fixed-at} {
       position: static;
       min-height: 0;
       overflow-y: auto;
-    }
-  }
-
-  &__card {
-    display: grid;
-    gap: 12px;
-    padding: 18px 20px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    background: var(--panel);
-    box-shadow: var(--shadow-xs);
-
-    h2 {
-      margin: 0;
-    }
-  }
-
-  &__points,
-  &__terms {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__points {
-    display: grid;
-    gap: 8px;
-    font-size: 13.5px;
-
-    li {
-      padding-left: 12px;
-      border-left: 2px solid var(--accent);
-    }
-  }
-
-  &__terms {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-
-    li {
-      padding: 2px 10px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-pill);
-      background: var(--panel-2);
-      font-size: 12.5px;
     }
   }
 }

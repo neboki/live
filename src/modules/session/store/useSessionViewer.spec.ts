@@ -33,6 +33,54 @@ describe('useSessionViewer', () => {
     expect(viewer.snapshot?.lines).toHaveLength(1);
   });
 
+  it('names, summarises and charges the conversation that just ended, and its record', () => {
+    const record = useSessionRecord();
+    const viewer = useSessionViewer();
+    record.begin({ pair: { from: 'AUTO', to: 'ES' }, startedAt: START });
+    record.addLine({ at: START + 1, source: 'Hello', translation: 'Hola' });
+    record.addUsage({ model: 'm', inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 });
+    record.end();
+    viewer.showRecent();
+
+    viewer.setTitle('  Budget   review ');
+    viewer.setSummary(['Closes on Friday']);
+    viewer.addUsage([{ model: 'm', inputTokens: 1, cachedInputTokens: 0, outputTokens: 2 }]);
+
+    expect(viewer.snapshot).toMatchObject({
+      title: 'Budget review',
+      summary: ['Closes on Friday'],
+      usage: [{ model: 'm', inputTokens: 11, outputTokens: 7 }],
+    });
+    expect(record.title).toBe('Budget review');
+    expect(record.summary).toEqual(['Closes on Friday']);
+    expect(record.usage).toMatchObject([{ inputTokens: 11, outputTokens: 7 }]);
+
+    viewer.setTitle('   ');
+    expect(viewer.snapshot).not.toHaveProperty('title');
+    expect(record.title).toBe('');
+  });
+
+  it('leaves the record alone when the conversation on screen is another one', async () => {
+    const record = useSessionRecord();
+    const viewer = useSessionViewer();
+    record.begin({ pair: { from: 'AUTO', to: 'ES' }, startedAt: START });
+    const content = toSessionFile({
+      startedAt: START,
+      endedAt: START + 5,
+      pair: { from: 'EN', to: 'ES' },
+      lines: [],
+      summary: [],
+      glossary: '',
+      usage: [],
+    });
+    await viewer.openFile(sessionFile('call.neboki-live.json', content));
+
+    viewer.setTitle('From a file');
+
+    expect(viewer.snapshot?.title).toBe('From a file');
+    expect(record.title).toBe('');
+  });
+
   it('opens a saved conversation', async () => {
     const viewer = useSessionViewer();
     const content = toSessionFile({

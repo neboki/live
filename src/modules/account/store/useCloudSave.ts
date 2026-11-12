@@ -128,9 +128,10 @@ export const useCloudSave = defineStore('cloud-save', () => {
       if (record.startedAt !== null && record.endedAt === null) void flush();
     }, FLUSH_MS);
     stopWatches = [
-      // The end of a conversation, and the summary that may follow it, are saved at once
+      // The end of a conversation, and what may follow it (its name, a summary written
+      // again, what the assistant spent), are saved at once
       watch(
-        () => [record.endedAt, record.summary.length] as const,
+        () => [record.endedAt, record.title, record.summary, JSON.stringify(record.usage)] as const,
         ([endedAt]) => {
           if (endedAt !== null) void flush();
         },

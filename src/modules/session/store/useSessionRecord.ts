@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { SessionBegin, SessionLine, SessionPair, Usage } from '../types';
 
-function mergeUsage(current: Usage, next: Usage): Usage {
+/** Two entries of the same model, as one */
+export function mergeUsage(current: Usage, next: Usage): Usage {
   const merged: Usage = {
     model: current.model,
     inputTokens: current.inputTokens + next.inputTokens,
@@ -27,6 +28,8 @@ export const useSessionRecord = defineStore('session-record', () => {
   const startedAt = ref<number | null>(null);
   const endedAt = ref<number | null>(null);
   const pair = ref<SessionPair>({ from: '', to: '' });
+  /** Its name, once it has one (see SessionSnapshot.title) */
+  const title = ref('');
   const lines = ref<SessionLine[]>([]);
   const summary = ref<string[]>([]);
   const glossary = ref('');
@@ -42,6 +45,7 @@ export const useSessionRecord = defineStore('session-record', () => {
     startedAt.value = options.startedAt;
     endedAt.value = null;
     pair.value = { ...options.pair };
+    title.value = '';
     lines.value = [];
     summary.value = [];
     glossary.value = options.glossary ?? '';
@@ -54,6 +58,10 @@ export const useSessionRecord = defineStore('session-record', () => {
 
   function setSummary(points: readonly string[]): void {
     summary.value = [...points];
+  }
+
+  function setTitle(name: string): void {
+    title.value = name;
   }
 
   function setGlossary(text: string): void {
@@ -75,6 +83,7 @@ export const useSessionRecord = defineStore('session-record', () => {
     startedAt,
     endedAt,
     pair,
+    title,
     lines,
     summary,
     glossary,
@@ -83,6 +92,7 @@ export const useSessionRecord = defineStore('session-record', () => {
     begin,
     addLine,
     setSummary,
+    setTitle,
     setGlossary,
     addUsage,
     end,

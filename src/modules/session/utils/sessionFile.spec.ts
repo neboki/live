@@ -47,6 +47,18 @@ describe('session file', () => {
     expect(parseSessionFile(toSessionFile(session()))).toEqual(session());
   });
 
+  it('keeps the name of a conversation that has one, tidied', () => {
+    const named = { ...session(), title: 'Budget review' };
+
+    expect(parseSessionFile(toSessionFile(named))).toEqual(named);
+    expect(
+      parseSessionFile(file({ session: { ...session(), title: '  Two\nlines ' } })).title,
+    ).toBe('Two lines');
+    expect(parseSessionFile(file({ session: { ...session(), title: 7 } }))).not.toHaveProperty(
+      'title',
+    );
+  });
+
   it('writes a recognisable, versioned envelope', () => {
     const data = JSON.parse(toSessionFile(session(), new Date('2026-10-21T08:00:00Z')));
 

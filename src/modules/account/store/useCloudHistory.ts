@@ -1,10 +1,16 @@
 import { defineStore } from 'pinia';
 import { reactive, ref, watch } from 'vue';
-import { parseSnapshot, useSessionViewer, type SessionSnapshot } from '@/modules/session';
+import {
+  parseSnapshot,
+  useSessionRecord,
+  useSessionViewer,
+  type SessionSnapshot,
+} from '@/modules/session';
 import { logError } from '@/shared/errors';
 import { getFirebaseDb } from '../firebase';
 import {
   cleanTitle,
+  cloudSessionId,
   fromCloudSession,
   toHistoryItem,
   type CloudHistoryItem,
@@ -40,6 +46,7 @@ export const useCloudHistory = defineStore('cloud-history', () => {
   const account = useAccount();
   const cloudSave = useCloudSave();
   const viewer = useSessionViewer();
+  const record = useSessionRecord();
   const items = ref<CloudHistoryItem[]>([]);
   const loading = ref(false);
   const loadingMore = ref(false);
@@ -247,6 +254,14 @@ export const useCloudHistory = defineStore('cloud-history', () => {
       if (change.title !== undefined) fields.title = change.title || deleteField();
       if (change.starred !== undefined) fields.starred = change.starred || deleteField();
       await updateDoc(doc(db, 'users', uid, 'sessions', id), fields);
+      if (change.title !== undefined) {
+        // The copy read earlier still has the old name, and so does the conversation that
+        // just ended, which would write it back on its next save
+        snapshots.delete(id);
+        if (record.startedAt !== null && cloudSessionId(record.startedAt) === id) {
+          record.setTitle(change.title);
+        }
+      }
       return true;
     } catch (err) {
       logError('Updating a saved conversation failed', err);
@@ -264,6 +279,41 @@ export const useCloudHistory = defineStore('cloud-history', () => {
 
   function setStarred(id: string, starred: boolean): Promise<boolean> {
     return patch(id, { starred });
+  }
+
+  /**
+   * Keeps what was written for a conversation after it ended, from its page: its name,
+   * its summary and what writing them spent. False when it could not: it then stays on
+   * screen only.
+   */
+  async function keep(id: string, shown: SessionSnapshot): Promise<boolean> {
+    const uid = account.user?.uid;
+    if (!uid) return false;
+    errorKey.value = null;
+    const title = cleanTitle(shown.title ?? '');
+    const written = {
+      title,
+      summary: [...shown.summary],
+      usage: shown.usage.map((entry) => ({ ...entry })),
+    };
+    try {
+      const [db, { deleteField, doc, serverTimestamp, updateDoc }] = await firestore();
+      await updateDoc(doc(db, 'users', uid, 'sessions', id), {
+        ...written,
+        title: title || deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+      const index = items.value.findIndex((item) => item.id === id);
+      const item = items.value[index];
+      if (item) items.value[index] = { ...item, ...written };
+      // Read anew the next time it is opened
+      snapshots.delete(id);
+      return true;
+    } catch (err) {
+      logError('Keeping what was written for a conversation failed', err);
+      errorKey.value = 'account.history.updateFailed';
+      return false;
+    }
   }
 
   /** Deletes the given conversations and their sentences, in as few batches as it can */
@@ -396,6 +446,7 @@ export const useCloudHistory = defineStore('cloud-history', () => {
     indexContent,
     rename,
     setStarred,
+    keep,
     remove,
     removeMany,
     removeAll,

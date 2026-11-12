@@ -205,6 +205,50 @@ describe('useCloudHistory', () => {
     expect(store.docs.get(`${BASE}/1000`)).not.toHaveProperty('title');
   });
 
+  it('keeps the name, summary and cost written from the page of a conversation', async () => {
+    saved('1000', 1000, [['a']]);
+    signIn();
+    const history = useCloudHistory();
+    await history.load();
+    await history.open('1000');
+    const shown = useSessionViewer().snapshot;
+    if (!shown) throw new Error('not opened');
+    const usage = [{ model: 'm', inputTokens: 5, cachedInputTokens: 0, outputTokens: 3 }];
+
+    expect(
+      await history.keep('1000', { ...shown, title: ' Budget  review ', summary: ['New'], usage }),
+    ).toBe(true);
+
+    expect(store.docs.get(`${BASE}/1000`)).toMatchObject({
+      title: 'Budget review',
+      summary: ['New'],
+      usage,
+      updatedAt: 'now',
+    });
+    expect(history.items[0]).toMatchObject({ title: 'Budget review', summary: ['New'] });
+    // Opened again, it is read anew: name and summary included
+    await history.open('1000');
+    expect(useSessionViewer().snapshot).toMatchObject({ title: 'Budget review', summary: ['New'] });
+
+    expect(await history.keep('1000', { ...shown, summary: ['New'] })).toBe(true);
+    expect(store.docs.get(`${BASE}/1000`)).not.toHaveProperty('title');
+  });
+
+  it('says so when what was written could not be kept', async () => {
+    saved('1000', 1000, [['a']]);
+    signIn();
+    const history = useCloudHistory();
+    await history.load();
+    await history.open('1000');
+    const shown = useSessionViewer().snapshot;
+    if (!shown) throw new Error('not opened');
+    store.failWrites = true;
+
+    expect(await history.keep('1000', { ...shown, title: 'Nope' })).toBe(false);
+    expect(history.errorKey).toBe('account.history.updateFailed');
+    expect(history.items[0]?.title).toBe('');
+  });
+
   it('puts the name back when saving it failed', async () => {
     saved('1000', 1000, [['a']]);
     signIn();

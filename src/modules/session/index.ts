@@ -19,7 +19,7 @@ export {
   downloadSubtitles,
 } from './composables/useExportSession';
 export { formatEur, usdToEur } from './utils/formatCost';
-export { SESSION_FILE_EXTENSION, parseSnapshot } from './utils/sessionFile';
+export { cleanTitle, SESSION_FILE_EXTENSION, TITLE_MAX, parseSnapshot } from './utils/sessionFile';
 export { elapsed, sessionDuration } from './utils/toMarkdown';
 export { downloadText } from './utils/download';
 export { default as SessionView } from './components/SessionView/SessionView.vue';

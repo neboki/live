@@ -450,7 +450,51 @@
       "search": "Buscar en la conversación",
       "noMatch": "Ninguna frase coincide con la búsqueda.",
       "noLines": "No se oyó ninguna frase.",
-      "speaker": "Voz {n}"
+      "speaker": "Voz {n}",
+      "markdownHint": "Para leer o pegar en un documento",
+      "subtitlesHint": "Para ponerlos sobre una grabación",
+      "file": "Archivo de Neboki Live",
+      "fileHint": "Para abrirla aquí otra vez",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "copyLine": "Copiar esta frase",
+      "searchTerm": "Buscar «{term}» en la conversación",
+      "voices": "Todas las voces",
+      "show": {
+        "label": "Qué texto mostrar",
+        "both": "Traducción y original",
+        "translation": "Solo traducción",
+        "source": "Solo original"
+      },
+      "rename": "Nombre de la conversación",
+      "generateName": "Que la IA escriba otro nombre",
+      "naming": "Poniendo nombre…",
+      "side": "Resumen e IA",
+      "tabs": {
+        "summary": "Resumen",
+        "assistant": "Asistente"
+      },
+      "noSummary": "Esta conversación no tiene resumen.",
+      "createSummary": "Crear resumen",
+      "regenerate": "Regenerar",
+      "creatingSummary": "Resumiendo…",
+      "summaryEmpty": "No salió nada que resumir.",
+      "aiCost": "Se hace con tu clave; lo que cuesta se suma a la conversación.",
+      "assistant": {
+        "ready": "Peticiones ya preparadas",
+        "placeholder": "Pregunta o pide algo sobre lo que se dijo…",
+        "send": "Enviar",
+        "stop": "Parar",
+        "hint": "Pide un acta, unas notas o las tareas con un clic, o pregunta lo que quieras.",
+        "writing": "Escribiendo…",
+        "failed": "No se pudo responder.",
+        "actions": {
+          "minutes": "Acta de reunión",
+          "notes": "Notas",
+          "tasks": "Tareas",
+          "email": "Correo de seguimiento"
+        }
+      }
     }
   },
   "language": {

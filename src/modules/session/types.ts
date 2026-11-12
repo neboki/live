@@ -48,6 +48,8 @@ export interface SessionSnapshot {
   startedAt: number | null;
   endedAt: number | null;
   pair: SessionPair;
+  /** Its name: written by the AI when it ends, or by the person; absent until then */
+  title?: string;
   lines: readonly SessionLine[];
   summary: readonly string[];
   glossary: string;

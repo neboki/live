@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue';
-import { CloudSessionActions, ConversationsView } from '@/modules/account';
+import { CloudSessionActions, ConversationsView, useCloudHistory } from '@/modules/account';
 import { LiveCaptions, LiveView, MobileLiveView, useLiveSession } from '@/modules/live';
 import { MobileHome, OnboardingView } from '@/modules/onboarding';
 import { useFloatingWindow } from '@/modules/overlay';
@@ -29,6 +29,15 @@ watch(
   },
 );
 
+// What is written from the page of a conversation kept in the account (its name, a summary,
+// what the assistant spent) is kept there too. One that just ended is saved through its
+// record; one from a file stays on screen until it is downloaded again.
+function keepChanges(): void {
+  const shown = viewer.snapshot;
+  if (!shown || viewer.cloudId === null) return;
+  void useCloudHistory().keep(viewer.cloudId, shown);
+}
+
 // Each page starts at its top. On a phone the start page is long, so Start is pressed
 // scrolled down; kept, that scroll would hide the live captions under the sticky header.
 function toTop(): void {
@@ -41,7 +50,7 @@ function toTop(): void {
     <Transition name="page" mode="out-in" @before-enter="toTop">
       <MobileLiveView v-if="session.showLive && phone" />
       <LiveView v-else-if="session.showLive" />
-      <SessionView v-else-if="viewer.snapshot">
+      <SessionView v-else-if="viewer.snapshot" @changed="keepChanges">
         <template v-if="viewer.source === 'cloud'" #actions><CloudSessionActions /></template>
       </SessionView>
       <PrivacyView v-else-if="appPage.privacyOpen" />
