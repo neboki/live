@@ -5,6 +5,10 @@
     "ignore": ["firebase.json", "**/.*"],
     "rewrites": [
       {
+        "source": "/api/free/**",
+        "function": { "functionId": "free", "region": "europe-west1" }
+      },
+      {
         "source": "/app/**",
         "destination": "/app/index.html"
       }

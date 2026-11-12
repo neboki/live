@@ -1,7 +1,7 @@
 {
   "name": "neboki-live-functions",
   "private": true,
-  "description": "The free demo of Neboki Live: a short-lived transcription key and a translation proxy.",
+  "description": "The free minutes of Neboki Live: a short-lived transcription key, a monthly allowance per account and a translation proxy.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "main": "lib/index.js",

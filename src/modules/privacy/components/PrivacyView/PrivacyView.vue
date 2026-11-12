@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { brand } from '@/shared/brand/brand';
 import { PRIVACY_CONTACT } from '@/shared/links';
-import { hasDemo } from '@/shared/providers/openai/demo';
+import { hasFreeServer } from '@/shared/providers/openai/freePlan';
 import { ACCOUNTS_ENABLED } from '../../buildFeatures';
 
 /**
@@ -36,10 +36,10 @@ const props = withDefaults(
   defineProps<{
     /** Whether this build lets people sign in (a prop so tests can show both) */
     accounts?: boolean;
-    /** Whether this build offers the free demo */
-    demo?: boolean;
+    /** Whether this build offers the free minutes */
+    free?: boolean;
   }>(),
-  { accounts: ACCOUNTS_ENABLED, demo: hasDemo },
+  { accounts: ACCOUNTS_ENABLED, free: ACCOUNTS_ENABLED && hasFreeServer },
 );
 
 const { t, tm, rt, locale } = useI18n();
@@ -71,7 +71,7 @@ const sections = computed<Section[]>(() => {
     'key',
     'security',
     ...(props.accounts ? ['account'] : []),
-    ...(props.demo ? ['demo'] : []),
+    ...(props.free ? ['free'] : []),
     'providers',
     'consent',
     'rights',
@@ -82,7 +82,7 @@ const sections = computed<Section[]>(() => {
 });
 
 /** Sections whose body is a plain list */
-const LIST_SECTIONS = new Set(['never', 'files', 'key', 'security', 'account', 'demo', 'rights']);
+const LIST_SECTIONS = new Set(['never', 'files', 'key', 'security', 'account', 'free', 'rights']);
 </script>
 
 <template>
@@ -123,8 +123,8 @@ const LIST_SECTIONS = new Set(['never', 'files', 'key', 'security', 'account', '
             <p v-if="props.accounts" class="privacy-view__note">
               {{ t('privacyPage.summary.account') }}
             </p>
-            <p v-if="props.demo" class="privacy-view__note">
-              {{ t('privacyPage.summary.demo') }}
+            <p v-if="props.free" class="privacy-view__note">
+              {{ t('privacyPage.summary.free') }}
             </p>
           </template>
 

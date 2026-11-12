@@ -9,8 +9,8 @@ declare module '*.vue' {
 interface ImportMetaEnv {
   /** Brand a build starts with: "neboki" (default) */
   readonly VITE_DEFAULT_BRAND?: string;
-  /** Where the free demo's server answers, e.g. "/api/demo"; unset: no demo */
-  readonly VITE_DEMO_API?: string;
+  /** Where the free minutes server answers, e.g. "/api/free"; unset: no free minutes */
+  readonly VITE_FREE_API?: string;
   /** Firebase web app for sign-in with Google; unset: no accounts */
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
