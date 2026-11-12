@@ -15,7 +15,7 @@
   "forwardPorts": [5173, 4173],
   "portsAttributes": {
     "5173": {
-      "label": "pnpm dev (open /live/)",
+      "label": "pnpm dev",
       "onAutoForward": "notify"
     },
     "4173": {

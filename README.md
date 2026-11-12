@@ -85,14 +85,20 @@ pnpm build          # production build in dist/
 ```
 
 Or open it in **GitHub Codespaces** (Code → Codespaces → Create): the dev container installs
-Node 24, pnpm, the dependencies and Claude Code. Run `pnpm dev` and open the forwarded port 5173
-at `/live/`. Before `pnpm test:e2e`, install the browser once with
+Node 24, pnpm, the dependencies and Claude Code. Run `pnpm dev` and open the forwarded port 5173. Before `pnpm test:e2e`, install the browser once with
 `pnpm exec playwright install --with-deps chromium`.
 
 Code lives in `src/modules/<module>/` (features) and `src/shared/` (reusable pieces).
 [`docs/architecture.md`](docs/architecture.md) explains the pipeline and the modules,
 [CONTRIBUTING.md](CONTRIBUTING.md) the workflow, commit format and releases, and
 [`docs/adr/`](docs/adr/) the key design decisions.
+
+### Run your own copy
+
+`pnpm build` leaves a static site in `dist/` that any static host can serve; with your own
+OpenAI key it needs no backend. Google sign-in and saved conversations are optional: copy
+`.env.example` to `.env` and fill in your own Firebase project, or leave it empty to build
+without accounts. If you publish your copy, read the licence and the name rules below.
 
 ## Credits
 
@@ -101,5 +107,16 @@ SIL Open Font License 1.1 ([license text](public/fonts/OFL.txt)).
 
 ## License
 
-[GNU Affero General Public License v3.0](LICENSE). If you run a modified version as a
-network service, you must offer its users the source code of your version.
+Copyright © 2026 Neboki.
+
+The code is free software under the
+[GNU Affero General Public License v3.0](LICENSE): you can use, study, change and share it. If
+you distribute a modified version, or run one as a network service, you must offer its users the
+source code of your version under the same licence.
+
+**Other terms.** If the AGPL does not fit your use (for example, building it into a closed
+product), write to <neboki@neboki.com> about a commercial licence.
+
+**Name and logo.** The licence covers the code, not the brand: the names "Neboki" and "Neboki
+Live" and the logo are not licensed. A modified version or a service of your own needs a
+different name and logo, and must not suggest that it comes from Neboki.

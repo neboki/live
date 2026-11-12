@@ -16,3 +16,4 @@
 - [ ] Lint, typecheck and tests pass locally
 - [ ] No API keys, audio or transcripts are logged
 - [ ] Docs updated if needed
+- [ ] I agree to the [licence of contributions](../CONTRIBUTING.md#licence-of-your-contributions)
