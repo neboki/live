@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { User } from 'firebase/auth';
 import { logError } from '@/shared/errors';
+import { setIdTokenSource } from '@/shared/providers/openai/freePlan';
 import { ACCOUNTS_ENABLED, getFirebaseAuth } from '../firebase';
 
 /** Who is signed in, as much as the app shows */
@@ -60,6 +61,8 @@ export const useAccount = defineStore('account', () => {
         user.value = next ? toAccountUser(next) : null;
         ready.value = true;
       });
+      // The free minutes prove who is asking with the account's Google ID token
+      setIdTokenSource(async () => (auth.currentUser ? auth.currentUser.getIdToken() : null));
     } catch (err) {
       started = false;
       ready.value = true;

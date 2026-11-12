@@ -6,9 +6,9 @@ import { ElevenLabsKeyField, useFloatingWindow } from '@/modules/overlay';
 import { LanguageSelect, useSettingsStore } from '@/modules/settings';
 import { needsShare } from '@/shared/audio/audioSources';
 import { PRIVACY_PATH } from '@/shared/links';
-import { hasDemo } from '@/shared/providers/openai/demo';
 import ApiKeyField from '../ApiKeyField/ApiKeyField.vue';
 import AudioSourcePicker from '../AudioSourcePicker/AudioSourcePicker.vue';
+import FreeMinutes from '../FreeMinutes/FreeMinutes.vue';
 import InstallHint from '../InstallHint/InstallHint.vue';
 import PlacementPicker from '../PlacementPicker/PlacementPicker.vue';
 
@@ -38,12 +38,12 @@ const canStart = computed(() => canFloat || !needsShare(settings.audioSource));
 if (!canStart.value) settings.audioSource = 'mic';
 
 async function start(): Promise<void> {
-  await session.start(settings.targetLanguage, { demo: false });
+  await session.start(settings.targetLanguage, { free: false });
 }
 
-/** The free demo: no key, a few minutes, captions only */
-async function startDemo(): Promise<void> {
-  await session.start(settings.targetLanguage, { demo: true });
+/** The free minutes: no key, signed in with Google, captions only */
+async function startFree(): Promise<void> {
+  await session.start(settings.targetLanguage, { free: true });
 }
 </script>
 
@@ -83,18 +83,7 @@ async function startDemo(): Promise<void> {
           <ElevenLabsKeyField />
         </div>
 
-        <div v-if="hasDemo" class="start__demo">
-          <span class="start__or">{{ t('start.demo.or') }}</span>
-          <button
-            class="start__cta lg-btn"
-            type="button"
-            :disabled="!canStart || session.starting"
-            @click="startDemo"
-          >
-            {{ t('start.demo.button') }}
-          </button>
-          <p class="start__hint">{{ t('start.demo.note') }}</p>
-        </div>
+        <FreeMinutes :disabled="!canStart" @start="startFree" />
 
         <p v-if="!canStart" class="start__notice" role="alert">{{ t('errors.pipUnsupported') }}</p>
         <p v-else-if="session.errorKey" class="start__notice" role="alert">
@@ -182,28 +171,6 @@ async function startDemo(): Promise<void> {
     flex: 1 0 100%;
     height: 46px;
     font-size: 15px;
-  }
-
-  // The free demo, under the key: a way in for whoever has none yet
-  &__demo {
-    display: grid;
-    gap: 8px;
-  }
-
-  // A rule each side of "or"
-  &__or {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    color: var(--subtle);
-    font-size: 12px;
-
-    &::before,
-    &::after {
-      flex: 1;
-      border-top: 1px solid var(--line-soft);
-      content: '';
-    }
   }
 
   &__notice,

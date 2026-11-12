@@ -1,76 +1,60 @@
-// The demo's bookkeeping, in memory. The function runs on a single instance (maxInstances 1),
-// so these maps see every request; a restart forgets them, which only ever lets a few more
-// demos through. The OpenAI project's own monthly budget is the hard stop behind them.
+// The free sessions running now, in memory. The function runs on a single instance
+// (maxInstances 1), so this map sees every request; a restart forgets them, and the app
+// then asks for a new session. What each account has used lives in Firestore (usage.ts).
 
-export interface DemoLimits {
-  /** Demos one client (IP address) may start per day */
-  perClient: number;
-  /** Demos everyone together may start per day */
-  perDay: number;
-  /** Text requests (translation, summary, suggestions) one demo may make */
-  callsPerGrant: number;
-  /** How long a demo's key is honoured by the proxy, in seconds */
-  grantSeconds: number;
+export interface GrantLimits {
+  /** How long a session's key is honoured after its last check-in, in seconds */
+  graceSeconds: number;
+  /** Text requests a session may make between two check-ins */
+  callsPerTick: number;
 }
 
-export type GrantRefusal = 'client' | 'day';
-
 interface Grant {
+  uid: string;
   expiresAt: number;
   calls: number;
 }
 
 export interface Grants {
-  /** Counts a new demo for this client, or says why it may not start one */
-  admit: (client: string, now: number) => GrantRefusal | null;
-  /** Remembers the key a demo was given, so the proxy honours it until it expires */
-  issue: (key: string, now: number) => void;
+  /** Remembers the key a session was given and whose it is */
+  issue: (key: string, uid: string, now: number) => void;
+  /** A check-in: keeps the session going; resolves with its account, or null when unknown */
+  renew: (key: string, now: number) => string | null;
   /** Counts one text request on this key; false when the key is unknown, expired or spent */
   spend: (key: string, now: number) => boolean;
+  /** Ends a session: its key is no longer honoured */
+  revoke: (key: string) => void;
 }
 
-function dayOf(now: number): string {
-  return new Date(now).toISOString().slice(0, 10);
-}
-
-export function createGrants(limits: DemoLimits): Grants {
-  let day = '';
-  let started = 0;
-  const perClient = new Map<string, number>();
+export function createGrants(limits: GrantLimits): Grants {
   const grants = new Map<string, Grant>();
+  const graceMs = limits.graceSeconds * 1000;
 
-  /** A new day starts every count over; expired keys are dropped as they are met */
-  function roll(now: number): void {
-    const today = dayOf(now);
-    if (today !== day) {
-      day = today;
-      started = 0;
-      perClient.clear();
-    }
-    for (const [key, grant] of grants) if (grant.expiresAt <= now) grants.delete(key);
+  /** Expired keys are dropped as they are met */
+  function live(key: string, now: number): Grant | null {
+    for (const [k, grant] of grants) if (grant.expiresAt <= now) grants.delete(k);
+    return grants.get(key) ?? null;
   }
 
-  function admit(client: string, now: number): GrantRefusal | null {
-    roll(now);
-    if (started >= limits.perDay) return 'day';
-    const count = perClient.get(client) ?? 0;
-    if (count >= limits.perClient) return 'client';
-    perClient.set(client, count + 1);
-    started++;
-    return null;
-  }
-
-  function issue(key: string, now: number): void {
-    grants.set(key, { expiresAt: now + limits.grantSeconds * 1000, calls: 0 });
-  }
-
-  function spend(key: string, now: number): boolean {
-    roll(now);
-    const grant = grants.get(key);
-    if (!grant || grant.calls >= limits.callsPerGrant) return false;
-    grant.calls++;
-    return true;
-  }
-
-  return { admit, issue, spend };
+  return {
+    issue: (key, uid, now) => {
+      grants.set(key, { uid, expiresAt: now + graceMs, calls: 0 });
+    },
+    renew: (key, now) => {
+      const grant = live(key, now);
+      if (!grant) return null;
+      grant.expiresAt = now + graceMs;
+      grant.calls = 0;
+      return grant.uid;
+    },
+    spend: (key, now) => {
+      const grant = live(key, now);
+      if (!grant || grant.calls >= limits.callsPerTick) return false;
+      grant.calls++;
+      return true;
+    },
+    revoke: (key) => {
+      grants.delete(key);
+    },
+  };
 }

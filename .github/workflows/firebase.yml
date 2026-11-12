@@ -67,6 +67,8 @@ jobs:
           VITE_FIREBASE_AUTH_DOMAIN: neboki-live.firebaseapp.com
           VITE_FIREBASE_PROJECT_ID: neboki-live
           VITE_FIREBASE_APP_ID: 1:907698541743:web:6ebc7e43cebe6928d9305a
+          # The free minutes (functions/, function "free"), behind the /api/free rewrite
+          VITE_FREE_API: /api/free
       - uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

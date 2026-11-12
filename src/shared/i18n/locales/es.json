@@ -79,10 +79,15 @@
       "button": "Instalar",
       "dismiss": "No mostrar más"
     },
-    "demo": {
+    "free": {
       "or": "o, sin clave",
-      "button": "Pruébalo gratis 3 minutos",
-      "note": "Solo subtítulos traducidos, sin cuenta y sin clave. Habla, o pon un vídeo, y míralo en tu idioma."
+      "signIn": "Entra con Google: 30 minutos gratis al mes",
+      "button": "Empezar con mis minutos gratis",
+      "note": "Sin clave de OpenAI. Solo subtítulos traducidos, en calidad Media.",
+      "left": "Te quedan {left} de {total} minutos gratis este mes.",
+      "usedUp": "Has usado tus minutos gratis de este mes. Vuelven el día 1, o usa tu propia clave.",
+      "paused": "Los minutos gratis están en pausa hasta el mes que viene. Puedes usar tu propia clave.",
+      "loading": "Mirando tus minutos gratis…"
     }
   },
   "overlay": {
@@ -358,9 +363,12 @@
     "micEnded": "El micrófono se desconectó, así que @:{'brand.name'} ya no oye nada.",
     "awayResumed": "Al salir de la app dejó de oír, así que puede faltar lo que se dijo. Ya vuelve a escuchar.",
     "awayPaused": "Al salir de la app el micrófono se pausó y no ha vuelto. Empieza de nuevo para seguir.",
-    "demoEnded": "Se acabó la demo de 3 minutos. Añade tu clave de OpenAI para seguir, desde ≈ 0,24 $ la hora.",
-    "demoQuota": "No quedan demos gratis por hoy. Añade tu clave de OpenAI para seguir.",
-    "demoUnavailable": "La demo gratis no está disponible ahora. Prueba más tarde o usa tu propia clave."
+    "freeEnded": "Se acabó la sesión gratis. Empieza otra si te quedan minutos.",
+    "freeMonth": "Has usado tus 30 minutos gratis de este mes. Añade tu clave de OpenAI para seguir, desde ≈ 0,24 $ la hora.",
+    "freeBudget": "Los minutos gratis están en pausa hasta el mes que viene. Añade tu clave de OpenAI para seguir.",
+    "freeSignin": "Entra con Google para usar los minutos gratis.",
+    "freeUnavailable": "Los minutos gratis no están disponibles ahora. Prueba más tarde o usa tu propia clave.",
+    "freeCaptionsOnly": "Con los minutos gratis solo hay subtítulos. Para la voz, usa tu propia clave."
   },
   "live": {
     "badge": "en directo",
@@ -424,7 +432,7 @@
       "hide": "Ocultar el panel",
       "help": "Ayuda"
     },
-    "demoStarted": "Demo gratis: 3 minutos de subtítulos traducidos. Añade tu clave para seguir."
+    "freeStarted": "Minutos gratis en marcha. Cuando se acaben, la sesión se para sola."
   },
   "onboarding": {
     "consent": {
@@ -731,7 +739,7 @@
         "Las conversaciones viven en la memoria de la pestaña: al cerrarla desaparecen, salvo que tú las descargues.",
         "Puedes borrarlo todo cuando quieras desde tu propio navegador."
       ],
-      "demo": "Excepción: la demo gratuita usa una clave nuestra, y por eso parte del texto pasa por nuestro servidor. Lo explicamos más abajo.",
+      "free": "Excepción: con los minutos gratis usas una clave nuestra, y por eso parte del texto pasa por nuestro servidor. Lo explicamos más abajo.",
       "account": "Iniciar sesión es opcional. Sin cuenta, todo se queda en este dispositivo."
     },
     "data": {
@@ -846,13 +854,13 @@
         "Al cerrar sesión, la cuenta deja de estar abierta en este navegador."
       ]
     },
-    "demo": {
-      "title": "Demo gratuita",
+    "free": {
+      "title": "Minutos gratis",
       "items": [
-        "La demo usa una clave de {brand}, no la tuya, y solo muestra subtítulos traducidos durante tres minutos.",
-        "El audio va directamente de tu navegador a OpenAI, con una clave temporal que nuestro servidor pide para ti y que caduca enseguida.",
+        "Si entras con Google, tienes 30 minutos gratis al mes con una clave de {brand}, no la tuya. Solo subtítulos traducidos.",
+        "El audio va directamente de tu navegador a OpenAI, con una clave temporal que nuestro servidor pide para ti y que caduca enseguida. Nuestro servidor nunca recibe el audio.",
         "El texto a traducir pasa por nuestro servidor (Google Cloud, en Europa), que lo reenvía a OpenAI sin guardarlo.",
-        "Para evitar abusos, el servidor cuenta cuántas demos empieza cada dirección IP al día. Ese recuento está solo en memoria y no se guarda en ninguna base de datos."
+        "Para contar tus minutos guardamos, por cada mes, cuántos segundos has usado, junto a tu identificador de usuario (Firestore, en Europa). Nada más: ni el audio ni el texto."
       ]
     },
     "providers": {

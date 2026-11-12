@@ -1,40 +1,46 @@
+import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { createGrants } from './grants.ts';
-import { createDemoHandler } from './handler.ts';
+import { createFreeHandler } from './handler.ts';
+import { CALLS_PER_TICK, GRANT_GRACE_SECONDS } from './plan.ts';
+import { createFirestoreUsage } from './usage.ts';
 
-/** A key from an OpenAI project kept for the demo, with its own monthly budget */
-const OPENAI_DEMO_KEY = defineSecret('OPENAI_DEMO_KEY');
+/**
+ * A key from an OpenAI project kept for the free plan. Give that project a monthly
+ * budget too: it is the hard stop behind the plan's own limits (plan.ts).
+ */
+const OPENAI_FREE_KEY = defineSecret('OPENAI_FREE_KEY');
 
-const DEMO_SECONDS = 180;
+const app = initializeApp();
 
-const handler = createDemoHandler({
-  grants: createGrants({
-    perClient: 3,
-    perDay: 300,
-    // About one sentence a second for the whole demo, which nobody speaks
-    callsPerGrant: 240,
-    // The demo, plus the last translations and the summary after it ends
-    grantSeconds: DEMO_SECONDS + 120,
-  }),
-  openAiKey: () => OPENAI_DEMO_KEY.value(),
-  demoSeconds: DEMO_SECONDS,
+const handler = createFreeHandler({
+  grants: createGrants({ graceSeconds: GRANT_GRACE_SECONDS, callsPerTick: CALLS_PER_TICK }),
+  usage: createFirestoreUsage(getFirestore(app)),
+  verifyUser: (idToken) =>
+    getAuth(app)
+      .verifyIdToken(idToken)
+      .then((decoded) => decoded.uid)
+      .catch(() => null),
+  openAiKey: () => OPENAI_FREE_KEY.value(),
   log: (message, detail) => logger.error(message, detail),
 });
 
 /**
- * The free three-minute demo, reached through Firebase Hosting (same origin as the app).
- * One instance on purpose: the demo's counters live in its memory.
+ * The free minutes, reached through Firebase Hosting (same origin as the app).
+ * One instance on purpose: the running sessions live in its memory.
  */
-export const demo = onRequest(
+export const free = onRequest(
   {
     region: 'europe-west1',
     maxInstances: 1,
     concurrency: 80,
     timeoutSeconds: 60,
     memory: '256MiB',
-    secrets: [OPENAI_DEMO_KEY],
+    secrets: [OPENAI_FREE_KEY],
     invoker: 'public',
   },
   (req, res) => handler(req, res),

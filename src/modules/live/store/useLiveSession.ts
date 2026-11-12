@@ -7,8 +7,12 @@ import { createAudioCapture } from '@/shared/audio/audioCapture';
 import { unlockAudio } from '@/shared/audio/unlockAudio';
 import { endedMessageKey, needsShare, startingMessageKey, type AudioSource } from '@/shared/audio';
 import { logError, type AppError } from '@/shared/errors';
-import { DEMO_API, TIER_MODELS } from '@/shared/providers/openai/config';
-import { type DemoGrant, requestDemo } from '@/shared/providers/openai/demo';
+import { FREE_API, TIER_MODELS } from '@/shared/providers/openai/config';
+import {
+  type FreeGrant,
+  requestFreeSession,
+  sendFreeTick,
+} from '@/shared/providers/openai/freePlan';
 import { verifyApiKey } from '@/shared/providers/openai/llm/chat';
 import { openAiLlm } from '@/shared/providers/openai/llm/openAiLlm';
 import { openAiRealtimeStt } from '@/shared/providers/openai/realtime/realtimeStt';
@@ -29,13 +33,16 @@ const UNPRICED_KEY = 'overlay.cost.unpricedLimit';
 const NEAR_LIMIT_KEY = 'overlay.cost.nearLimit';
 /** Shown while the shared tab sends no sound at all: its video is most likely paused */
 const TAB_SILENT_KEY = 'live.tabSilent';
-/** Shown as the free demo starts, and on the home screen once its time is up */
-const DEMO_STARTED_KEY = 'live.demoStarted';
-const DEMO_ENDED_KEY = 'errors.demoEnded';
+/** Shown as a free session starts */
+const FREE_STARTED_KEY = 'live.freeStarted';
+/** Shown on the home screen once the month's free minutes are used up */
+const FREE_USED_UP_KEY = 'errors.freeMonth';
+/** Free-session errors that end it; anything else (a dropped check-in) is tried again */
+const FREE_FATAL_KEYS = new Set(['errors.freeEnded', 'errors.freeMonth', 'errors.freeBudget']);
 
 export interface StartOptions {
-  /** The free demo: no key needed, the cheapest models, a few minutes. Default: as last time */
-  demo?: boolean;
+  /** The free minutes: no key needed, Medium quality, signed in. Default: as last time */
+  free?: boolean;
   /** What the session is for; 'listen' by default */
   mode?: LiveMode;
   /** Conversation: the other person's language (ISO 639-1) */
@@ -136,22 +143,52 @@ export const useLiveSession = defineStore('live', () => {
     capture,
     wanted: () => active.value && inPage.value && sync.playback.value === null,
   });
-  /** The running (or last) session is the free demo; a restart from the bar keeps it */
-  const demo = ref(false);
-  /** Epoch milliseconds when the demo stops itself, while one runs */
-  const demoEndsAt = ref<number | null>(null);
-  let demoTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The running (or last) session uses the free minutes; a restart from the bar keeps it */
+  const free = ref(false);
+  /** Epoch milliseconds when the free minutes run out, while a free session runs */
+  const freeEndsAt = ref<number | null>(null);
+  let freeTimer: ReturnType<typeof setTimeout> | null = null;
+  let tickTimer: ReturnType<typeof setInterval> | null = null;
 
-  function clearDemoTimer(): void {
-    if (demoTimer !== null) clearTimeout(demoTimer);
-    demoTimer = null;
-    demoEndsAt.value = null;
+  function clearFreeTimers(): void {
+    if (freeTimer !== null) clearTimeout(freeTimer);
+    if (tickTimer !== null) clearInterval(tickTimer);
+    freeTimer = null;
+    tickTimer = null;
+    freeEndsAt.value = null;
   }
 
-  /** The demo's time is up: end it as the user would, and say why on the home screen */
-  function endDemo(): void {
+  /** The free minutes are up (or paused): end as the user would, and say why on the home screen */
+  function endFree(messageKey: string = FREE_USED_UP_KEY): void {
     stop();
-    errorKey.value = DEMO_ENDED_KEY;
+    errorKey.value = messageKey;
+  }
+
+  /** The session stops itself once `seconds` (plus the stretch already paid) are used */
+  function freeUntil(seconds: number, tickSeconds: number): void {
+    if (freeTimer !== null) clearTimeout(freeTimer);
+    const ms = (seconds + tickSeconds) * 1000;
+    freeEndsAt.value = Date.now() + ms;
+    freeTimer = setTimeout(() => endFree(), ms);
+  }
+
+  /**
+   * Checks in with the free server every stretch: it pays for that time and says what is
+   * left. A check-in that fails to arrive is tried at the next one; the server waits a
+   * little longer than one stretch before it lets the session go.
+   */
+  function startTicks(grant: FreeGrant): void {
+    const token = startToken;
+    freeUntil(grant.seconds, grant.tickSeconds);
+    tickTimer = setInterval(() => {
+      sendFreeTick(grant.key)
+        .then((answer) => {
+          if (token !== startToken || !active.value) return;
+          if ('seconds' in answer) freeUntil(answer.seconds, grant.tickSeconds);
+          else if (FREE_FATAL_KEYS.has(answer.userMessageKey)) endFree(answer.userMessageKey);
+        })
+        .catch((err: unknown) => logError('Free minutes check-in failed', err));
+    }, grant.tickSeconds * 1000);
   }
 
   function endRecord(): void {
@@ -164,7 +201,7 @@ export const useLiveSession = defineStore('live', () => {
   /** Graceful stops let the last sentence finish translating; fatal ones cancel at once. */
   function teardown(graceful: boolean): void {
     startToken++;
-    clearDemoTimer();
+    clearFreeTimers();
     away.stop();
     silence.stop();
     capture.stop();
@@ -240,12 +277,12 @@ export const useLiveSession = defineStore('live', () => {
   }
 
   /**
-   * The demo server only takes the cheapest models; the user's choice is for their key.
+   * The free minutes run at Medium quality, whatever the user chose for their own key.
    * Asked to speak as people talk, the interpreter does it; a conversation goes both
    * ways, which the interpreter (one target language) cannot, so it reads aloud instead.
    */
   function modelsFor(): Partial<Record<ModelRole, string>> {
-    if (demo.value) return { ...TIER_MODELS.low };
+    if (free.value) return { ...TIER_MODELS.medium };
     const chosen = { ...settings.models };
     const twoWay = partner.value !== '';
     if (twoWay && settings.tier === 'interpreter') return { ...TIER_MODELS.low };
@@ -311,7 +348,7 @@ export const useLiveSession = defineStore('live', () => {
     }
     const token = ++startToken;
     starting.value = true;
-    demo.value = options.demo ?? demo.value;
+    free.value = options.free ?? free.value;
     errorKey.value = null;
     source.value = wanted;
     partner.value = mode.value === 'talk' ? (options.partner ?? '') : '';
@@ -324,7 +361,7 @@ export const useLiveSession = defineStore('live', () => {
       overlay.reset({ from: AUTO_DETECT, to: target.toUpperCase() });
       overlay.hidden = false;
       const apiKey = settings.apiKey.trim();
-      const endpoint = demo.value ? DEMO_API : settings.endpoint;
+      const endpoint = free.value ? FREE_API : settings.endpoint;
 
       // The share dialog opens first: the floating window uses the click up, so it goes
       // right after. The key is checked meanwhile. A window that fails to open is not
@@ -350,14 +387,14 @@ export const useLiveSession = defineStore('live', () => {
         },
       );
       const opening = wantsFloating.value && listening ? floating.open() : Promise.resolve(null);
-      // The demo asks its server for a key meanwhile; a key of the user's own is checked
-      const access: Promise<DemoGrant | AppError | null> = demo.value
-        ? requestDemo()
+      // A free session asks its server for a key meanwhile; a key of the user's own is checked
+      const access: Promise<FreeGrant | AppError | null> = free.value
+        ? requestFreeSession()
         : verifyApiKey({ apiKey, endpoint }, modelsInUse());
       // The transcriber connects while the user picks what to share, not after it: the
       // first caption no longer waits for the connection, and what is said meanwhile waits
-      // in the pipeline. The demo's needs the key its server hands out first
-      const connecting: Promise<AppError | null> = demo.value
+      // in the pipeline. A free one needs the key its server hands out first
+      const connecting: Promise<AppError | null> = free.value
         ? access.then((granted) =>
             granted && 'key' in granted ? connect(granted.key, endpoint, target) : null,
           )
@@ -370,7 +407,7 @@ export const useLiveSession = defineStore('live', () => {
       ]);
       if (overtaken(token)) return false;
       let keyError: AppError | null = null;
-      let grant: DemoGrant | null = null;
+      let grant: FreeGrant | null = null;
       if (granted && 'key' in granted) grant = granted;
       else keyError = granted;
       const startError = captureError ?? keyError ?? connectError;
@@ -388,9 +425,8 @@ export const useLiveSession = defineStore('live', () => {
       // Only a tab alone: a microphone is never exactly silent, so it would never trip
       if (source.value === 'tab') silence.start();
       if (grant) {
-        demoEndsAt.value = Date.now() + grant.seconds * 1000;
-        demoTimer = setTimeout(endDemo, grant.seconds * 1000);
-        overlay.setNotice(DEMO_STARTED_KEY, NOTICE_TTL_MS);
+        startTicks(grant);
+        overlay.setNotice(FREE_STARTED_KEY, NOTICE_TTL_MS);
       }
       return true;
     } catch (err) {
@@ -408,7 +444,7 @@ export const useLiveSession = defineStore('live', () => {
    * that cannot connect (the interpreter on Azure) says why and goes back to `previous`.
    */
   async function retune(previous: QualityTier | null): Promise<void> {
-    if (!active.value || demo.value) return;
+    if (!active.value || free.value) return;
     const token = startToken;
     const target = overlay.pair.to.toLowerCase();
     const error = await connect(settings.apiKey.trim(), settings.endpoint, target);
@@ -446,8 +482,8 @@ export const useLiveSession = defineStore('live', () => {
   watch(
     () => settings.apiKey,
     (key) => {
-      // The demo runs on the demo server's key, not this one
-      if (!key.trim() && !demo.value && (active.value || starting.value)) stop();
+      // A free session runs on the free server's key, not this one
+      if (!key.trim() && !free.value && (active.value || starting.value)) stop();
     },
   );
   // "Start over" in the bar: the screen is cleared there, the pipeline forgets here
@@ -526,10 +562,10 @@ export const useLiveSession = defineStore('live', () => {
     syncedLines: sync.reached,
     /** The shared tab sends no sound: the user should press play in it */
     tabSilent,
-    /** The session is the free demo */
-    demo,
-    /** When the demo stops itself (epoch milliseconds), while one runs */
-    demoEndsAt,
+    /** The session uses the free minutes */
+    free,
+    /** When the free minutes run out (epoch milliseconds), while a free session runs */
+    freeEndsAt,
     mode,
     partner,
     receive,

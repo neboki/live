@@ -3,9 +3,15 @@
 The app shows this to its users at `/privacy` (the Privacy & security page, `src/modules/privacy`).
 Keep both in step when a data flow changes.
 
-Neboki Live is a static web page. There is **no Neboki Live server for your data, no analytics and
-no telemetry**; signing in is optional. Everything below happens between your browser and OpenAI,
-using your own API key (the free demo, when a build offers it, is the one exception: see the page).
+Neboki Live is a static web page. With your own key there is **no Neboki Live server for your data,
+no analytics and no telemetry**; signing in is optional. Everything below happens between your
+browser and OpenAI, using your own API key.
+
+The one exception is the **free minutes** (30 a month for an account signed in with Google,
+`functions/`): the audio still goes straight to OpenAI with a key that expires within a minute, but
+the text to translate passes through our server (Cloud Functions, europe-west1), which forwards it
+to OpenAI with Neboki's key and keeps nothing. To count the minutes it stores, per month, the
+seconds each account used (`freeUsage/{month}/users/{uid}` in Firestore, closed to the app).
 
 ## What is sent to OpenAI
 

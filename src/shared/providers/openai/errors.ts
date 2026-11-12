@@ -30,11 +30,18 @@ const DEPLOYMENT_CODE = 'DeploymentNotFound';
 const MODEL_CODE = 'model_not_found';
 /** The request itself was refused: a setting the model does not take, or a bad value */
 const INVALID_REQUEST_TYPE = 'invalid_request_error';
-/** Codes the demo proxy (functions/) answers with */
-const DEMO_CODE_PREFIX = 'demo_';
-const DEMO_ENDED_CODE = 'demo_expired';
-/** This visitor, or everyone today, has used up the demos */
-const DEMO_QUOTA_CODES = ['demo_client', 'demo_day'];
+/** Codes the free minutes server (functions/) answers with */
+const FREE_CODE_PREFIX = 'free_';
+/** The session ended, or the request carried no valid Google sign-in */
+const FREE_UNAUTHORIZED: Readonly<Record<string, string>> = {
+  free_expired: 'errors.freeEnded',
+  free_signin: 'errors.freeSignin',
+};
+/** The account's minutes for this month, or everyone's budget, are used up */
+const FREE_USED_UP: Readonly<Record<string, string>> = {
+  free_month: 'errors.freeMonth',
+  free_budget: 'errors.freeBudget',
+};
 const STATUS_BAD_REQUEST = 400;
 const STATUS_NOT_FOUND = 404;
 
@@ -81,15 +88,13 @@ export function errorFromCode(
 ): AppError | null {
   const message = redactKey(detail.message, apiKey).slice(0, MAX_DETAIL_CHARS);
   const isQuota = detail.code === QUOTA_CODE || detail.type === QUOTA_CODE;
-  // The free demo's proxy: its time is up, or no more demos can start today
-  if (detail.code === DEMO_ENDED_CODE) {
-    return new UnauthorizedError(`Demo ended: ${message}`, 'errors.demoEnded');
-  }
-  if (DEMO_QUOTA_CODES.includes(detail.code)) {
-    return new RateLimitError(`No demo left: ${message}`, 'errors.demoQuota');
-  }
-  if (detail.code.startsWith(DEMO_CODE_PREFIX)) {
-    return new RateLimitError(`Demo unavailable: ${message}`, 'errors.demoUnavailable');
+  // The free minutes server: the session ended, the minutes ran out, or it is unavailable
+  const unauthorized = FREE_UNAUTHORIZED[detail.code];
+  if (unauthorized) return new UnauthorizedError(`Free minutes: ${message}`, unauthorized);
+  const usedUp = FREE_USED_UP[detail.code];
+  if (usedUp) return new RateLimitError(`Free minutes used up: ${message}`, usedUp);
+  if (detail.code.startsWith(FREE_CODE_PREFIX)) {
+    return new RateLimitError(`Free minutes unavailable: ${message}`, 'errors.freeUnavailable');
   }
   if (status === 401 || detail.code === INVALID_KEY_CODE) {
     return new UnauthorizedError(`OpenAI rejected the key: ${message}`, 'errors.invalidKey');

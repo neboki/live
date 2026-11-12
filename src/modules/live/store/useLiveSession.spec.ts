@@ -93,13 +93,15 @@ vi.mock('@/shared/pip/useDocumentPip', async () => {
     },
   };
 });
-const demoFakes = vi.hoisted(() => ({
-  requestDemo: vi.fn<() => Promise<{ key: string; seconds: number } | Error>>(),
+const freeFakes = vi.hoisted(() => ({
+  requestFreeSession:
+    vi.fn<() => Promise<{ key: string; seconds: number; tickSeconds: number } | Error>>(),
+  sendFreeTick: vi.fn<(key: string) => Promise<{ seconds: number } | Error>>(),
 }));
-vi.mock('@/shared/providers/openai/demo', () => ({ requestDemo: demoFakes.requestDemo }));
+vi.mock('@/shared/providers/openai/freePlan', () => freeFakes);
 vi.mock('@/shared/providers/openai/config', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/providers/openai/config')>()),
-  DEMO_API: '/api/demo',
+  FREE_API: '/api/free',
 }));
 vi.mock('@/shared/providers/openai/llm/chat', () => ({ verifyApiKey: fakes.verifyApiKey }));
 vi.mock('@/shared/providers/openai/realtime/realtimeStt', () => ({
@@ -843,12 +845,14 @@ describe('useLiveSession and where the captions go', () => {
   });
 });
 
-describe('useLiveSession, free demo', () => {
+describe('useLiveSession, free minutes', () => {
   beforeEach(() => {
     localStorage.clear();
     setActivePinia(createPinia());
     vi.clearAllMocks();
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'],
+    });
     fakes.pip.supported = true;
     fakes.pipOpen.mockResolvedValue(null);
     fakes.captureStart.mockResolvedValue(null);
@@ -856,63 +860,108 @@ describe('useLiveSession, free demo', () => {
       fakes.state.stt = callbacks;
       return { append: vi.fn(), close: fakes.sessionClose };
     });
-    demoFakes.requestDemo.mockResolvedValue({ key: 'temp-demo-key', seconds: 180 });
+    freeFakes.requestFreeSession.mockResolvedValue({
+      key: 'temp-free-key',
+      seconds: 120,
+      tickSeconds: 30,
+    });
+    freeFakes.sendFreeTick.mockResolvedValue({ seconds: 90 });
   });
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
-  it('runs on the demo key and the cheapest models, without a key of its own', async () => {
+  it('runs on the free key at Medium quality, without a key of its own', async () => {
     const settings = useSettingsStore();
-    settings.models.transcription = 'gpt-live-transcribe';
+    settings.models.transcription = 'gpt-transcribe';
     const session = useLiveSession();
 
-    await expect(session.start('es', { demo: true })).resolves.toBe(true);
+    await expect(session.start('es', { free: true })).resolves.toBe(true);
 
     expect(fakes.verifyApiKey).not.toHaveBeenCalled();
     expect(fakes.connect.mock.calls[0]?.[0]).toMatchObject({
-      apiKey: 'temp-demo-key',
-      endpoint: '/api/demo',
-      model: 'gpt-transcribe',
+      apiKey: 'temp-free-key',
+      endpoint: '/api/free',
+      model: 'gpt-live-transcribe',
     });
-    expect(session.demo).toBe(true);
-    expect(session.demoEndsAt).toBe(Date.now() + 180_000);
+    expect(session.free).toBe(true);
+    // The minutes left, plus the stretch already paid
+    expect(session.freeEndsAt).toBe(Date.now() + 150_000);
+  });
+
+  it('checks in every stretch and keeps going with what is left', async () => {
+    const session = useLiveSession();
+    await session.start('es', { free: true });
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(freeFakes.sendFreeTick).toHaveBeenCalledWith('temp-free-key');
+    expect(session.active).toBe(true);
+    expect(session.freeEndsAt).toBe(Date.now() + 120_000);
+  });
+
+  it('stops when a check-in says the minutes are used up', async () => {
+    freeFakes.sendFreeTick.mockResolvedValue(
+      new AppError('used up', { userMessageKey: 'errors.freeMonth' }),
+    );
+    const session = useLiveSession();
+    await session.start('es', { free: true });
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(session.active).toBe(false);
+    expect(session.errorKey).toBe('errors.freeMonth');
+  });
+
+  it('keeps going when a check-in is lost on the way', async () => {
+    freeFakes.sendFreeTick.mockResolvedValue(
+      new AppError('offline', { userMessageKey: 'errors.connectionFailed' }),
+    );
+    const session = useLiveSession();
+    await session.start('es', { free: true });
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(session.active).toBe(true);
   });
 
   it('stops itself when its time is up and says so on the home screen', async () => {
     const session = useLiveSession();
-    await session.start('es', { demo: true });
+    await session.start('es', { free: true });
+    freeFakes.sendFreeTick.mockReturnValue(new Promise(() => undefined));
 
-    vi.advanceTimersByTime(180_000);
+    await vi.advanceTimersByTimeAsync(150_000);
 
     expect(session.active).toBe(false);
-    expect(session.demoEndsAt).toBeNull();
-    expect(session.errorKey).toBe('errors.demoEnded');
+    expect(session.freeEndsAt).toBeNull();
+    expect(session.errorKey).toBe('errors.freeMonth');
   });
 
-  it('shows why no demo could start', async () => {
-    demoFakes.requestDemo.mockResolvedValue(
-      new AppError('none left', { userMessageKey: 'errors.demoQuota' }),
+  it('shows why no free session could start', async () => {
+    freeFakes.requestFreeSession.mockResolvedValue(
+      new AppError('none left', { userMessageKey: 'errors.freeMonth' }),
     );
     const session = useLiveSession();
 
-    await expect(session.start('es', { demo: true })).resolves.toBe(false);
+    await expect(session.start('es', { free: true })).resolves.toBe(false);
 
-    expect(session.errorKey).toBe('errors.demoQuota');
+    expect(session.errorKey).toBe('errors.freeMonth');
     expect(fakes.connect).not.toHaveBeenCalled();
   });
 
-  it('goes back to the user key when started normally after a demo', async () => {
+  it('goes back to the user key when started normally after free minutes', async () => {
     useSettingsStore().apiKey = 'test-key';
     fakes.verifyApiKey.mockResolvedValue(null);
     const session = useLiveSession();
-    await session.start('es', { demo: true });
+    await session.start('es', { free: true });
     session.stop();
 
-    await session.start('es', { demo: false });
+    await session.start('es', { free: false });
 
     expect(fakes.connect.mock.calls[1]?.[0]).toMatchObject({ apiKey: 'test-key' });
-    expect(session.demoEndsAt).toBeNull();
+    expect(session.freeEndsAt).toBeNull();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(freeFakes.sendFreeTick).not.toHaveBeenCalled();
   });
 });

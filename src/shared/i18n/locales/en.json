@@ -79,10 +79,15 @@
       "button": "Install",
       "dismiss": "Don't show again"
     },
-    "demo": {
+    "free": {
       "or": "or, without a key",
-      "button": "Try it free for 3 minutes",
-      "note": "Translated captions only, no account and no key. Speak, or play a video, and watch it in your language."
+      "signIn": "Sign in with Google: 30 free minutes a month",
+      "button": "Start with my free minutes",
+      "note": "No OpenAI key needed. Translated captions only, at Medium quality.",
+      "left": "{left} of {total} free minutes left this month.",
+      "usedUp": "You've used this month's free minutes. They come back on the 1st, or use your own key.",
+      "paused": "Free minutes are paused until next month. You can use your own key.",
+      "loading": "Checking your free minutes…"
     }
   },
   "overlay": {
@@ -358,9 +363,12 @@
     "micEnded": "The microphone was disconnected, so @:{'brand.name'} can’t hear anything any more.",
     "awayResumed": "It stopped hearing while you were out of the app, so some of what was said may be missing. It is listening again.",
     "awayPaused": "The microphone paused when you left the app and has not come back. Start again to carry on.",
-    "demoEnded": "The 3-minute demo is over. Add your OpenAI key to keep going, from ≈ $0.24 an hour.",
-    "demoQuota": "No more free demos today. Add your OpenAI key to keep going.",
-    "demoUnavailable": "The free demo is not available right now. Try again later, or use your own key."
+    "freeEnded": "The free session has ended. Start another if you have minutes left.",
+    "freeMonth": "You've used this month's 30 free minutes. Add your OpenAI key to keep going, from ≈ $0.24 an hour.",
+    "freeBudget": "Free minutes are paused until next month. Add your OpenAI key to keep going.",
+    "freeSignin": "Sign in with Google to use the free minutes.",
+    "freeUnavailable": "Free minutes are not available right now. Try again later, or use your own key.",
+    "freeCaptionsOnly": "Free minutes give captions only. For the voice, use your own key."
   },
   "live": {
     "badge": "live",
@@ -424,7 +432,7 @@
       "hide": "Hide the panel",
       "help": "Help"
     },
-    "demoStarted": "Free demo: 3 minutes of translated captions. Add your own key to keep going."
+    "freeStarted": "Free minutes running. The session stops by itself when they run out."
   },
   "onboarding": {
     "consent": {
@@ -731,7 +739,7 @@
         "Conversations live in the tab's memory: they are gone when you close it, unless you download them.",
         "You can delete everything at any time from your own browser."
       ],
-      "demo": "One exception: the free demo uses our own key, so part of the text goes through our server. Details below.",
+      "free": "One exception: the free minutes use our own key, so part of the text goes through our server. Details below.",
       "account": "Signing in is optional. Without an account, everything stays on this device."
     },
     "data": {
@@ -846,13 +854,13 @@
         "Signing out closes the account in this browser."
       ]
     },
-    "demo": {
-      "title": "Free demo",
+    "free": {
+      "title": "Free minutes",
       "items": [
-        "The demo uses a {brand} key, not yours, and only shows translated captions for three minutes.",
-        "Audio goes straight from your browser to OpenAI, with a temporary key our server requests for you and that expires quickly.",
+        "Signed in with Google, you get 30 free minutes a month on a {brand} key, not yours. Translated captions only.",
+        "Audio goes straight from your browser to OpenAI, with a temporary key our server requests for you and that expires quickly. Our server never receives the audio.",
         "The text to translate goes through our server (Google Cloud, in Europe), which forwards it to OpenAI without keeping it.",
-        "To prevent abuse, the server counts how many demos each IP address starts per day. That count lives in memory only and is not saved in any database."
+        "To count your minutes we keep, for each month, how many seconds you used, with your user id (Firestore, in Europe). Nothing else: neither audio nor text."
       ]
     },
     "providers": {

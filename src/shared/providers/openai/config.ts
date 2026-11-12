@@ -32,11 +32,11 @@ export const VOICES = [
 export const VOICE_TIMEOUT_MS = 20_000;
 
 /**
- * The free demo's server (functions/, behind Firebase Hosting), or '' where the build has
- * none (local builds). It hands out a short-lived transcription key and passes the
- * translation on with its own key, so a visitor can try the app without one.
+ * The free minutes server (functions/, behind Firebase Hosting), or '' where the build has
+ * none (local builds). For an account signed in with Google it hands out a short-lived
+ * transcription key and passes the translation on with its own key, so no key is needed.
  */
-export const DEMO_API: string = import.meta.env.VITE_DEMO_API ?? '';
+export const FREE_API: string = import.meta.env.VITE_FREE_API ?? '';
 
 export type QualityTier = 'low' | 'medium' | 'premium' | 'interpreter';
 
