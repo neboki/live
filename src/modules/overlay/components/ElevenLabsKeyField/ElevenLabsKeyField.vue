@@ -115,7 +115,13 @@ watch(current, (now) => {
 
     <p class="eleven__using" role="status">
       <template v-if="waitingForKey">
-        {{ t(current === 'off' ? 'overlay.voice.needsKey' : 'overlay.voice.needsKeyMeanwhile') }}
+        {{
+          t(
+            current === 'off'
+              ? 'overlay.voice.needsElevenLabsKey'
+              : 'overlay.voice.needsElevenLabsKeyMeanwhile',
+          )
+        }}
       </template>
       <template v-else-if="current === 'off'">{{ t('overlay.voice.usingNone') }}</template>
       <template v-else-if="engine === 'elevenlabs'">

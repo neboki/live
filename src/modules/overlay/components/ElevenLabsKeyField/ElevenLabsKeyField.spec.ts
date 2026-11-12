@@ -60,7 +60,7 @@ describe('ElevenLabsKeyField', () => {
     expect(radios(wrapper).eleven.attributes('aria-checked')).toBe('true');
     expect(wrapper.get('label').text()).toBe(i18n.global.t('overlay.voice.keyLabel'));
     expect(wrapper.find('a[href*="elevenlabs"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsKeyMeanwhile'));
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsElevenLabsKeyMeanwhile'));
     expect(settings.tts.engine).toBe('openai');
     expect(overlay.options.voice).toBe(true);
 
@@ -95,7 +95,7 @@ describe('ElevenLabsKeyField', () => {
     const wrapper = mountField();
 
     await radios(wrapper).eleven.trigger('click');
-    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsKey'));
+    expect(wrapper.text()).toContain(i18n.global.t('overlay.voice.needsElevenLabsKey'));
     await wrapper.get('input').setValue(KEY);
     await flushPromises();
 
