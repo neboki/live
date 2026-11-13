@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionDueFrom, createRun, isSaidIn, takeNext, type Sentence } from './run';
+import { captionComing, createRun, isSaidIn, takeNext, type Sentence } from './run';
 
 function sentence(seq: number, text: string, speaker: number | null): Sentence {
   return { seq, text, previous: [], heardAt: seq, heardOn: seq, speaker };
@@ -55,29 +55,24 @@ describe('isSaidIn', () => {
   });
 });
 
-describe('captionDueFrom', () => {
+describe('captionComing', () => {
   const run = (): ReturnType<typeof createRun> =>
     createRun({ apiKey: 'k', targetLanguage: 'Spanish', onFatal: () => undefined });
 
-  it('is null while every sentence heard has its caption', () => {
-    expect(captionDueFrom(run())).toBeNull();
+  it('is null while no translation is being written, or it has no words yet', () => {
+    const idle = run();
+    expect(captionComing(idle)).toBeNull();
+    idle.inFlight = { sentence: { ...sentence(1, 'b', null), from: 900 }, text: '' };
+    expect(captionComing(idle)).toBeNull();
   });
 
-  it('is where the oldest sentence waiting for its translation began', () => {
-    const waiting = run();
-    waiting.inFlight = { sentence: { ...sentence(1, 'b', null), from: 900 }, text: 'x' };
-    waiting.queue = [{ ...sentence(2, 'c', null), from: 1500 }, sentence(1200, 'd', null)];
-    expect(captionDueFrom(waiting)).toBe(900);
-  });
-
-  it('counts speech still being said, from its start or the end of the last sentence', () => {
-    const speaking = run();
-    speaking.sttActivity = 'speech';
-    speaking.speechStartedOn = 1000;
-    expect(captionDueFrom(speaking)).toBe(1000);
-    speaking.lastHeardOn = 3000;
-    expect(captionDueFrom(speaking)).toBe(3000);
-    speaking.sttActivity = 'idle';
-    expect(captionDueFrom(speaking)).toBeNull();
+  it('is the words so far, placed where their sentence began', () => {
+    const writing = run();
+    writing.inFlight = { sentence: { ...sentence(1, 'b', 2), from: 900 }, text: 'Hola a' };
+    expect(captionComing(writing)).toEqual({ from: 900, text: 'Hola a', speaker: 2 });
+    // Without a known start, where it was heard in full
+    const heard = sentence(1, 'c', null);
+    writing.inFlight = { sentence: heard, text: 'x' };
+    expect(captionComing(writing)).toEqual({ from: heard.heardOn, text: 'x' });
   });
 });

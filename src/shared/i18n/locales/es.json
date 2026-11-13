@@ -287,12 +287,10 @@
     },
     "sync": {
       "label": "Imagen al ritmo de los subtítulos",
-      "hint": "Muestra la pestaña compartida en la app unos segundos por detrás, para que cada subtítulo caiga sobre su frase",
+      "hint": "Muestra la pestaña compartida en la app unos segundos por detrás, para que cada subtítulo caiga sobre su frase. El vídeo no se para nunca",
       "on": "Ver la pestaña al ritmo de los subtítulos",
       "off": "Volver a la pestaña en directo",
-      "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede",
-      "waitLabel": "Esperar a los subtítulos",
-      "waitHint": "Sincronía exacta: si una traducción se retrasa, el vídeo se para hasta que llega y sigue desde ahí, más por detrás. Desactivado, un subtítulo tardío solo se muestra un poco tarde y el vídeo no se para nunca"
+      "unavailable": "Solo funciona compartiendo una pestaña de Chrome con su audio; con una ventana o la pantalla entera no se puede"
     },
     "groups": {
       "show": "Mostrar",
@@ -398,7 +396,6 @@
     "sync": {
       "title": "La pestaña compartida, al ritmo de los subtítulos",
       "buffering": "Reteniendo la imagen… {seconds} s",
-      "calibrating": "Ajustando la traducción al vídeo… {seconds} s",
       "lag": "{seconds} s por detrás del directo",
       "pause": "Pausar",
       "resume": "Reanudar",
@@ -415,8 +412,7 @@
       "exitFullscreen": "Salir de pantalla completa",
       "delayHint": "Cuánto se retrasa la imagen. En Auto se mide al empezar lo que tardan los primeros subtítulos y se fija para toda la sesión. Un subtítulo solo llega cuando su frase entera se ha oído y traducido: las frases largas necesitan más",
       "late": "Subtítulos tarde · usar {seconds} s",
-      "lateHint": "Varios subtítulos recientes llegaron después de que su frase empezara en pantalla. Con {seconds} s habrían llegado a tiempo",
-      "waiting": "Esperando la traducción…"
+      "lateHint": "Varios subtítulos recientes llegaron después de que su frase empezara en pantalla. Con {seconds} s habrían llegado a tiempo"
     },
     "side": {
       "label": "Opciones",

@@ -1,7 +1,7 @@
 # 0008 — Video sync: the shared tab a few seconds behind, in step with the captions
 
 - **Status:** accepted
-- **Date:** 2026-10-26
+- **Date:** 2026-10-26 (revised 2026-11-13)
 - **Related:** [0007](0007-voice-latency.md) (voice latency)
 
 ## Context
@@ -24,40 +24,42 @@ the user hears of it. With the tab's picture it can own what they see of it too.
    playhead is kept the wanted delay behind the end of the buffer (`delayedPlayback`).
    The buffer stays in segments mode: the recording's own timestamps place each chunk,
    where sequence mode re-times every append and puts clicks and gaps in the sound.
-   Falling behind the wanted delay is made up by playing 4 % faster, far behind by
-   jumping; a delay that grows past what is buffered holds the picture until it is there
-   (never slowed down: time-stretched speech is what sounds like a bad connection). The
-   live sound of the tab is muted meanwhile. Media more than 20 s behind the playhead is
-   dropped. Only a silenced tab with a picture, in a browser that can record and play
-   `video/webm`, offers the option (`canSyncVideo`).
+   Once playing it is left alone at normal speed; only a real slip of more than 2 s (a
+   stall, a hidden tab) is corrected, by one jump. A recording can have gaps (a tab that
+   stops painting sends no frames): the playhead starts past them and jumps over the ones
+   it runs into at once, instead of standing in them. The live sound of the tab is muted
+   meanwhile. Media more than 20 s behind the playhead is dropped. Only a silenced tab
+   with a picture, in a browser that can record and play `video/webm`, offers the option
+   (`canSyncVideo`).
    The user can pause the picture like a recording; resumed, it goes on from there,
    further behind, with its captions, until "back in step" jumps to the wanted delay. A
    pause long enough to fill the buffer catches up by itself.
-2. **The delay is settled at the start, then kept.** _(Revised 2026-11-10; it first
-   followed the latency all along, which kept the picture drifting.)_ On "auto", the
-   default, the picture is held while the session's first captions are timed, from where
-   their sentence began to when the caption arrived. Once three are, the delay is the
-   slowest of the recent ones plus 1.5 s of room (for the voice to start), rounded up to
-   the half second, between 3 and 30 s. _(Revised again the same day: it first left out
-   the slowest. A caption can only exist once its sentence was said, so on a monologue
-   with long sentences that delay could not be met, and every long one stopped the
-   picture or showed late.)_ The picture starts that far behind, or, if it already holds
-   more, glides there by playing 8 % faster (pitch kept), skipping nothing. Without
-   speech it starts after 20 s and settles once captions come. The delay then stays put
-   for the session, like a broadcast. Only when two of the last six captions still land
-   late is it raised to cover them, with one hold while the picture buffers; it is never
-   lowered. A single late caption just shows late. The user can instead pick a fixed
-   delay (3–30 s), and is then offered a longer one when captions keep landing late
-   (`utils/sync.ts`, `watchers/videoSync.ts`).
-   The "wait" option, which holds the picture for every late caption, is off by default
-   since 2026-11-10: on a monologue it stopped the picture every few sentences, each stop
-   leaving it further behind, which looked like a skipping video. It stays as an opt-in
-   for exact sync. In development the player traces every hold, seek, glide and stall of
-   the element in the console as `[sync]`, to tell our holds from the decoder's.
-3. **The captions follow the picture.** Under the picture the page lists the session's
-   lines whose sentence the delayed picture has reached (its start when known, otherwise
-   its end). The floating window keeps showing the captions live: the delayed ones are a
-   second reading, in the page, for whoever watches there.
+2. **The picture never stops for a caption; the delay is known beforehand.** _(Revised
+   2026-11-13. Before, the delay was measured from the first three captions while the
+   picture waited, raised later with a hold, and an optional "wait" paused the picture
+   for every late caption. Measured in a real browser on a shared tab, those holds froze
+   the picture 11 to 55 s out of every 80; without them, up to 40 % of the captions
+   landed seconds late. Seven delay policies in eight days had only ever been checked
+   with fakes.)_ On "auto", the default, the delay is 8 s from the first frame: the
+   longest sentence the audio gate lets through (4 s), its transcript (about 1 s), the
+   first translated words (under 1 s, 2.5 s when the request was doubled) and some room.
+   Nothing is measured while the picture waits, and nothing in the controller can pause
+   the picture or make it jump. Only when two of the last six captions still land late
+   is the delay raised to cover them, and the picture gets there by playing 5 % slower
+   (pitch kept, at the threshold where a change of tempo starts to be noticed), still
+   without stopping; it is never lowered. A caption that is late simply shows as soon as
+   it exists. The user can instead pick a fixed delay (3–30 s), which stays as chosen,
+   and is then offered a longer one when captions keep landing late (`utils/sync.ts`,
+   `watchers/videoSync.ts`). The "wait" option is gone. In development the player traces
+   every seek, glide and stall of the element in the console as `[sync]`.
+3. **The captions follow the picture, from their first words.** On the picture the page
+   shows the session's lines whose sentence the delayed picture has reached (its start
+   when known, otherwise its end), and also the caption still being written: its
+   translated words show where its sentence began as they arrive, instead of waiting for
+   the whole line (`captionComing` in the pipeline). That takes the length of the
+   translation out of what the delay has to cover. The floating window keeps showing the
+   captions live: the delayed ones are a second reading, in the page, for whoever
+   watches there.
 4. **It is a preference.** The option is remembered with the other bar preferences; each
    session offers it only while its share allows it, and a failure to start the delay
    withdraws it for that session.
@@ -68,8 +70,11 @@ the user hears of it. With the tab's picture it can own what they see of it too.
 - ✅ Nothing changes for the transcription or the floating window: the delayed picture is
   a copy, fed from the same share.
 - ❌ The user has to watch the page instead of the original tab, which keeps playing
-  silently; the first picture takes the whole delay to appear, and a growing delay
-  pauses it.
+  silently; the first picture takes the whole delay (8 s on auto) to appear.
+- ✅ The flow has a browser test with the real recorder and buffer
+  (`tests/e2e/sync.spec.ts`): it fails when the picture pauses or stands still.
+- ❌ Not covered yet: a tab whose picture stands still for long (slides). Its recording
+  has gaps, and jumping over them also skips that stretch of sound.
 - ❌ Recording the tab costs CPU (VP8 at up to 2.5 Mb/s) and about 20 s of memory.
 - ✅ The translated voice follows the picture too: while it plays behind time, each line is
   read when the picture reaches its sentence, and one it has left behind is skipped

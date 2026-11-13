@@ -10,7 +10,7 @@ import { createExtras, MAX_UNSUMMARIZED } from './extras';
 import { hedged, isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
 import {
   activityOf,
-  captionDueFrom,
+  captionComing,
   createRun,
   isSaidIn,
   keywordsFrom,
@@ -405,6 +405,6 @@ export function createLivePipeline({
     abort,
     setTargetLanguage,
     resetConversation,
-    captionDueFrom: () => (current ? captionDueFrom(current) : null),
+    captionComing: () => (current ? captionComing(current) : null),
   };
 }

@@ -84,8 +84,18 @@ export interface LivePipeline {
   /** Starts the conversation over: forgets the voices heard and the earlier lines */
   resetConversation: () => void;
   /**
-   * Epoch milliseconds where the oldest speech still without a caption began; null
-   * when every sentence heard has one. The synced picture waits there for it.
+   * The caption being written right now, with the words that came so far; null while
+   * there is none. The synced picture shows it on its sentence as it is written.
    */
-  captionDueFrom: () => number | null;
+  captionComing: () => ComingCaption | null;
+}
+
+/** A caption whose translation is still arriving */
+export interface ComingCaption {
+  /** Epoch milliseconds when its sentence began */
+  from: number;
+  /** The translated words so far */
+  text: string;
+  /** Who said it, when speakers are told apart */
+  speaker?: number;
 }

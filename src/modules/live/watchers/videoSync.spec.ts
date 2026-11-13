@@ -3,8 +3,9 @@ import { nextTick, reactive } from 'vue';
 import type { SessionLine } from '@/modules/session';
 import { PACE_MS, type DelayedPlayback } from '@/shared/media/delayedPlayback';
 import { SYNC_DELAY_AUTO } from '@/modules/overlay';
-import { CALIBRATION_SECONDS } from '../utils/sync';
-import { createVideoSync, MAX_WAIT_MS, type VideoSyncDeps } from './videoSync';
+import type { ComingCaption } from '../pipeline/types';
+import { AUTO_SECONDS } from '../utils/sync';
+import { createVideoSync, type VideoSyncDeps } from './videoSync';
 
 /** The delay the user chose */
 const DELAY = 5;
@@ -12,21 +13,15 @@ const DELAY = 5;
 interface FakePlayback extends DelayedPlayback {
   lag: number | null;
   held: boolean;
-  waitingForCaption: boolean;
 }
 
 function fakePlayback(): FakePlayback {
   const playback: FakePlayback = {
     lag: null,
     held: false,
-    waitingForCaption: false,
     element: document.createElement('video'),
     lagSeconds: () => playback.lag,
     paused: () => playback.held,
-    wait: vi.fn((on: boolean) => {
-      playback.waitingForCaption = on;
-    }),
-    waiting: () => playback.waitingForCaption,
     setDelay: vi.fn(),
     glideTo: vi.fn(),
     setVolume: vi.fn(),
@@ -52,16 +47,15 @@ function setup(playback: DelayedPlayback | null = fakePlayback()): {
   overlay: VideoSyncDeps['overlay'];
   lines: SessionLine[];
   now: { value: number };
-  due: { value: number | null };
+  coming: { value: ComingCaption | null };
 } {
   const now = { value: 100_000 };
-  const due: { value: number | null } = { value: null };
+  const coming: { value: ComingCaption | null } = { value: null };
   const lines: SessionLine[] = [];
   const overlay = reactive({
     canSyncVideo: false,
     syncVideo: false,
     syncDelay: DELAY,
-    syncWait: false,
   });
   const capture = {
     canSync: true,
@@ -76,29 +70,10 @@ function setup(playback: DelayedPlayback | null = fakePlayback()): {
     },
     overlay,
     lines: () => lines,
-    captionDueFrom: () => due.value,
+    captionComing: () => coming.value,
     now: () => now.value,
   };
-  return { deps, capture, overlay, lines, now, due };
-}
-
-/** A session with the picture synced and the wait option on, playing DELAY behind */
-async function waitingSetup(): Promise<{
-  playback: FakePlayback;
-  sync: ReturnType<typeof createVideoSync>;
-  overlay: VideoSyncDeps['overlay'];
-  now: { value: number };
-  due: { value: number | null };
-}> {
-  const playback = fakePlayback();
-  const { deps, overlay, now, due } = setup(playback);
-  overlay.syncWait = true;
-  const sync = createVideoSync(deps);
-  overlay.syncVideo = true;
-  sync.started();
-  await nextTick();
-  playback.lag = DELAY;
-  return { playback, sync, overlay, now, due };
+  return { deps, capture, overlay, lines, now, coming };
 }
 
 describe('createVideoSync', () => {
@@ -219,79 +194,76 @@ describe('createVideoSync', () => {
     expect(sync.playback.value).toBeNull();
   });
 
-  describe('waiting for late captions', () => {
-    it('holds the picture once it reaches speech without a caption, and goes on when it arrives', async () => {
-      const { playback, sync, now, due } = await waitingSetup();
-      due.value = 96_000;
+  it('shows a caption on its sentence as it is written, before its line is finished', async () => {
+    const playback = fakePlayback();
+    const { deps, overlay, lines, now, coming } = setup(playback);
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    lines.push(line(96_000, 94_000));
+    playback.lag = 5;
 
-      // The picture is at 95 000: the sentence has not begun on screen yet
-      now.value = 100_000;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
+    // The first words of the next sentence came back; the picture (at 96 000) is not there yet
+    coming.value = { from: 97_000, text: 'Hola', speaker: 1 };
+    now.value = 101_000;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.reached.value).toEqual([lines[0]]);
 
-      // At 96 500 it has: the picture holds
-      now.value = 101_500;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(playback.wait).toHaveBeenLastCalledWith(true);
-      expect(sync.waiting.value).toBe(true);
-
-      // Held, it falls further behind; the caption arrives and it goes on
-      playback.lag = 7;
-      now.value = 103_500;
-      due.value = null;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(playback.wait).toHaveBeenLastCalledWith(false);
-      expect(sync.waiting.value).toBe(false);
-      sync.ended();
+    // At 97 500 it is: the words written so far show, and grow as more arrive
+    now.value = 102_500;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.reached.value.at(-1)).toMatchObject({
+      from: 97_000,
+      translation: 'Hola',
+      speaker: 1,
     });
+    coming.value = { from: 97_000, text: 'Hola a todos', speaker: 1 };
+    now.value = 102_750;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.reached.value.at(-1)).toMatchObject({ from: 97_000, translation: 'Hola a todos' });
 
-    it('lets a caption that never comes go after a while, and does not wait for it again', async () => {
-      const { playback, sync, now, due } = await waitingSetup();
-      due.value = 90_000;
-      now.value = 100_000;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(true);
-
-      now.value = 100_000 + MAX_WAIT_MS + 1;
-      playback.lag = DELAY + MAX_WAIT_MS / 1000;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
-
-      now.value += 1000;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
-
-      // The next late sentence is waited for again
-      due.value = now.value - DELAY * 1000 - (MAX_WAIT_MS + 1000);
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(true);
-      sync.ended();
-      expect(playback.waitingForCaption).toBe(false);
-    });
-
-    it('never waits with the option off, while paused by the user, or far behind already', async () => {
-      const { playback, sync, overlay, now, due } = await waitingSetup();
-      due.value = 90_000;
-      now.value = 100_000;
-
-      overlay.syncWait = false;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
-
-      overlay.syncWait = true;
-      playback.held = true;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
-
-      playback.held = false;
-      playback.lag = DELAY + 61;
-      vi.advanceTimersByTime(PACE_MS);
-      expect(sync.waiting.value).toBe(false);
-      sync.ended();
-    });
+    // Finished, the recorded line takes its place: it is not shown twice
+    lines.push({ at: 99_000, from: 97_000, source: 's', translation: 'Hola a todos.' });
+    coming.value = null;
+    now.value = 103_000;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(sync.reached.value).toEqual(lines);
+    sync.ended();
   });
 
-  it('on auto, holds the picture while the first captions are timed, then settles its delay', async () => {
+  it('never stops or moves the picture for a caption, however late it is', async () => {
+    const playback = fakePlayback();
+    const { deps, lines, overlay, now, coming } = setup(playback);
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    playback.lag = DELAY;
+
+    // Sentences whose captions take 9 s, with a chosen delay of 5 s
+    for (let from = 100_000; from < 160_000; from += 6000) {
+      now.value = from + 8000;
+      coming.value = { from, text: 'tarde' };
+      vi.advanceTimersByTime(PACE_MS);
+      now.value = from + 9000;
+      coming.value = null;
+      lines.push(line(from + 4000, from));
+      vi.advanceTimersByTime(PACE_MS);
+    }
+
+    expect(playback.pause).not.toHaveBeenCalled();
+    expect(playback.catchUp).not.toHaveBeenCalled();
+    expect(playback.setDelay).not.toHaveBeenCalled();
+    // A chosen delay stays as chosen: only the automatic one is raised
+    expect(playback.glideTo).not.toHaveBeenCalled();
+    expect(sync.delaySeconds.value).toBe(DELAY);
+    // Late, the captions still show, as soon as they exist
+    expect(sync.reached.value).toEqual(lines);
+    sync.ended();
+  });
+
+  it('on auto, starts at a delay known beforehand: nothing is measured while the picture waits', async () => {
     const playback = fakePlayback();
     const { deps, capture, overlay, lines, now } = setup(playback);
     overlay.syncDelay = SYNC_DELAY_AUTO;
@@ -299,98 +271,66 @@ describe('createVideoSync', () => {
     overlay.syncVideo = true;
     sync.started();
     await nextTick();
-    expect(capture.syncOriginal).toHaveBeenCalledWith(CALIBRATION_SECONDS);
-    expect(sync.calibrating.value).toBe(true);
+    expect(capture.syncOriginal).toHaveBeenCalledWith(AUTO_SECONDS);
+    expect(sync.delaySeconds.value).toBe(AUTO_SECONDS);
 
-    // Each caption arrives 3 s after its sentence began
-    lines.push(line(102_000, 100_500));
-    now.value = 103_500;
-    vi.advanceTimersByTime(PACE_MS);
-    lines.push(line(104_000, 102_500));
-    now.value = 105_500;
-    vi.advanceTimersByTime(PACE_MS);
-    expect(sync.calibrating.value).toBe(true);
-    lines.push(line(106_000, 104_500));
-    now.value = 107_500;
-    vi.advanceTimersByTime(PACE_MS);
-
-    // 3 s + room = 4.5 s; the picture already holds its starting delay, so it starts there
-    expect(sync.calibrating.value).toBe(false);
-    expect(sync.delaySeconds.value).toBe(CALIBRATION_SECONDS);
-
-    // Playing: it glides down to the settled delay, once, and stays there
-    playback.lag = CALIBRATION_SECONDS;
-    vi.advanceTimersByTime(PACE_MS);
-    expect(playback.glideTo).toHaveBeenCalledWith(4.5);
-    expect(sync.delaySeconds.value).toBe(4.5);
-    vi.advanceTimersByTime(PACE_MS * 4);
-    expect(playback.glideTo).toHaveBeenCalledTimes(1);
-    sync.ended();
-  });
-
-  it('on auto, keeps the longest hold when no caption comes, and settles once they do', async () => {
-    const playback = fakePlayback();
-    const { deps, overlay, lines, now } = setup(playback);
-    overlay.syncDelay = SYNC_DELAY_AUTO;
-    const sync = createVideoSync(deps);
-    overlay.syncVideo = true;
-    sync.started();
-    await nextTick();
-    // Music, no speech: the picture starts after the whole calibration hold
-    now.value = 100_000 + CALIBRATION_SECONDS * 1000;
-    playback.lag = CALIBRATION_SECONDS;
-    vi.advanceTimersByTime(PACE_MS);
-    expect(sync.delaySeconds.value).toBe(CALIBRATION_SECONDS);
-    expect(sync.calibrating.value).toBe(true);
-
-    lines.push(line(121_000, 120_000), line(123_000, 122_000), line(125_000, 124_000));
-    now.value = 126_000;
-    vi.advanceTimersByTime(PACE_MS);
-    // Waits of 6, 4 and 2 s: the slowest, 6 s, + room = 7.5 s
-    expect(playback.glideTo).toHaveBeenCalledWith(7.5);
-    expect(sync.calibrating.value).toBe(false);
-    sync.ended();
-  });
-
-  it('on auto, raises a settled delay once captions keep landing late, and never lowers it', async () => {
-    const playback = fakePlayback();
-    const { deps, overlay, lines, now } = setup(playback);
-    overlay.syncDelay = SYNC_DELAY_AUTO;
-    const sync = createVideoSync(deps);
-    overlay.syncVideo = true;
-    sync.started();
-    await nextTick();
-    /** A caption arrives for a sentence that began `from`, and the next look sees it */
-    function arrives(from: number, at: number): void {
-      lines.push(line(at, from));
-      now.value = at;
+    // Quick captions do not lower it, and nothing is retuned as they come
+    playback.lag = AUTO_SECONDS;
+    for (let from = 100_500; from < 130_000; from += 3000) {
+      lines.push(line(from + 2000, from));
+      now.value = from + 3000;
       vi.advanceTimersByTime(PACE_MS);
     }
-    // Settled from three 3 s waits: 4.5 s
-    playback.lag = 9.5;
-    arrives(100_000, 103_000);
-    arrives(103_000, 106_000);
-    arrives(106_000, 109_000);
-    expect(sync.delaySeconds.value).toBe(4.5);
-    expect(playback.glideTo).toHaveBeenLastCalledWith(4.5);
+    expect(sync.delaySeconds.value).toBe(AUTO_SECONDS);
+    expect(playback.glideTo).not.toHaveBeenCalled();
+    expect(playback.setDelay).not.toHaveBeenCalled();
+    expect(capture.syncOriginal).toHaveBeenCalledTimes(1);
+    sync.ended();
+  });
 
-    // One long sentence: its caption shows late, the delay stays
-    playback.lag = 4.5;
-    arrives(109_000, 118_000);
-    expect(sync.delaySeconds.value).toBe(4.5);
+  it('on auto, raises the delay by gliding once captions keep landing late, and never lowers it', async () => {
+    const playback = fakePlayback();
+    const { deps, overlay, lines, now, coming } = setup(playback);
+    overlay.syncDelay = SYNC_DELAY_AUTO;
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    sync.started();
+    await nextTick();
+    playback.lag = AUTO_SECONDS;
+    /** The first words of a caption show `wait` ms after its sentence began at `from` */
+    function arrives(from: number, wait: number): void {
+      coming.value = { from, text: 'x' };
+      now.value = from + wait;
+      vi.advanceTimersByTime(PACE_MS);
+      // Its line is recorded later: the wait counted is the one to its first words
+      coming.value = null;
+      lines.push(line(from + 1000, from));
+      now.value = from + wait + 2000;
+      vi.advanceTimersByTime(PACE_MS);
+    }
+    arrives(100_000, 5000);
+    arrives(110_000, 6000);
+    expect(playback.glideTo).not.toHaveBeenCalled();
 
-    // A second one: the delay is raised to cover the slowest (9 s + room = 10.5 s)
-    arrives(118_000, 126_000);
-    expect(playback.glideTo).toHaveBeenLastCalledWith(10.5);
-    expect(sync.delaySeconds.value).toBe(10.5);
+    // One slow caption shows late; the delay stays
+    arrives(120_000, 10_000);
+    expect(sync.delaySeconds.value).toBe(AUTO_SECONDS);
+
+    // A second one: the delay covers the slowest (10.4 s + room, to the half second)
+    arrives(135_000, 10_400);
+    expect(playback.glideTo).toHaveBeenLastCalledWith(12);
+    expect(sync.delaySeconds.value).toBe(12);
+    // Reached without stopping or jumping
+    expect(playback.setDelay).not.toHaveBeenCalled();
+    expect(playback.pause).not.toHaveBeenCalled();
 
     // Quick captions again: it stays where it is
-    playback.lag = 10.5;
-    arrives(126_000, 128_000);
-    arrives(128_000, 130_000);
-    arrives(130_000, 132_000);
-    expect(sync.delaySeconds.value).toBe(10.5);
-    expect(playback.glideTo).toHaveBeenCalledTimes(2);
+    playback.lag = 12;
+    arrives(150_000, 3000);
+    arrives(160_000, 3000);
+    arrives(170_000, 3000);
+    expect(sync.delaySeconds.value).toBe(12);
+    expect(playback.glideTo).toHaveBeenCalledTimes(1);
     sync.ended();
   });
 });

@@ -6,12 +6,12 @@
 // the same technique as a live television stream, inside one tab. Once there it plays
 // at normal speed and is left alone: the delay stays fixed, so picture and sound run
 // smoothly. Only a real slip (a stall, a hidden tab) of more than a couple of seconds
-// is corrected, once, by a jump or by holding the picture. Choosing another delay moves
+// is corrected: by one jump when it fell behind, by playing slightly slower when it got
+// too close to the present. Choosing another delay moves
 // it straight there. The user can also pause it and go on from there, further behind,
-// until they ask to catch up. And it can wait for a caption that is late: the picture
-// holds where it is and goes on once the caption is there, further behind, as a video
-// does while it buffers. Lowered by glideTo() instead, it gets there by playing a little
-// faster for a while, so nothing is skipped: how a delay found by measuring settles in.
+// until they ask to catch up. Nothing else ever stops it: a delay that has to change while
+// it plays (glideTo) is reached by playing a little faster or slower for a while, too
+// little to notice, so the picture and its sound never halt and nothing is skipped.
 
 import { logError } from '@/shared/errors';
 
@@ -23,8 +23,8 @@ export interface DelayedPlayback {
   paused: () => boolean;
   setDelay: (seconds: number) => void;
   /**
-   * Moves to a shorter delay by playing slightly faster until it is there, skipping
-   * nothing; a longer one is reached as setDelay() does, by holding the picture
+   * Moves to another delay without stopping or skipping: slightly faster until it is
+   * there for a shorter one, slightly slower for a longer one
    */
   glideTo: (seconds: number) => void;
   setVolume: (volume: number) => void;
@@ -32,10 +32,6 @@ export interface DelayedPlayback {
   pause: () => void;
   /** Goes on from where it was paused: that much further behind, until catchUp() */
   resume: () => void;
-  /** Holds the picture for a late caption (true) or lets it go on (false); not a pause */
-  wait: (on: boolean) => void;
-  /** Held for a late caption */
-  waiting: () => boolean;
   /** Back to the wanted delay, skipping what was missed */
   catchUp: () => void;
   stop: () => void;
@@ -54,14 +50,17 @@ export const PACE_MS = 250;
 export const SLIP_SECONDS = 2;
 /** A seek closer than this to where the playhead is would only cut the sound */
 const SEEK_MIN_SECONDS = 0.25;
+/** A playhead this close to the end of a buffered stretch that a gap follows jumps over it */
+const GAP_EDGE_SECONDS = 0.1;
 /** Media this far behind the playhead is dropped, so the buffer never fills up */
 export const KEEP_BEHIND_SECONDS = 20;
 const VIDEO_BITS_PER_SECOND = 2_500_000;
 /**
- * Speed while gliding to a shorter delay: 8 % faster is hard to notice (the pitch is
- * kept) and wins back a second every 12 or so
+ * Speeds while gliding to another delay. A change of tempo in speech is noticed from
+ * about 5 % (the pitch is kept), so these stay at it: a second is won or lost every 20
  */
-export const GLIDE_RATE = 1.08;
+export const GLIDE_FAST_RATE = 1.05;
+export const GLIDE_SLOW_RATE = 0.95;
 /** Gliding stops this close to the wanted delay */
 const GLIDE_DONE_SECONDS = 0.25;
 /** Every this many checks, the trace notes where the playhead is */
@@ -121,11 +120,9 @@ export function createDelayedPlayback(
   let playing = false;
   /** Paused by the user */
   let held = false;
-  /** Held for a late caption */
-  let waitingForCaption = false;
   /** Resumed after a pause: further behind than the delay, on purpose, until catchUp() */
   let behindByChoice = false;
-  /** Playing faster until the playhead is the (lowered) delay behind */
+  /** Playing a little faster or slower until the playhead is the (changed) delay behind */
   let gliding = false;
   let stopped = false;
   let reading: Promise<void> = Promise.resolve();
@@ -137,8 +134,6 @@ export function createDelayedPlayback(
   let timeZero: number | null = null;
   /** Checks so far, for the periodic trace */
   let ticks = 0;
-  /** When the current wait for a caption began (ms), for the trace */
-  let waitedSince = 0;
   const pacer = setInterval(pace, PACE_MS);
 
   element.playsInline = true;
@@ -171,15 +166,50 @@ export function createDelayedPlayback(
   if (TRACED) STALL_EVENTS.forEach((type) => element.addEventListener(type, onStall));
 
   function play(): void {
-    if (held || waitingForCaption) return;
+    if (held) return;
     element.play().catch((err: unknown) => logError('Delayed playback could not start', err));
+  }
+
+  /**
+   * The nearest time at or after `time` that is buffered: a recording can have gaps
+   * (a tab that stops painting sends no frames), and a playhead put in one stays there
+   */
+  function playable(time: number): number {
+    const ranges = buffer?.buffered;
+    if (!ranges) return time;
+    for (let index = 0; index < ranges.length; index++) {
+      if (time < ranges.start(index)) return ranges.start(index);
+      if (time <= ranges.end(index)) return time;
+    }
+    return time;
   }
 
   /** Moves the playhead, unless it is already about there (a seek interrupts the sound) */
   function seekTo(time: number): void {
-    if (Math.abs(element.currentTime - time) <= SEEK_MIN_SECONDS) return;
-    trace('seek', { ...state(), to: Number(time.toFixed(2)) });
-    element.currentTime = time;
+    const to = playable(time);
+    if (Math.abs(element.currentTime - to) <= SEEK_MIN_SECONDS) return;
+    trace('seek', { ...state(), to: Number(to.toFixed(2)) });
+    element.currentTime = to;
+  }
+
+  /**
+   * A playhead that ran into a gap of the recording goes on from where it resumes,
+   * at once, instead of standing there until the slip is large enough to be corrected
+   */
+  function skipGap(): void {
+    const ranges = buffer?.buffered;
+    if (!ranges) return;
+    for (let index = 0; index < ranges.length - 1; index++) {
+      const next = ranges.start(index + 1);
+      if (
+        element.currentTime >= ranges.end(index) - GAP_EDGE_SECONDS &&
+        element.currentTime < next
+      ) {
+        trace('skip a gap', { ...state(), to: Number(next.toFixed(2)) });
+        element.currentTime = next;
+        return;
+      }
+    }
   }
 
   /** Drops what is far behind the playhead; true when a removal was started */
@@ -239,7 +269,7 @@ export function createDelayedPlayback(
   }
 
   function pace(): void {
-    if (stopped || !buffer || held || waitingForCaption) return;
+    if (stopped || !buffer || held) return;
     const end = bufferedEnd(buffer);
     if (end === null) return;
     const lag = end - element.currentTime;
@@ -253,24 +283,33 @@ export function createDelayedPlayback(
       play();
       return;
     }
+    skipGap();
     if (behindByChoice) return;
     if (gliding) {
       glide(lag);
       return;
     }
-    realign(end, SLIP_SECONDS);
+    // Slipped too close to the present (the recording fell behind for a moment): it
+    // drifts back by playing slower. Only a delay the user chose holds the picture
+    if (lag - delay < -SLIP_SECONDS) gliding = true;
+    else realign(end, SLIP_SECONDS);
   }
 
   function setRate(rate: number): void {
     if (element.playbackRate !== rate) element.playbackRate = rate;
   }
 
-  /** One step of a glide: faster while further behind than the delay, then normal again */
+  /**
+   * One step of a glide: faster while further behind than the delay, slower while
+   * closer to the present than it, then normal again
+   */
   function glide(lag: number): void {
-    if (lag - delay > GLIDE_DONE_SECONDS) {
+    const off = lag - delay;
+    if (Math.abs(off) > GLIDE_DONE_SECONDS) {
+      const rate = off > 0 ? GLIDE_FAST_RATE : GLIDE_SLOW_RATE;
       element.preservesPitch = true;
-      if (element.playbackRate !== GLIDE_RATE) trace('glide', state());
-      setRate(GLIDE_RATE);
+      if (element.playbackRate !== rate) trace('glide', state());
+      setRate(rate);
       return;
     }
     stopGlide();
@@ -285,6 +324,7 @@ export function createDelayedPlayback(
   /**
    * Back to the wanted delay when off by more than `tolerance`: further behind, it jumps
    * ahead; too close to the live edge, the picture is held until that much is buffered
+   * (only when the user picks a longer delay: they asked for it there and then)
    */
   function realign(end: number, tolerance: number): void {
     const gap = end - element.currentTime - delay;
@@ -339,8 +379,9 @@ export function createDelayedPlayback(
 
   function glideTo(seconds: number): void {
     const next = Math.max(0, seconds);
-    // Still filling the buffer, or asked for more room: nothing to win back by speed
-    if (!playing || next >= delay) {
+    if (next === delay) return;
+    // Still filling the buffer: it simply fills up to the new delay
+    if (!playing) {
       setDelay(next);
       return;
     }
@@ -369,28 +410,11 @@ export function createDelayedPlayback(
     if (playing) play();
   }
 
-  function wait(on: boolean): void {
-    if (stopped || on === waitingForCaption) return;
-    waitingForCaption = on;
-    if (on) {
-      stopGlide();
-      waitedSince = Date.now();
-      trace('wait for a caption', state());
-      element.pause();
-      return;
-    }
-    // Further behind now, on purpose: it stays there until catchUp(), never jumps ahead
-    behindByChoice = true;
-    trace('caption arrived', { ...state(), waitedMs: Date.now() - waitedSince });
-    if (playing) play();
-  }
-
   function catchUp(): void {
     if (stopped) return;
     trace('catch up', state());
-    const wasHeld = held || waitingForCaption;
+    const wasHeld = held;
     held = false;
-    waitingForCaption = false;
     behindByChoice = false;
     stopGlide();
     if (!playing) return;
@@ -427,8 +451,6 @@ export function createDelayedPlayback(
     setVolume,
     pause,
     resume,
-    wait,
-    waiting: () => waitingForCaption,
     catchUp,
     stop,
   };
