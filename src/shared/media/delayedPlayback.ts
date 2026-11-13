@@ -12,8 +12,13 @@
 // until they ask to catch up. Nothing else ever stops it: a delay that has to change while
 // it plays (glideTo) is reached by playing a little faster or slower for a while, too
 // little to notice, so the picture and its sound never halt and nothing is skipped.
+//
+// What is recorded is not the tab's own picture track but a copy of it repainted at a
+// steady rate (steadyPicture): a tab that stands still (slides) sends no frames, and a
+// recording without frames cannot be played, sound included.
 
 import { logError } from '@/shared/errors';
+import { steadyPicture, type SteadyPicture } from './steadyPicture';
 
 export interface DelayedPlayback {
   readonly element: HTMLVideoElement;
@@ -109,7 +114,8 @@ export function createDelayedPlayback(
   if (type === null) throw new Error('Delayed playback is not supported here');
   const mediaSource = new MediaSource();
   const url = URL.createObjectURL(mediaSource);
-  const recorder = new MediaRecorder(stream, {
+  const steady: SteadyPicture | null = steadyPicture(stream);
+  const recorder = new MediaRecorder(steady?.stream ?? stream, {
     mimeType: type,
     videoBitsPerSecond: VIDEO_BITS_PER_SECOND,
   });
@@ -435,6 +441,7 @@ export function createDelayedPlayback(
     } catch (err) {
       logError('Delayed playback did not stop cleanly', err);
     } finally {
+      steady?.stop();
       element.pause();
       element.removeAttribute('src');
       element.load();

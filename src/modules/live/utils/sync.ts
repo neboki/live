@@ -12,11 +12,13 @@
 import type { SessionLine } from '@/modules/session';
 
 /**
- * Seconds the picture plays behind on "auto": the longest sentence (4 s) and the pause
- * that ends it, its transcript (about 1 s), the first translated words (under 1 s, 2.5 s
- * when the request had to be doubled) and some room
+ * Seconds the picture plays behind on "auto". A caption needs about 8 s when all goes
+ * well: the longest sentence (4 s) and the pause that ends it, its transcript (about
+ * 1 s), the first translated words (under 1 s, 2.5 s when the request had to be doubled).
+ * The rest is room for a slow network and for sentences that wait their turn: on a
+ * video nobody answers to, being further behind costs nothing, a late caption does
  */
-export const AUTO_SECONDS = 8;
+export const AUTO_SECONDS = 15;
 /** Room left on top of a late caption's measured wait when the delay is raised */
 const AUTO_HEADROOM_MS = 1500;
 /** Most an automatic delay is raised to, in seconds */

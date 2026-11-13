@@ -313,23 +313,23 @@ describe('createVideoSync', () => {
     expect(playback.glideTo).not.toHaveBeenCalled();
 
     // One slow caption shows late; the delay stays
-    arrives(120_000, 10_000);
+    arrives(120_000, 17_000);
     expect(sync.delaySeconds.value).toBe(AUTO_SECONDS);
 
-    // A second one: the delay covers the slowest (10.4 s + room, to the half second)
-    arrives(135_000, 10_400);
-    expect(playback.glideTo).toHaveBeenLastCalledWith(12);
-    expect(sync.delaySeconds.value).toBe(12);
+    // A second one: the delay covers the slowest (17.4 s + room, to the half second)
+    arrives(140_000, 17_400);
+    expect(playback.glideTo).toHaveBeenLastCalledWith(19);
+    expect(sync.delaySeconds.value).toBe(19);
     // Reached without stopping or jumping
     expect(playback.setDelay).not.toHaveBeenCalled();
     expect(playback.pause).not.toHaveBeenCalled();
 
     // Quick captions again: it stays where it is
-    playback.lag = 12;
-    arrives(150_000, 3000);
+    playback.lag = 19;
     arrives(160_000, 3000);
     arrives(170_000, 3000);
-    expect(sync.delaySeconds.value).toBe(12);
+    arrives(180_000, 3000);
+    expect(sync.delaySeconds.value).toBe(19);
     expect(playback.glideTo).toHaveBeenCalledTimes(1);
     sync.ended();
   });

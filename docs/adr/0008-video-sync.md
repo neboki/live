@@ -40,9 +40,11 @@ the user hears of it. With the tab's picture it can own what they see of it too.
    for every late caption. Measured in a real browser on a shared tab, those holds froze
    the picture 11 to 55 s out of every 80; without them, up to 40 % of the captions
    landed seconds late. Seven delay policies in eight days had only ever been checked
-   with fakes.)_ On "auto", the default, the delay is 8 s from the first frame: the
+   with fakes.)_ On "auto", the default, the delay is 15 s from the first frame. About 8 s is what a
+   caption needs when all goes well: the
    longest sentence the audio gate lets through (4 s), its transcript (about 1 s), the
-   first translated words (under 1 s, 2.5 s when the request was doubled) and some room.
+   first translated words (under 1 s, 2.5 s when the request was doubled); the rest is
+   room for a slow network, since on a video being further behind costs nothing.
    Nothing is measured while the picture waits, and nothing in the controller can pause
    the picture or make it jump. Only when two of the last six captions still land late
    is the delay raised to cover them, and the picture gets there by playing 5 % slower
@@ -70,11 +72,15 @@ the user hears of it. With the tab's picture it can own what they see of it too.
 - ✅ Nothing changes for the transcription or the floating window: the delayed picture is
   a copy, fed from the same share.
 - ❌ The user has to watch the page instead of the original tab, which keeps playing
-  silently; the first picture takes the whole delay (8 s on auto) to appear.
+  silently; the first picture takes the whole delay (15 s on auto) to appear.
 - ✅ The flow has a browser test with the real recorder and buffer
   (`tests/e2e/sync.spec.ts`): it fails when the picture pauses or stands still.
-- ❌ Not covered yet: a tab whose picture stands still for long (slides). Its recording
-  has gaps, and jumping over them also skips that stretch of sound.
+- ✅ A tab whose picture stands still (slides) plays like any other: a shared tab only
+  sends a frame when something changes, and a recording without frames cannot be played,
+  sound included (measured: the player never started). What is recorded is therefore a
+  copy of the picture repainted 24 times a second (`steadyPicture`), at the cost of one
+  canvas draw per frame. While the app's own tab is hidden its timers slow down and the
+  copy with them.
 - ❌ Recording the tab costs CPU (VP8 at up to 2.5 Mb/s) and about 20 s of memory.
 - ✅ The translated voice follows the picture too: while it plays behind time, each line is
   read when the picture reaches its sentence, and one it has left behind is skipped

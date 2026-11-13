@@ -58,19 +58,19 @@ describe('suggestedDelay', () => {
 
 describe('raisedDelay', () => {
   it('raises the delay once a couple of recent captions landed late', () => {
-    // Late: later than 5 s + 0.5 s of margin; the slowest, 8 s, plus room → 9.5 s
-    expect(raisedDelay([3000, 7000, 4000, 8000], 5)).toBe(9.5);
+    // Late: later than 15 s + 0.5 s of margin; the slowest, 18 s, plus room → 19.5 s
+    expect(raisedDelay([3000, 17_000, 4000, 18_000], 15)).toBe(19.5);
   });
 
   it('lets a single late caption show late instead', () => {
-    expect(raisedDelay([3000, 9000, 4000], 5)).toBeNull();
-    expect(raisedDelay([], 5)).toBeNull();
+    expect(raisedDelay([3000, 19_000, 4000], 15)).toBeNull();
+    expect(raisedDelay([], 15)).toBeNull();
   });
 
   it('never lowers it, and forgets late captions beyond the recent window', () => {
-    expect(raisedDelay([5300, 5400], 5)).toBeNull();
+    expect(raisedDelay([15_300, 15_400], 15)).toBeNull();
     const old = [20_000, 20_000];
-    expect(raisedDelay([...old, ...Array<number>(6).fill(3000)], 5)).toBeNull();
+    expect(raisedDelay([...old, ...Array<number>(6).fill(3000)], 15)).toBeNull();
     expect(raisedDelay([60_000, 60_000], AUTO_MAX_SECONDS)).toBeNull();
     // Raised, it is at least the delay that auto starts at
     expect(raisedDelay([4000, 4200], 3)).toBe(AUTO_SECONDS);

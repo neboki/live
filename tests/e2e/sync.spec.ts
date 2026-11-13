@@ -32,15 +32,17 @@ declare global {
  * Replaces the share dialog with a browser tab as Chrome reports it: a picture that
  * keeps painting, and a voice that says a sentence of 2.5 s, stops for 0.7 s, and so on
  */
-async function fakeTalkingTab(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+async function fakeTalkingTab(page: Page, picture: 'moving' | 'still' = 'moving'): Promise<void> {
+  await page.addInitScript((kind) => {
     navigator.mediaDevices.getDisplayMedia = async () => {
       const canvas = document.createElement('canvas');
       canvas.width = 640;
       canvas.height = 360;
       const paint = canvas.getContext('2d');
       let frame = 0;
-      setInterval(() => {
+      // A still tab (slides) paints once: Chrome then sends no more frames
+      const repaint = kind === 'moving' ? setInterval : setTimeout;
+      repaint(() => {
         if (!paint) return;
         paint.fillStyle = `hsl(${frame % 360} 60% 35%)`;
         paint.fillRect(0, 0, canvas.width, canvas.height);
@@ -70,7 +72,7 @@ async function fakeTalkingTab(page: Page): Promise<void> {
       window.fakeShareContext = ctx;
       return new MediaStream([...out.stream.getAudioTracks(), ...video]);
     };
-  });
+  }, picture);
 }
 
 /** Stands in for OpenAI: every sentence is transcribed, and translated after a while */
@@ -161,7 +163,7 @@ test('the synced picture never stops while people speak, even with slow translat
   await expect(player.locator('.synced-tab__notice')).toBeVisible();
   await expect
     .poll(() => video.evaluate((el: HTMLVideoElement) => !el.paused && el.currentTime > 0), {
-      timeout: 20_000,
+      timeout: 30_000,
     })
     .toBe(true);
   await watchPicture(page);
@@ -206,4 +208,30 @@ test('the menu offers one switch for the synced picture, with nothing to wait fo
   await page.locator('.live__panel-toggle').click();
   await expect(page.getByText('Picture in step with the captions')).toBeVisible();
   await expect(page.getByText('Wait for the captions')).toHaveCount(0);
+});
+
+test('a tab whose picture stands still (slides) plays too, sound and captions included', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await fakeTalkingTab(page, 'still');
+  await fakeSlowOpenAi(page);
+  await startSynced(page);
+
+  const player = page.locator('.live .synced-tab');
+  const video = player.locator('.synced-tab__frame video');
+  // Without frames to record, the player used to wait for ever for something to play
+  await expect
+    .poll(() => video.evaluate((el: HTMLVideoElement) => !el.paused && el.currentTime > 0), {
+      timeout: 30_000,
+    })
+    .toBe(true);
+  await watchPicture(page);
+  await page.waitForTimeout(10_000);
+
+  const probe = await page.evaluate(() => window.syncProbe);
+  if (!probe) throw new Error('The picture was not watched');
+  expect(probe.pauses).toBe(0);
+  expect(longestFreeze(probe.samples)).toBeLessThan(1000);
+  await expect(player.locator('.synced-tab__line--current')).toContainText('Frase');
 });
