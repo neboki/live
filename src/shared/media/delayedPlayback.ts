@@ -13,11 +13,17 @@
 // it plays (glideTo) is reached by playing a little faster or slower for a while, too
 // little to notice, so the picture and its sound never halt and nothing is skipped.
 //
+// The sound does not go through the recording: it is delayed apart, in a delay line that
+// cannot stall (soundLine), and the picture, recorded and played silent, follows it. A
+// recording of both stops its sound at every gap of its picture, and a live recording has
+// gaps; heard, each one is a cut in the middle of a word.
+//
 // What is recorded is not the tab's own picture track but a copy of it repainted at a
 // steady rate (steadyPicture): a tab that stands still (slides) sends no frames, and a
 // recording without frames cannot be played, sound included.
 
 import { logError } from '@/shared/errors';
+import { soundLine, type SoundLine } from './soundLine';
 import { steadyPicture, type SteadyPicture } from './steadyPicture';
 
 export interface DelayedPlayback {
@@ -44,6 +50,10 @@ export interface DelayedPlayback {
 
 /** Recording formats tried in order; the first the browser records and plays is used */
 const MIME_TYPES = ['video/webm;codecs=vp8,opus', 'video/webm'];
+/** The format of a recording of the picture alone, while the sound is delayed apart */
+const SILENT_MIME_TYPE = 'video/webm;codecs=vp8';
+/** Most the end of the buffer is taken to be behind real time, in seconds */
+const MAX_EDGE_SECONDS = 1.5;
 /** Length of each recorded chunk: the granularity of the buffer */
 export const CHUNK_MS = 250;
 /** How often the playhead is checked against the wanted delay */
@@ -91,6 +101,13 @@ function supportedType(): string | null {
   );
 }
 
+/** True where the picture can be recorded and played without its sound */
+function canRecordSilent(): boolean {
+  return (
+    MediaRecorder.isTypeSupported(SILENT_MIME_TYPE) && MediaSource.isTypeSupported(SILENT_MIME_TYPE)
+  );
+}
+
 /** True where the browser can record a stream and play it from a buffer (Chromium, Firefox) */
 export function canDelayPlayback(): boolean {
   return supportedType() !== null;
@@ -114,11 +131,15 @@ export function createDelayedPlayback(
   if (type === null) throw new Error('Delayed playback is not supported here');
   const mediaSource = new MediaSource();
   const url = URL.createObjectURL(mediaSource);
-  const steady: SteadyPicture | null = steadyPicture(stream);
-  const recorder = new MediaRecorder(steady?.stream ?? stream, {
-    mimeType: type,
+  /** The sound, delayed apart; null where that cannot be done and it stays in the recording */
+  const sound: SoundLine | null = canRecordSilent() ? soundLine(stream, delaySeconds) : null;
+  const steady: SteadyPicture | null = steadyPicture(stream, sound !== null);
+  const recorded = steady?.stream ?? stream;
+  const recorder = new MediaRecorder(recorded, {
+    mimeType: sound && steady ? SILENT_MIME_TYPE : type,
     videoBitsPerSecond: VIDEO_BITS_PER_SECOND,
   });
+  const bufferType = sound && steady ? SILENT_MIME_TYPE : type;
   const queue: ArrayBuffer[] = [];
   let delay = delaySeconds;
   let buffer: SourceBuffer | null = null;
@@ -144,6 +165,8 @@ export function createDelayedPlayback(
 
   element.playsInline = true;
   element.preload = 'auto';
+  // With the sound delayed apart, the element only shows the picture
+  if (sound) element.muted = true;
   element.src = url;
 
   /** Where things stand, for the trace */
@@ -274,9 +297,22 @@ export function createDelayedPlayback(
       });
   }
 
+  /**
+   * Where "now" is on the recording's clock. With the sound delayed apart the picture
+   * has to be the delay behind real time, as the sound is, not behind the end of the
+   * buffer, which is itself a little behind: that much is added. Null while nothing is
+   * buffered
+   */
+  function liveEdge(): number | null {
+    const end = buffer ? bufferedEnd(buffer) : null;
+    if (end === null || !sound || timeZero === null) return end;
+    const behind = Date.now() / 1000 - timeZero - end;
+    return end + Math.min(MAX_EDGE_SECONDS, Math.max(0, behind));
+  }
+
   function pace(): void {
     if (stopped || !buffer || held) return;
-    const end = bufferedEnd(buffer);
+    const end = liveEdge();
     if (end === null) return;
     const lag = end - element.currentTime;
     if (++ticks % TRACE_EVERY === 0) trace('playhead', state());
@@ -348,7 +384,7 @@ export function createDelayedPlayback(
     try {
       // Segments mode: the recording's own timestamps place each chunk, so sound and
       // picture stay as they were recorded (sequence mode re-times every append)
-      buffer = mediaSource.addSourceBuffer(type);
+      buffer = mediaSource.addSourceBuffer(bufferType);
       buffer.addEventListener('updateend', onUpdateEnd);
       buffer.addEventListener('error', (event) =>
         logError('Delayed playback buffer failed', event),
@@ -365,6 +401,10 @@ export function createDelayedPlayback(
 
   function lagSeconds(): number | null {
     if (!playing || !buffer) return null;
+    if (sound) {
+      const live = liveEdge();
+      return live === null ? null : Math.max(0, live - element.currentTime);
+    }
     const end = bufferedEnd(buffer);
     if (end === null) return null;
     // Behind the end of the buffer, plus how far that end is behind real time
@@ -378,8 +418,9 @@ export function createDelayedPlayback(
     if (next === delay) return;
     stopGlide();
     delay = next;
+    sound?.setDelay(next);
     if (stopped || !buffer || !playing || held || behindByChoice) return;
-    const end = bufferedEnd(buffer);
+    const end = liveEdge();
     if (end !== null) realign(end, SEEK_MIN_SECONDS);
   }
 
@@ -391,13 +432,16 @@ export function createDelayedPlayback(
       setDelay(next);
       return;
     }
+    // The sound gets there at the pace of the picture's glide
+    sound?.setDelay(next, Math.abs(next - delay) / (1 - GLIDE_SLOW_RATE));
     delay = next;
     if (stopped || held || behindByChoice) return;
     gliding = true;
   }
 
   function setVolume(volume: number): void {
-    element.volume = Math.min(1, Math.max(0, volume));
+    if (sound) sound.setVolume(volume);
+    else element.volume = Math.min(1, Math.max(0, volume));
   }
 
   function pause(): void {
@@ -405,11 +449,17 @@ export function createDelayedPlayback(
     held = true;
     stopGlide();
     trace('paused by the user', state());
+    sound?.mute(true);
     element.pause();
   }
 
   function resume(): void {
     if (stopped || !held) return;
+    // The delayed sound went on meanwhile, as a broadcast does: the picture rejoins it
+    if (sound) {
+      catchUp();
+      return;
+    }
     held = false;
     behindByChoice = true;
     trace('resumed by the user', state());
@@ -422,9 +472,10 @@ export function createDelayedPlayback(
     const wasHeld = held;
     held = false;
     behindByChoice = false;
+    sound?.mute(false);
     stopGlide();
     if (!playing) return;
-    const end = buffer ? bufferedEnd(buffer) : null;
+    const end = liveEdge();
     if (end !== null) seekTo(end - delay);
     if (wasHeld) play();
   }
@@ -441,6 +492,7 @@ export function createDelayedPlayback(
     } catch (err) {
       logError('Delayed playback did not stop cleanly', err);
     } finally {
+      sound?.stop();
       steady?.stop();
       element.pause();
       element.removeAttribute('src');

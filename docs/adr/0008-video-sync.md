@@ -75,6 +75,16 @@ the user hears of it. With the tab's picture it can own what they see of it too.
   silently; the first picture takes the whole delay (15 s on auto) to appear.
 - ✅ The flow has a browser test with the real recorder and buffer
   (`tests/e2e/sync.spec.ts`): it fails when the picture pauses or stands still.
+- ✅ The sound cannot be cut by the picture. _(2026-11-13)_ Picture and sound used to be
+  recorded together, and a player stops the sound of such a recording at every gap of
+  its picture; a live recording has gaps (measured on a YouTube talk: one in a minute on
+  an idle computer, each a cut in the middle of a word). The sound now goes through a
+  Web Audio delay line (`soundLine`), which leaves exactly the delay later and cannot
+  stall, and the picture is recorded and played silent, kept the same delay behind real
+  time. Measured on the same talk: 75 s without a stall, seek or change of speed, the
+  sound 15.00 s late and the picture 15.06 to 15.09 s. The price: a paused picture can
+  no longer go on from where it stopped, it rejoins the sound; and raising the delay
+  bends the pitch by 5 % while it moves.
 - ✅ A tab whose picture stands still (slides) plays like any other: a shared tab only
   sends a frame when something changes, and a recording without frames cannot be played,
   sound included (measured: the player never started). What is recorded is therefore a

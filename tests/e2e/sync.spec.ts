@@ -186,6 +186,8 @@ test('the synced picture never stops while people speak, even with slow translat
 
   // Nothing paused it: no wait for a caption, no hold to fit another delay
   expect(pauses).toBe(0);
+  // The sound is not in the recording: it is delayed apart, where a gap cannot cut it
+  expect(await video.evaluate((el: HTMLVideoElement) => el.muted)).toBe(true);
   // It moved all along, at the speed of the tab or within the 5 % of a glide
   expect(longestFreeze(samples)).toBeLessThan(1000);
   expect(played / elapsed).toBeGreaterThan(0.9);

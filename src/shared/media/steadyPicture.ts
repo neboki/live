@@ -10,7 +10,7 @@
 import { logError } from '@/shared/errors';
 
 export interface SteadyPicture {
-  /** The tab's sound with the steady copy of its picture */
+  /** The steady copy of the picture, with the tab's sound unless it is played apart */
   stream: MediaStream;
   stop: () => void;
 }
@@ -23,10 +23,10 @@ const MAX_WIDTH = 1280;
 const DEFAULT_SIZE = { width: 1280, height: 720 };
 
 /**
- * The steady copy of `stream`; null where it has no picture or the browser cannot make
- * one (the stream is then recorded as it is).
+ * The steady copy of `stream`, with its sound or (`silent`) without; null where it has
+ * no picture or the browser cannot make one (the stream is then recorded as it is).
  */
-export function steadyPicture(stream: MediaStream): SteadyPicture | null {
+export function steadyPicture(stream: MediaStream, silent = false): SteadyPicture | null {
   if (typeof stream.getVideoTracks !== 'function') return null;
   const [picture] = stream.getVideoTracks();
   if (!picture) return null;
@@ -73,5 +73,6 @@ export function steadyPicture(stream: MediaStream): SteadyPicture | null {
     source.srcObject = null;
   }
 
-  return { stream: new MediaStream([...copy.getVideoTracks(), ...stream.getAudioTracks()]), stop };
+  const sound = silent ? [] : stream.getAudioTracks();
+  return { stream: new MediaStream([...copy.getVideoTracks(), ...sound]), stop };
 }
