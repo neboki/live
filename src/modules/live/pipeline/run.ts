@@ -1,6 +1,7 @@
 import type { CaptionActivity } from '@/modules/overlay';
 import { createSpeakerClusters, type SpeakerClusters } from '@/shared/audio/speakerClusters';
 import type { SttActivity, SttSession, TextContext, Usage } from '@/shared/providers/types';
+import type { TranslationAhead } from './translateAhead';
 import type { ComingCaption, PipelineOptions, RecordedLine, TextRole } from './types';
 
 /** What the summary and suggestions are written in when nothing is translated */
@@ -33,6 +34,8 @@ export interface Sentence {
   speaker: number | null;
   /** Sentences heard while the translator was busy, translated together with this one */
   absorbed?: Sentence[];
+  /** Its translation, already asked for while the captions before it are shown */
+  ahead?: TranslationAhead;
 }
 
 /** The sentence being translated and the text streamed so far */
