@@ -9,7 +9,7 @@ import { AppError, ExternalServiceError, UnauthorizedError } from '@/shared/erro
 import type { DelayedPlayback } from '@/shared/media/delayedPlayback';
 import type { SttCallbacks, SttOptions, SttSession, Usage } from '@/shared/providers/types';
 import { TIER_MODELS } from '@/shared/providers/openai/config';
-import { CALIBRATION_SECONDS } from '../utils/sync';
+import { AUTO_SECONDS } from '../utils/sync';
 import { useLiveSession } from './useLiveSession';
 
 const fakes = vi.hoisted(() => {
@@ -324,8 +324,6 @@ describe('useLiveSession', () => {
       paused: () => false,
       pause: vi.fn(),
       resume: vi.fn(),
-      wait: vi.fn(),
-      waiting: () => false,
       catchUp: vi.fn(),
       setDelay: vi.fn(),
       glideTo: vi.fn(),
@@ -340,13 +338,12 @@ describe('useLiveSession', () => {
     await nextTick();
 
     expect(overlay.canSyncVideo).toBe(true);
-    // Auto by default: held the longest while the first captions are timed
-    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(CALIBRATION_SECONDS);
+    // Auto by default: a delay known beforehand, nothing to work out
+    expect(fakes.syncOriginal).toHaveBeenLastCalledWith(AUTO_SECONDS);
     expect(session.syncedTab).toBe(playback);
-    expect(session.syncDelaySeconds).toBe(CALIBRATION_SECONDS);
-    expect(session.syncCalibrating).toBe(true);
+    expect(session.syncDelaySeconds).toBe(AUTO_SECONDS);
 
-    // The latency does not move it: only the captions timed, or a delay chosen, change it
+    // The latency does not move it: only a delay chosen does
     const calls = fakes.syncOriginal.mock.calls.length;
     overlay.setLatency(4200);
     await nextTick();

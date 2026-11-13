@@ -63,6 +63,6 @@ export function createSessionPipeline({
     abort: () => active.abort(),
     setTargetLanguage: (language, code) => active.setTargetLanguage(language, code),
     resetConversation: () => active.resetConversation(),
-    captionDueFrom: () => active.captionDueFrom(),
+    captionComing: () => active.captionComing(),
   };
 }

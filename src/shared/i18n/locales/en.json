@@ -118,7 +118,7 @@
       "translating": "Translating…"
     },
     "latency": "Translation delay",
-    "slow": "The translation is running behind; it catches up by joining sentences",
+    "slow": "Seconds from when a sentence starts to be said until its caption shows. It is running behind; it catches up by joining sentences",
     "resize": "Drag to resize (or use the arrow keys)",
     "space": "Space",
     "shortcut": "shows or hides the bar",
@@ -287,12 +287,10 @@
     },
     "sync": {
       "label": "Picture in step with the captions",
-      "hint": "Shows the shared tab in the app a few seconds behind, so each caption lands on its sentence",
+      "hint": "Shows the shared tab in the app a few seconds behind, so each caption lands on its sentence. The video never stops",
       "on": "Watch the tab in step with the captions",
       "off": "Back to the live tab",
-      "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen",
-      "waitLabel": "Wait for the captions",
-      "waitHint": "Exact sync: when a translation runs late, the video stops until it arrives, and goes on from there, further behind. Off, a late caption simply shows a little late and the video never stops"
+      "unavailable": "Only works when sharing a Chrome tab with its audio; not with a window or the whole screen"
     },
     "groups": {
       "show": "Show",
@@ -398,7 +396,6 @@
     "sync": {
       "title": "The shared tab, in step with the captions",
       "buffering": "Holding the picture back… {seconds} s",
-      "calibrating": "Fitting the translation to the video… {seconds} s",
       "lag": "{seconds} s behind real time",
       "pause": "Pause",
       "resume": "Resume",
@@ -415,8 +412,7 @@
       "exitFullscreen": "Exit fullscreen",
       "delayHint": "How far the picture is held back. On Auto, how long the first captions take is measured at the start and kept for the whole session. A caption only arrives once its whole sentence is heard and translated: long sentences need more",
       "late": "Captions late · use {seconds} s",
-      "lateHint": "Several recent captions arrived after their sentence began on screen. With {seconds} s they would have landed on time",
-      "waiting": "Waiting for the translation…"
+      "lateHint": "Several recent captions arrived after their sentence began on screen. With {seconds} s they would have landed on time"
     },
     "side": {
       "label": "Options",

@@ -126,16 +126,6 @@ const seeSwitches = computed<MenuSwitch[]>(() => {
     disabled: syncUnavailable.value,
     toggle: () => (store.syncVideo = !store.syncVideo),
   });
-  // Only means something while the picture is synced
-  if (store.syncVideo && !syncUnavailable.value) {
-    list.push({
-      key: 'syncWait',
-      label: t('overlay.sync.waitLabel'),
-      hint: t('overlay.sync.waitHint'),
-      checked: store.syncWait,
-      toggle: () => (store.syncWait = !store.syncWait),
-    });
-  }
   return list;
 });
 

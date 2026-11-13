@@ -1,53 +1,39 @@
 // Which captions a shared tab shown some seconds behind real time has reached, so each
-// lands on its sentence, and how far behind it should be. The delay is either chosen by
-// the user (see the overlay's SYNC_DELAY_CHOICES), and then a caption slower than it shows
-// as soon as it arrives and a longer delay is suggested when that keeps happening; or
-// "auto": the first captions of the session are timed and the delay is set from them,
-// like a live broadcast that settles its delay and keeps it; only when captions keep
-// landing late is it raised, never lowered, so the picture stops as seldom as it can.
+// lands on its sentence, and how far behind it should be. The picture never stops for a
+// caption: the delay has to be long enough from the first frame. A caption starts to
+// exist when its sentence was heard to the end (4 s at most, see the audio module's
+// energyVad), transcribed and the first translated words came back, so "auto" starts at
+// a delay that covers that, known beforehand; it is not measured while the picture
+// waits. Only when captions keep landing late (a slow network) is it raised, never
+// lowered, and the picture gets there by playing slightly slower, without stopping. A
+// delay chosen by the user (see the overlay's SYNC_DELAY_CHOICES) stays as chosen: a
+// caption slower than it shows as soon as it arrives and a longer one is suggested.
 
 import type { SessionLine } from '@/modules/session';
 
-/** Captions timed before an automatic delay is settled */
-export const CALIBRATION_LINES = 3;
 /**
- * Seconds the picture starts behind while the delay is automatic and not settled yet:
- * enough for a short sentence and its caption, so the picture shows soon. Once a few
- * captions were timed the delay is settled from them: the picture holds once to reach a
- * longer one, or glides to a shorter one. (It used to wait up to 20 s, which made every
- * synced start feel stuck.)
+ * Seconds the picture plays behind on "auto". A caption needs about 8 s when all goes
+ * well: the longest sentence (4 s) and the pause that ends it, its transcript (about
+ * 1 s), the first translated words (under 1 s, 2.5 s when the request had to be doubled).
+ * The rest is room for a slow network and for sentences that wait their turn: on a
+ * video nobody answers to, being further behind costs nothing, a late caption does
  */
-export const CALIBRATION_SECONDS = 6;
-/** Room left on top of the captions' measured wait: for the voice to start, and jitter */
+export const AUTO_SECONDS = 15;
+/** Room left on top of a late caption's measured wait when the delay is raised */
 const AUTO_HEADROOM_MS = 1500;
-/** Bounds of an automatic delay, in seconds */
-export const AUTO_MIN_SECONDS = 3;
+/** Most an automatic delay is raised to, in seconds */
 export const AUTO_MAX_SECONDS = 30;
-/** Most recent waits an automatic delay is drawn from */
-const AUTO_WINDOW = 8;
 
 /** The delay that covers a caption which took `waitMs` to arrive, with room, in bounds */
 function delayCovering(waitMs: number): number {
   const seconds = Math.ceil(((waitMs + AUTO_HEADROOM_MS) / 1000) * 2) / 2;
-  return Math.min(AUTO_MAX_SECONDS, Math.max(AUTO_MIN_SECONDS, seconds));
-}
-
-/**
- * The delay, in seconds, that lets the captions land on their sentence, from how long
- * each recent one took to arrive after its sentence began (milliseconds); null until
- * enough were timed. Enough for the slowest of them: a caption can only exist once its
- * whole sentence was said, so a delay shorter than the long sentences stops the picture
- * (or shows their captions late) at every one. Rounded up to the half second.
- */
-export function autoDelay(waits: readonly number[]): number | null {
-  const recent = waits.slice(-AUTO_WINDOW);
-  if (recent.length < CALIBRATION_LINES) return null;
-  return delayCovering(Math.max(...recent));
+  return Math.min(AUTO_MAX_SECONDS, Math.max(AUTO_SECONDS, seconds));
 }
 
 /**
  * A longer automatic delay, once captions keep landing after their sentence began on
- * the picture: enough for the slowest of the recent late ones. Null while the current
+ * the picture: enough for the slowest of the recent late ones. `waits` is how long each
+ * caption took to start showing after its sentence began, in milliseconds. Null while the current
  * delay is enough, or while only one caption was late (a single long sentence is let
  * show late rather than moving the whole picture for it).
  */

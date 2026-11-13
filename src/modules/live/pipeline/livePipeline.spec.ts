@@ -154,33 +154,42 @@ describe('createLivePipeline', () => {
     expect(translate.mock.calls.at(-1)?.[0].previous).toEqual(['b', 'c', 'd']);
   });
 
-  it('joins the sentences heard while translating into the next request', async () => {
+  it('asks for every sentence at once, each on its own, and shows them in order', async () => {
     const stt = fakeStt();
     const first = deferred<undefined>();
-    const translate = vi.fn((request: TranslateRequest) =>
-      request.text === '1' ? first.promise : Promise.resolve(),
-    );
+    const translate = vi.fn(async (request: TranslateRequest, onDelta: (chunk: string) => void) => {
+      if (request.text === '1') await first.promise;
+      onDelta(`<${request.text}>`);
+    });
     const record = fakeRecord();
+    const overlay = useOverlayStore();
     const llm = fakeLlm({ translate });
-    const pipeline = createLivePipeline({ stt, llm, overlay: useOverlayStore(), record });
+    const pipeline = createLivePipeline({ stt, llm, overlay, record });
     await pipeline.start(options);
 
     ['1', '2', '3', '4'].forEach((line) => stt.callbacks().onFinal(line));
-    first.resolve(undefined);
+    // A slow first answer holds nobody: the others are asked for meanwhile, never joined
+    await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(4));
+    expect(translate.mock.calls.map(([request]) => request.text)).toEqual(['1', '2', '3', '4']);
+    expect(translate.mock.calls[3]?.[0].previous).toEqual(['1', '2', '3']);
+    // Nothing shows before its turn: the captions are still at the first sentence
+    expect(record.addLine).not.toHaveBeenCalled();
 
-    await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(2));
-    expect(translate.mock.calls.map(([request]) => request.text)).toEqual(['1', '2 3 4']);
-    expect(translate.mock.calls[1]?.[0].previous).toEqual(['1']);
-    await vi.waitFor(() => expect(record.addLine).toHaveBeenCalledTimes(2));
-    expect(record.addLine.mock.calls.map(([line]) => line.source)).toEqual(['1', '2 3 4']);
+    first.resolve(undefined);
+    await vi.waitFor(() => expect(record.addLine).toHaveBeenCalledTimes(4));
+    const lines = record.addLine.mock.calls.map(([line]) => line);
+    expect(lines.map((line) => line.source)).toEqual(['1', '2', '3', '4']);
+    // One short caption per sentence, each with its own translation
+    expect(lines.map((line) => line.translation)).toEqual(['<1>', '<2>', '<3>', '<4>']);
   });
 
-  it('drops the oldest queued sentences beyond 6, keeping the record in order', async () => {
+  it('drops the oldest waiting sentences beyond 6, keeping the record in order', async () => {
     const stt = fakeStt();
     const first = deferred<undefined>();
-    const translate = vi.fn((request: TranslateRequest) =>
-      request.text === '1' ? first.promise : Promise.resolve(),
-    );
+    const translate = vi.fn(async (request: TranslateRequest, onDelta: (chunk: string) => void) => {
+      if (request.text === '1') await first.promise;
+      onDelta(`<${request.text}>`);
+    });
     const record = fakeRecord();
     const llm = fakeLlm({ translate });
     const pipeline = createLivePipeline({ stt, llm, overlay: useOverlayStore(), record });
@@ -189,14 +198,22 @@ describe('createLivePipeline', () => {
     ['1', '2', '3', '4', '5', '6', '7', '8'].forEach((line) => stt.callbacks().onFinal(line));
     first.resolve(undefined);
 
-    await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(2));
-    expect(translate.mock.calls[1]?.[0].text).toBe('3 4 5 6 7 8');
-    await vi.waitFor(() => expect(record.addLine).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(record.addLine).toHaveBeenCalledTimes(8));
     const lines = record.addLine.mock.calls.map(([line]) => line);
     // '2' was dropped while '1' was translating, but it still comes after '1'
-    expect(lines.map((line) => line.source)).toEqual(['1', '2', '3 4 5 6 7 8']);
+    expect(lines.map((line) => line.source)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+    expect(lines.map((line) => line.translation)).toEqual([
+      '<1>',
+      '',
+      '<3>',
+      '<4>',
+      '<5>',
+      '<6>',
+      '<7>',
+      '<8>',
+    ]);
     const stamps = lines.map((line) => line.at);
-    expect(stamps).toEqual([...stamps].sort((a, b) => a - b));
+    expect(stamps).toEqual([...stamps].sort((x, y) => x - y));
   });
 
   it('records each translation, the detected language and the usage', async () => {

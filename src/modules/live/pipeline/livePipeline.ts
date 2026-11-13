@@ -10,7 +10,8 @@ import { createExtras, MAX_UNSUMMARIZED } from './extras';
 import { hedged, isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
 import {
   activityOf,
-  captionDueFrom,
+  captionComing,
+  captionDelay,
   createRun,
   isSaidIn,
   keywordsFrom,
@@ -20,6 +21,7 @@ import {
   type Run,
   type Sentence,
 } from './run';
+import { translateAhead } from './translateAhead';
 import type { LivePipeline, PipelineDeps, PipelineOptions, TextRole } from './types';
 
 export type * from './types';
@@ -35,9 +37,11 @@ const RECONNECTING_KEY = 'live.reconnecting';
 
 /**
  * Audio → transcription → translation, plus the optional summary and reply
- * suggestions. Translations run one at a time, in order; sentences heard while
- * one is translating are joined into the next request. The extras run on the
- * side and never block the captions.
+ * suggestions. Each sentence is translated on its own, asked for as soon as it is
+ * heard (see translateAhead), and the captions show one at a time, in order: a slow
+ * answer delays its own caption, not the ones after it, and no caption is longer than
+ * its sentence. Only a conversation still translates one at a time, joining what one
+ * person said meanwhile. The extras run on the side and never block the captions.
  */
 export function createLivePipeline({
   stt,
@@ -90,10 +94,57 @@ export function createLivePipeline({
    */
   function showAsHeard(run: Run, sentence: Sentence, translation: string): void {
     overlay.startTranslation(sentence.text, sentence.speaker);
-    overlay.setLatency(now() - sentence.heardAt);
+    overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
     overlay.finishTranslation();
     recordLine(run, sentence, translation);
     updateActivity(run);
+  }
+
+  /**
+   * Asks for the translation of `sentence`. A stuck call would hold its caption: a slow
+   * one is raced by a twin (hedged), and both get a deadline and, while nothing came out
+   * of it yet (`shown`), one more try (`again` runs before it)
+   */
+  async function ask(
+    run: Run,
+    sentence: Sentence,
+    into: string,
+    onChunk: (chunk: string) => void,
+    shown: () => boolean,
+    again?: () => void,
+  ): Promise<void> {
+    const request = {
+      ...context(run, 'translation'),
+      targetLanguage: into,
+      text: sentence.text,
+      previous: sentence.previous,
+    };
+    for (let attempt = 1; ; attempt++) {
+      again?.();
+      try {
+        await watchTranslation(
+          hedged((signal, onDelta) => llm.translate({ ...request, signal }, onDelta)),
+          run.controller.signal,
+          onChunk,
+        );
+        return;
+      } catch (err) {
+        const retry = attempt < TRANSLATE_ATTEMPTS && !shown() && isLive(run) && isRetryable(err);
+        if (!retry) throw err;
+        logError('Translation retried', err);
+      }
+    }
+  }
+
+  /** Asks for the translation at once, so it is there when the captions get to it */
+  function askAhead(run: Run, sentence: Sentence): void {
+    const { targetLanguage, targetCode, partner } = run.options;
+    // A conversation only knows the direction once it knows who spoke
+    if (partner || targetLanguage === null) return;
+    if (isSaidIn(sentence, targetCode, targetLanguage)) return;
+    sentence.ahead = translateAhead((onDelta, produced) =>
+      ask(run, sentence, targetLanguage, onDelta, produced),
+    );
   }
 
   async function translate(run: Run, sentence: Sentence): Promise<void> {
@@ -135,13 +186,6 @@ export function createLivePipeline({
     };
     if (!placing) overlay.startTranslation('', sentence.speaker);
     try {
-      const { previous } = sentence;
-      const request = {
-        ...context(run, 'translation'),
-        targetLanguage: into,
-        text: sentence.text,
-        previous,
-      };
       const onChunk = (chunk: string): void => {
         if (!isLive(run)) return;
         let text = chunk;
@@ -153,30 +197,26 @@ export function createLivePipeline({
           text = tag.rest;
         }
         if (unwanted || !text) return;
-        if (first) overlay.setLatency(now() - sentence.heardAt);
+        if (first) overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
         first = false;
         inFlight.text += text;
         overlay.appendTranslation(text);
         updateActivity(run);
       };
-      // A stuck call would hold every sentence after it: a slow one is raced by a twin
-      // (hedged), and both get a deadline and,
-      // when nothing came out of it yet, one more try
-      for (let attempt = 1; ; attempt++) {
-        if (placing && !placing.placed) placing.raw = '';
-        try {
-          await watchTranslation(
-            hedged((signal, onDelta) => llm.translate({ ...request, signal }, onDelta)),
-            run.controller.signal,
-            onChunk,
-          );
-          break;
-        } catch (err) {
-          const again =
-            attempt < TRANSLATE_ATTEMPTS && !inFlight.text && isLive(run) && isRetryable(err);
-          if (!again) throw err;
-          logError('Translation retried', err);
-        }
+      if (sentence.ahead) {
+        // Asked for when it was heard: what came meanwhile shows at once
+        await sentence.ahead.consume(onChunk);
+      } else {
+        await ask(
+          run,
+          sentence,
+          into,
+          onChunk,
+          () => Boolean(inFlight.text),
+          () => {
+            if (placing && !placing.placed) placing.raw = '';
+          },
+        );
       }
       // A whole answer that looked like the start of a tag: it was the translation
       if (placing && !placing.placed && placing.raw.trim()) {
@@ -207,13 +247,12 @@ export function createLivePipeline({
   async function pump(run: Run): Promise<void> {
     run.translating = true;
     try {
-      const joinUnknown = !run.options.partner;
-      for (
-        let next = takeNext(run.queue, joinUnknown);
-        next && isLive(run);
-        next = takeNext(run.queue, joinUnknown)
-      ) {
-        await translate(run, next);
+      // A conversation joins what one person said while the other's line was translated;
+      // elsewhere every sentence keeps its own caption, already asked for
+      const next = (): Sentence | undefined =>
+        run.options.partner ? takeNext(run.queue, false) : run.queue.shift();
+      for (let sentence = next(); sentence && isLive(run); sentence = next()) {
+        await translate(run, sentence);
       }
     } finally {
       run.translating = false;
@@ -222,6 +261,7 @@ export function createLivePipeline({
   }
 
   function enqueue(run: Run, sentence: Sentence): void {
+    askAhead(run, sentence);
     run.queue.push(sentence);
     while (run.queue.length > MAX_QUEUED) {
       const dropped = run.queue.shift();
@@ -405,6 +445,6 @@ export function createLivePipeline({
     abort,
     setTargetLanguage,
     resetConversation,
-    captionDueFrom: () => (current ? captionDueFrom(current) : null),
+    captionComing: () => (current ? captionComing(current) : null),
   };
 }

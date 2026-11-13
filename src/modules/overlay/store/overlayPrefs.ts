@@ -91,7 +91,6 @@ export function loadPrefs(): OverlayPrefs {
     prefs.syncDelay =
       [SYNC_DELAY_AUTO, ...SYNC_DELAY_CHOICES].find((seconds) => seconds === parsed.syncDelay) ??
       prefs.syncDelay;
-    if (typeof parsed.syncWait === 'boolean') prefs.syncWait = parsed.syncWait;
     prefs.placement =
       CAPTION_PLACEMENTS.find((placement) => placement === parsed.placement) ?? prefs.placement;
   } catch (err) {

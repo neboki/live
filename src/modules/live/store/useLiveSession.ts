@@ -83,7 +83,7 @@ export const useLiveSession = defineStore('live', () => {
     capture,
     overlay,
     lines: () => record.lines,
-    captionDueFrom: () => pipeline.captionDueFrom(),
+    captionComing: () => pipeline.captionComing(),
   });
   const away = createAwayWatch({
     onBack: (heard) => {
@@ -515,12 +515,8 @@ export const useLiveSession = defineStore('live', () => {
     syncedTab: sync.playback,
     livePicture,
     syncDelaySeconds: sync.delaySeconds,
-    /** The synced delay is automatic and still being worked out from the first captions */
-    syncCalibrating: sync.calibrating,
     syncLagSeconds: sync.lagSeconds,
     syncPaused: sync.paused,
-    /** The synced picture holds until a late caption arrives */
-    syncWaiting: sync.waiting,
     syncFailed: sync.failed,
     /** The captions the synced picture has reached */
     syncedLines: sync.reached,
