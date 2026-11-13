@@ -118,7 +118,7 @@
       "translating": "Traduciendo…"
     },
     "latency": "Retraso de la traducción",
-    "slow": "La traducción va con retraso; se pone al día juntando frases",
+    "slow": "Segundos desde que se empieza a decir una frase hasta que aparece su subtítulo. Va con retraso; se pone al día juntando frases",
     "resize": "Arrastra para cambiar el tamaño (o usa las flechas)",
     "space": "Espacio",
     "shortcut": "muestra u oculta la barra",

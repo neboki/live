@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionComing, createRun, isSaidIn, takeNext, type Sentence } from './run';
+import { captionComing, captionDelay, createRun, isSaidIn, takeNext, type Sentence } from './run';
 
 function sentence(seq: number, text: string, speaker: number | null): Sentence {
   return { seq, text, previous: [], heardAt: seq, heardOn: seq, speaker };
@@ -74,5 +74,17 @@ describe('captionComing', () => {
     const heard = sentence(1, 'c', null);
     writing.inFlight = { sentence: heard, text: 'x' };
     expect(captionComing(writing)).toEqual({ from: heard.heardOn, text: 'x' });
+  });
+});
+
+describe('captionDelay', () => {
+  it('counts from when the sentence began, not from when its transcript arrived', () => {
+    // Said from 1000 to 5000, transcript at 6000, first translated words 800 ms later
+    const said = { ...sentence(0, 'a', null), from: 1000, heardOn: 6000 };
+    expect(captionDelay(said, 800)).toBe(5800);
+  });
+
+  it('falls back to the time since the transcript where the start is unknown', () => {
+    expect(captionDelay(sentence(0, 'a', null), 800)).toBe(800);
   });
 });

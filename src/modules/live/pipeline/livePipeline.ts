@@ -11,6 +11,7 @@ import { hedged, isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './tra
 import {
   activityOf,
   captionComing,
+  captionDelay,
   createRun,
   isSaidIn,
   keywordsFrom,
@@ -90,7 +91,7 @@ export function createLivePipeline({
    */
   function showAsHeard(run: Run, sentence: Sentence, translation: string): void {
     overlay.startTranslation(sentence.text, sentence.speaker);
-    overlay.setLatency(now() - sentence.heardAt);
+    overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
     overlay.finishTranslation();
     recordLine(run, sentence, translation);
     updateActivity(run);
@@ -153,7 +154,7 @@ export function createLivePipeline({
           text = tag.rest;
         }
         if (unwanted || !text) return;
-        if (first) overlay.setLatency(now() - sentence.heardAt);
+        if (first) overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
         first = false;
         inFlight.text += text;
         overlay.appendTranslation(text);

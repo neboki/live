@@ -118,7 +118,7 @@
       "translating": "Translating…"
     },
     "latency": "Translation delay",
-    "slow": "The translation is running behind; it catches up by joining sentences",
+    "slow": "Seconds from when a sentence starts to be said until its caption shows. It is running behind; it catches up by joining sentences",
     "resize": "Drag to resize (or use the arrow keys)",
     "space": "Space",
     "shortcut": "shows or hides the bar",

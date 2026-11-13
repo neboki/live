@@ -6,6 +6,16 @@ import type { ComingCaption, PipelineOptions, RecordedLine, TextRole } from './t
 /** What the summary and suggestions are written in when nothing is translated */
 const SAME_LANGUAGE = 'the language of the transcript';
 
+/**
+ * How long the caption of `sentence` took to start showing, in milliseconds, counted
+ * from when its speaker began it: what the viewer feels as "the captions are late".
+ * `sinceHeard` is the time since its transcript arrived.
+ */
+export function captionDelay(sentence: Sentence, sinceHeard: number): number {
+  const spoken = sentence.from === undefined ? 0 : Math.max(0, sentence.heardOn - sentence.from);
+  return spoken + Math.max(0, sinceHeard);
+}
+
 /** A finished sentence waiting for its translation */
 export interface Sentence {
   /** Order in which it was heard; the record keeps this order */

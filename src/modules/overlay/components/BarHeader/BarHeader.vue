@@ -10,7 +10,7 @@ import ListeningBadge from '../ListeningBadge/ListeningBadge.vue';
 import QuickStepper from '../QuickStepper/QuickStepper.vue';
 
 /** From this delay on the captions are running behind, and the bar says so */
-const SLOW_LATENCY_MS = 4000;
+const SLOW_LATENCY_MS = 8000;
 
 /**
  * Top row of the caption bar. The same six controls wherever the bar is, always in the
