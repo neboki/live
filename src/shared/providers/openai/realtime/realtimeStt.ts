@@ -4,6 +4,8 @@ import {
   DRAIN_MS,
   FLUSH_MS,
   INPUT_SAMPLE_RATE,
+  LIVE_MAX_SENTENCE_MS,
+  LIVE_TEXT_FAMILY,
   MAX_KEYWORDS,
   MODELS,
   SENTENCE_TIMEOUT_MS,
@@ -37,8 +39,11 @@ interface PendingCommit {
 
 function startSession(socket: WebSocket, options: SttOptions, callbacks: SttCallbacks): SttSession {
   const model = options.model ?? MODELS.transcription;
-  const audio = createAudioOutbox();
-  const items = createTranscriptItems(callbacks);
+  // A model that writes while people speak has its text split into sentences as it
+  // comes, so its audio is only cut at pauses: a cut inside a word comes back garbled
+  const live = LIVE_TEXT_FAMILY.test(model);
+  const audio = createAudioOutbox(live ? { maxSentenceMs: LIVE_MAX_SENTENCE_MS } : {});
+  const items = createTranscriptItems(callbacks, { live, voiceSoFar: audio.voiceSoFar });
   let ws: WebSocket | null = null;
   let unbilledSamples = 0;
   /** Whether the user was told we are reconnecting (a quiet idle reconnect is not announced) */
@@ -79,7 +84,8 @@ function startSession(socket: WebSocket, options: SttOptions, callbacks: SttCall
       unacknowledged = Math.max(0, unacknowledged - 1);
       changed = true;
     }
-    const given = items.expire(SENTENCE_TIMEOUT_MS, now);
+    items.settle(now);
+    const given = items.expire(SENTENCE_TIMEOUT_MS, now, !audio.isIdle());
     if (changed || given) {
       logError(
         'Transcription stalled',

@@ -13,6 +13,10 @@
 // - 4 s caps a sentence, so even speech without any breath (or over music, which never
 //   goes quiet) still gets translated. With 6 s and 3.5 s, captions of a video came
 //   five to eight seconds after the words: too late to follow (2026-11-11).
+// - The cap cuts wherever the speaker happens to be, often inside a word, and the loose
+//   end then comes back as an empty, repeated or invented sentence (2026-11-15). A model
+//   that writes while people speak does not need it to keep up: its caller splits the
+//   text instead and passes a much longer cap (see transcriptSplit).
 
 import { rms } from './pcm';
 
@@ -33,13 +37,19 @@ const SILENCE_STEPS: readonly { after: number; silence: number }[] = [
   { after: 1500, silence: 300 },
   { after: 0, silence: 500 },
 ];
-const MAX_UTTERANCE_MS = 4000;
+export const MAX_UTTERANCE_MS = 4000;
+
+export interface EnergyVadOptions {
+  /** Longest a sentence may run before it is closed whatever the speaker is doing */
+  maxUtteranceMs?: number;
+}
 
 function silenceToClose(utteranceMs: number): number {
   return SILENCE_STEPS.find((step) => utteranceMs >= step.after)?.silence ?? 500;
 }
 
-export function createEnergyVad(): EnergyVad {
+export function createEnergyVad(options: EnergyVadOptions = {}): EnergyVad {
+  const maxUtteranceMs = options.maxUtteranceMs ?? MAX_UTTERANCE_MS;
   let silentMs = 0;
   let utteranceMs = 0;
   let hadSpeech = false;
@@ -66,7 +76,7 @@ export function createEnergyVad(): EnergyVad {
       utteranceMs = 0;
       return false;
     }
-    if (silentMs >= silenceToClose(utteranceMs) || utteranceMs >= MAX_UTTERANCE_MS) {
+    if (silentMs >= silenceToClose(utteranceMs) || utteranceMs >= maxUtteranceMs) {
       reset();
       return true;
     }
