@@ -43,6 +43,66 @@ describe('createLivePipeline', () => {
     expect(overlay.latencyMs).toBe(0);
   });
 
+  it('never shows a language code the translator adds without being asked', async () => {
+    const overlay = useOverlayStore();
+    const stt = fakeStt();
+    const record = fakeRecord();
+    // The code comes split across chunks, as a stream does
+    const llm = fakeLlm({
+      translate: async (_request, onDelta) => {
+        onDelta('[e');
+        onDelta('s] Yes');
+        onDelta('.');
+      },
+    });
+    const pipeline = createLivePipeline({ stt, llm, overlay, record, now: () => 0 });
+    await pipeline.start(options);
+
+    stt.callbacks().onFinal('Sí.');
+
+    await vi.waitFor(() => {
+      expect(overlay.translation).toMatchObject({ text: 'Yes.', done: true });
+    });
+    expect(record.addLine).toHaveBeenCalledWith(expect.objectContaining({ translation: 'Yes.' }));
+  });
+
+  it('never shows a tag the translator leaks into its answer', async () => {
+    const overlay = useOverlayStore();
+    const stt = fakeStt();
+    const record = fakeRecord();
+    const llm = fakeLlm({
+      translate: async (_request, onDelta) => {
+        onDelta('It hasn’t been,</final');
+        onDelta('_answer>');
+      },
+    });
+    const pipeline = createLivePipeline({ stt, llm, overlay, record, now: () => 0 });
+    await pipeline.start(options);
+
+    stt.callbacks().onFinal('No ha sido,');
+
+    await vi.waitFor(() => {
+      expect(overlay.translation).toMatchObject({ text: 'It hasn’t been,', done: true });
+    });
+    expect(record.addLine).toHaveBeenCalledWith(
+      expect.objectContaining({ translation: 'It hasn’t been,' }),
+    );
+  });
+
+  it('keeps a translation that only looks like the start of a code', async () => {
+    const overlay = useOverlayStore();
+    const stt = fakeStt();
+    const llm = fakeLlm({ translate: async (_request, onDelta) => onDelta('[OK') });
+    const pipeline = createLivePipeline({ stt, llm, overlay, now: () => 0 });
+    await pipeline.start(options);
+
+    stt.callbacks().onFinal('[OK');
+
+    await vi.waitFor(() => {
+      expect(overlay.translation).toMatchObject({ text: '[OK', done: true });
+    });
+  });
+
   it('without a target language, shows each sentence as heard and never translates', async () => {
     const overlay = useOverlayStore();
     const stt = fakeStt();
