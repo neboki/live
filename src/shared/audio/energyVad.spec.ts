@@ -33,6 +33,15 @@ describe('createEnergyVad', () => {
     expect(closes.indexOf(true)).toBe(39);
   });
 
+  it('runs as long as its caller allows when the cap is raised, and still closes at a pause', () => {
+    const vad = createEnergyVad({ maxUtteranceMs: 20_000 });
+    const closes = Array.from({ length: 150 }, () => vad.feed(speech(), RATE));
+    const pause = Array.from({ length: 2 }, () => vad.feed(silence(), RATE));
+
+    expect(closes.some(Boolean)).toBe(false);
+    expect(pause).toEqual([false, true]);
+  });
+
   it('closes a long sentence on a shorter pause the longer it runs', () => {
     const after = (speechChunks: number): number => {
       const vad = createEnergyVad();

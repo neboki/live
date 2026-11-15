@@ -20,6 +20,13 @@ interface FakeOpenAi {
   socketError?: string;
   /** Closes the transcription socket instead of answering */
   socketClosed?: boolean;
+  /**
+   * Answers like the live model with someone who never pauses: these words come one by
+   * one as soon as audio flows, and no sentence is ever closed
+   */
+  words?: string[];
+  /** Called with every sentence the app closes (commits) */
+  onCommit?: () => void;
 }
 
 declare global {
@@ -106,7 +113,21 @@ async function fakeOpenAi(page: Page, fake: FakeOpenAi = {}): Promise<void> {
         const code = fake.socketError;
         ws.send(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', code } }));
       }
+      if (fake.words && event.type === 'input_audio_buffer.append' && item === 0) {
+        item = 1;
+        for (const delta of fake.words) {
+          ws.send(
+            JSON.stringify({
+              type: 'conversation.item.input_audio_transcription.delta',
+              item_id: 'item_1',
+              delta,
+            }),
+          );
+        }
+      }
       if (event.type !== 'input_audio_buffer.commit') return;
+      fake.onCommit?.();
+      if (fake.words) return;
       const id = `item_${++item}`;
       ws.send(
         JSON.stringify({
@@ -187,6 +208,25 @@ test('transcribes the shared audio and shows the translation', async ({ page }) 
   await page.locator('.live__stop').click();
   await expect(page.locator('.session')).toBeVisible();
   await expect.poll(() => floating.isClosed()).toBe(true);
+});
+
+test('shows a sentence as soon as it is written, while the speaker goes on without a pause', async ({
+  page,
+}) => {
+  // The tone never stops: nothing but the text says where the sentence ends
+  await fakeScreenShare(page, 'audio');
+  let commits = 0;
+  await fakeOpenAi(page, {
+    words: [' How', ' are', ' you', '?', ' I', ' am'],
+    onCommit: () => commits++,
+  });
+  const floating = await startSession(page);
+
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 10_000,
+  });
+  // The audio was not cut to get it: a cut in the middle of a word comes back garbled
+  expect(commits).toBe(0);
 });
 
 test('explains a rejected key', async ({ page }) => {

@@ -3,6 +3,7 @@
 // so silence outside a sentence is never sent nor billed.
 
 import { mergePcm, pcmToBase64 } from '@/shared/audio/pcm';
+import { createEnergyVad } from '@/shared/audio/energyVad';
 import { createSilenceGate } from '@/shared/audio/silenceGate';
 import { createVoiceprintMeter, type Voiceprint } from '@/shared/audio/voiceprint';
 import { INPUT_SAMPLE_RATE, MAX_BUFFERED_SECONDS } from '../config';
@@ -29,13 +30,22 @@ export interface AudioOutbox {
   finish: () => boolean;
   /** True while no sentence is open (silence is being held back) */
   isIdle: () => boolean;
+  /** How the open sentence sounds so far, or null with too little speech */
+  voiceSoFar: () => Voiceprint | null;
+}
+
+export interface AudioOutboxOptions {
+  /** Longest a sentence may run before its audio is cut; the VAD's own cap by default */
+  maxSentenceMs?: number;
 }
 
 const MAX_BUFFERED_SAMPLES = INPUT_SAMPLE_RATE * MAX_BUFFERED_SECONDS;
 export const COMMIT_EVENT = { type: 'input_audio_buffer.commit' } as const;
 
-export function createAudioOutbox(): AudioOutbox {
-  const gate = createSilenceGate(INPUT_SAMPLE_RATE);
+export function createAudioOutbox(options: AudioOutboxOptions = {}): AudioOutbox {
+  const gate = createSilenceGate(INPUT_SAMPLE_RATE, {
+    vad: createEnergyVad({ maxUtteranceMs: options.maxSentenceMs }),
+  });
   const meter = createVoiceprintMeter(INPUT_SAMPLE_RATE);
   let queue: Int16Array[] = [];
   /** Epoch milliseconds when each queued chunk began, as captured (same order as `queue`) */
@@ -105,5 +115,5 @@ export function createAudioOutbox(): AudioOutbox {
     return gate.isIdle();
   }
 
-  return { add, take, hasQueued, finish, isIdle };
+  return { add, take, hasQueued, finish, isIdle, voiceSoFar: () => meter.peek() };
 }
