@@ -1,6 +1,6 @@
 import type { Voiceprint } from '@/shared/audio/voiceprint';
 import type { FinalMeta, SttCallbacks } from '../../types';
-import { endsSentence, splitPoint } from './transcriptSplit';
+import { endsSentence, hasWords, splitPoint } from './transcriptSplit';
 
 /** One committed sentence: its text so far and, once done, its final text. */
 interface ItemState {
@@ -141,7 +141,8 @@ export function createTranscriptItems(
     state.sent += length;
     // What is left began now: its first word has just arrived (or will)
     state.pieceOn = pending(state).trim() ? Date.now() : null;
-    if (piece) callbacks.onFinal(piece, { ...(voice ? { voice } : {}), startedOn });
+    // The full stop of a sentence that already went out is not a sentence of its own
+    if (hasWords(piece)) callbacks.onFinal(piece, { ...(voice ? { voice } : {}), startedOn });
   }
 
   /** Sends out every sentence the oldest open one already holds in full. */
@@ -190,7 +191,8 @@ export function createTranscriptItems(
   function restOf(state: ItemState, transcript: string): string {
     if (state.sent === 0) return transcript;
     const head = state.text.slice(0, state.sent).trim();
-    return transcript.startsWith(head) ? transcript.slice(head.length) : pending(state);
+    const rest = transcript.startsWith(head) ? transcript.slice(head.length) : pending(state);
+    return hasWords(rest) ? rest : '';
   }
 
   function completed(id: string, transcript: string, language?: string): void {
@@ -232,7 +234,7 @@ export function createTranscriptItems(
     const state = firstOpen();
     if (!state) return;
     const waiting = pending(state);
-    if (!waiting.trim()) return;
+    if (!hasWords(waiting)) return;
     const idleMs = now - state.activeOn;
     if (idleMs >= (endsSentence(waiting) ? SENTENCE_IDLE_MS : WORDS_IDLE_MS)) {
       sendPiece(state, waiting.length);

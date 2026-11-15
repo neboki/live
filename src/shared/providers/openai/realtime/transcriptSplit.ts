@@ -29,6 +29,11 @@ export function wordCount(text: string): number {
   return spaced + Math.ceil(unspaced / 2);
 }
 
+/** False for punctuation on its own: a full stop that came late is not a sentence. */
+export function hasWords(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
 /** True when the text ends where a sentence does. */
 export function endsSentence(text: string): boolean {
   return ENDS_SENTENCE.test(text);

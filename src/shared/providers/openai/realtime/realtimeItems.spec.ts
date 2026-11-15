@@ -138,6 +138,21 @@ describe('createTranscriptItems with a model that writes while people speak', ()
     expect(items.hasPending()).toBe(false);
   });
 
+  it('never sends out a full stop on its own when it comes after its sentence went out', () => {
+    const { items, finals } = live();
+    const start = Date.now();
+    say(items, 'a', 'Hizo lo contrario');
+    items.settle(start + 2000);
+    expect(finals).toEqual(['Hizo lo contrario']);
+
+    items.delta('a', '.');
+    items.settle(start + 4000);
+    items.committed('a');
+    items.completed('a', 'Hizo lo contrario.');
+
+    expect(finals).toEqual(['Hizo lo contrario']);
+  });
+
   it('waits longer for a sentence left half said', () => {
     const { items, finals } = live();
     const start = Date.now();
