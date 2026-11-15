@@ -85,6 +85,8 @@ export function createTranscriptItems(
 ): TranscriptItems {
   const items = new Map<string, ItemState>();
   const expired = new Set<string>();
+  /** Sentences given up on before a single word of them came, in case they come late */
+  const unheard = new Map<string, ItemState>();
 
   function item(id: string): ItemState {
     let state = items.get(id);
@@ -195,9 +197,21 @@ export function createTranscriptItems(
     return hasWords(rest) ? rest : '';
   }
 
+  /** A sentence the server took too long over, and nothing of it was shown: late, not lost. */
+  function showLate(id: string, transcript: string, language?: string): void {
+    const state = unheard.get(id);
+    unheard.delete(id);
+    if (!state || !hasWords(transcript)) return;
+    if (language) state.language = language;
+    callbacks.onFinal(transcript, metaOf(state));
+  }
+
   function completed(id: string, transcript: string, language?: string): void {
     // Already shown with what it had: a late final would say it twice
-    if (expired.delete(id)) return;
+    if (expired.delete(id)) {
+      showLate(id, transcript.trim(), language);
+      return;
+    }
     const state = item(id);
     // Silence over background noise can close an empty sentence
     state.final = restOf(state, transcript.trim()).trim();
@@ -210,6 +224,7 @@ export function createTranscriptItems(
 
   function failed(id: string): void {
     expired.delete(id);
+    unheard.delete(id);
     items.delete(id);
     emitReady();
   }
@@ -219,6 +234,7 @@ export function createTranscriptItems(
     emitReady();
     items.clear();
     expired.clear();
+    unheard.clear();
   }
 
   function hasOpen(): boolean {
@@ -250,12 +266,14 @@ export function createTranscriptItems(
       if (speaking && !state.committed) continue;
       state.final = pending(state).trim();
       expired.add(id);
+      if (!state.text) unheard.set(id, state);
       count++;
     }
     while (expired.size > MAX_EXPIRED_IDS) {
       const oldest = expired.values().next().value;
       if (oldest === undefined) break;
       expired.delete(oldest);
+      unheard.delete(oldest);
     }
     if (count) emitReady();
     return count;

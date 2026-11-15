@@ -56,6 +56,18 @@ describe('createTranscriptItems', () => {
     expect(items.hasOpen()).toBe(false);
   });
 
+  it('shows a sentence that comes after it was given up on, when nothing of it was shown', () => {
+    const { items, finals } = setup();
+    const start = Date.now();
+    items.committed('a');
+    items.expire(8000, start + 9000);
+
+    items.delta('a', 'Thanks');
+    items.completed('a', 'Thanks.');
+
+    expect(finals).toEqual(['Thanks.']);
+  });
+
   it('drops a given-up sentence that had no text at all', () => {
     const { items, finals } = setup();
     const start = Date.now();
