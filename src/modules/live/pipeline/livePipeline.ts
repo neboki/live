@@ -170,6 +170,9 @@ export function createLivePipeline({
     // Nobody could tell who said it: the translator names the language before its
     // translation, and the line goes on screen once that says who it was for
     const placing = partner && sentence.speaker === null ? { raw: '', placed: false } : null;
+    // Nobody asked for the language: the translator still names it now and then
+    // ("[es] Yes."), so the start of every answer is read for a code that is never shown
+    const opening = placing ? null : { raw: '', read: false };
     /** The listener of the line turned translations off: it is not shown or kept */
     let unwanted = false;
     const place = (code: string | null): void => {
@@ -196,6 +199,13 @@ export function createLivePipeline({
           place(tag.code);
           text = tag.rest;
         }
+        if (opening && !opening.read) {
+          opening.raw += chunk;
+          const tag = readLanguageTag(opening.raw);
+          if (!tag) return;
+          opening.read = true;
+          text = tag.rest;
+        }
         if (unwanted || !text) return;
         if (first) overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
         first = false;
@@ -215,6 +225,7 @@ export function createLivePipeline({
           () => Boolean(inFlight.text),
           () => {
             if (placing && !placing.placed) placing.raw = '';
+            if (opening && !opening.read) opening.raw = '';
           },
         );
       }
@@ -222,6 +233,12 @@ export function createLivePipeline({
       if (placing && !placing.placed && placing.raw.trim()) {
         const raw = placing.raw;
         place(null);
+        onChunk(raw);
+      }
+      if (opening && !opening.read && opening.raw.trim()) {
+        const raw = opening.raw;
+        opening.raw = '';
+        opening.read = true;
         onChunk(raw);
       }
       done = true;
