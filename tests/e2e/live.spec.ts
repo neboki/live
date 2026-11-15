@@ -27,6 +27,8 @@ interface FakeOpenAi {
   words?: string[];
   /** Called with every sentence the app closes (commits) */
   onCommit?: () => void;
+  /** Says nothing about a closed sentence for this long, then sends it whole */
+  lateMs?: number;
 }
 
 declare global {
@@ -129,6 +131,19 @@ async function fakeOpenAi(page: Page, fake: FakeOpenAi = {}): Promise<void> {
       fake.onCommit?.();
       if (fake.words) return;
       const id = `item_${++item}`;
+      if (fake.lateMs) {
+        ws.send(JSON.stringify({ type: 'input_audio_buffer.committed', item_id: id }));
+        setTimeout(() => {
+          ws.send(
+            JSON.stringify({
+              type: 'conversation.item.input_audio_transcription.completed',
+              item_id: id,
+              transcript: HEARD,
+            }),
+          );
+        }, fake.lateMs);
+        return;
+      }
       ws.send(
         JSON.stringify({
           type: 'conversation.item.input_audio_transcription.delta',
@@ -227,6 +242,18 @@ test('shows a sentence as soon as it is written, while the speaker goes on witho
   });
   // The audio was not cut to get it: a cut in the middle of a word comes back garbled
   expect(commits).toBe(0);
+});
+
+test('a sentence the transcriber takes too long over is shown late, not lost', async ({ page }) => {
+  await fakeScreenShare(page, 'audio');
+  // Longer than the app waits for a sentence before it moves on
+  await fakeOpenAi(page, { lateMs: 6500 });
+  const floating = await startSession(page);
+
+  await speakOneSentence(page, floating);
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 15_000,
+  });
 });
 
 test('explains a rejected key', async ({ page }) => {
