@@ -526,6 +526,35 @@ test('restarting from the error in the floating window starts again', async ({ p
   });
 });
 
+test('a language code the translator adds on its own never reaches the captions', async ({
+  page,
+}) => {
+  await fakeScreenShare(page, 'audio');
+  // The code comes split across two pieces of the stream, as it does for real
+  const frames = ['[e', `s] ${TRANSLATED}`]
+    .map(
+      (content) => `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}
+
+`,
+    )
+    .join('');
+  await fakeOpenAi(page, {
+    chat: (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: `${frames}data: [DONE]
+
+`,
+      }),
+  });
+  const floating = await startSession(page);
+
+  await speakOneSentence(page, floating);
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 10_000,
+  });
+});
+
 test('the floating window gets the app styles and fonts', async ({ page }) => {
   await fakeScreenShare(page, 'audio');
   // No HTTP routing here (see fakeOpenAi): the key check is answered by a fake fetch
