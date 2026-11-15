@@ -66,6 +66,29 @@ describe('createLivePipeline', () => {
     expect(record.addLine).toHaveBeenCalledWith(expect.objectContaining({ translation: 'Yes.' }));
   });
 
+  it('never shows a tag the translator leaks into its answer', async () => {
+    const overlay = useOverlayStore();
+    const stt = fakeStt();
+    const record = fakeRecord();
+    const llm = fakeLlm({
+      translate: async (_request, onDelta) => {
+        onDelta('It hasn’t been,</final');
+        onDelta('_answer>');
+      },
+    });
+    const pipeline = createLivePipeline({ stt, llm, overlay, record, now: () => 0 });
+    await pipeline.start(options);
+
+    stt.callbacks().onFinal('No ha sido,');
+
+    await vi.waitFor(() => {
+      expect(overlay.translation).toMatchObject({ text: 'It hasn’t been,', done: true });
+    });
+    expect(record.addLine).toHaveBeenCalledWith(
+      expect.objectContaining({ translation: 'It hasn’t been,' }),
+    );
+  });
+
   it('keeps a translation that only looks like the start of a code', async () => {
     const overlay = useOverlayStore();
     const stt = fakeStt();

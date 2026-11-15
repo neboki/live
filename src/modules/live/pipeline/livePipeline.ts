@@ -5,6 +5,7 @@ import type { FinalMeta, SttCallbacks, TextContext, Usage } from '@/shared/provi
 import type { Voiceprint } from '@/shared/audio/voiceprint';
 import { readLanguageTag, routeOf, speakerOf, speakerOfTag } from './conversation';
 import { routeError } from './errorRoute';
+import { createMarkupFilter } from './markupFilter';
 import { introducedName } from './speakerNames';
 import { createExtras, MAX_UNSUMMARIZED } from './extras';
 import { hedged, isRetryable, TRANSLATE_ATTEMPTS, watchTranslation } from './translateWatchdog';
@@ -173,6 +174,7 @@ export function createLivePipeline({
     // Nobody asked for the language: the translator still names it now and then
     // ("[es] Yes."), so the start of every answer is read for a code that is never shown
     const opening = placing ? null : { raw: '', read: false };
+    const markup = createMarkupFilter();
     /** The listener of the line turned translations off: it is not shown or kept */
     let unwanted = false;
     const place = (code: string | null): void => {
@@ -206,6 +208,7 @@ export function createLivePipeline({
           opening.read = true;
           text = tag.rest;
         }
+        text = markup.push(text);
         if (unwanted || !text) return;
         if (first) overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
         first = false;
@@ -226,6 +229,7 @@ export function createLivePipeline({
           () => {
             if (placing && !placing.placed) placing.raw = '';
             if (opening && !opening.read) opening.raw = '';
+            markup.reset();
           },
         );
       }
@@ -240,6 +244,12 @@ export function createLivePipeline({
         opening.raw = '';
         opening.read = true;
         onChunk(raw);
+      }
+      // A "<" at the very end that was not the start of a tag after all
+      const held = markup.flush();
+      if (held && !unwanted && isLive(run)) {
+        inFlight.text += held;
+        overlay.appendTranslation(held);
       }
       done = true;
       if (isLive(run) && run.noticeShown) {
