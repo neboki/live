@@ -213,6 +213,55 @@ describe('connecting', () => {
   });
 });
 
+describe('speech that never pauses', () => {
+  const DELTA = 'conversation.item.input_audio_transcription.delta';
+
+  it('is not cut after 4 s for a model that writes while people speak', async () => {
+    const { session, ws } = await connect(callbacks());
+    for (let sent = 0; sent < 100; sent++) session.append(chunk(100));
+
+    expect(ws.types()).not.toContain('input_audio_buffer.commit');
+  });
+
+  it('hands each sentence to the captions as its text comes, with the audio still open', async () => {
+    const cb = callbacks();
+    const { session, ws } = await connect(cb);
+    session.append(chunk(100));
+    for (const delta of [' Costs', ' went', ' up', '.', ' So', ' the']) {
+      ws.receive({ type: DELTA, item_id: 'a', delta });
+    }
+
+    expect(cb.onFinal.mock.calls.map(([text]) => text)).toEqual(['Costs went up.']);
+    expect(ws.types()).not.toContain('input_audio_buffer.commit');
+    expect(cb.onPartial).toHaveBeenLastCalledWith('So the');
+  });
+
+  it('hands over the last sentence when the words stop, even over sound that never goes quiet', async () => {
+    const cb = callbacks();
+    const { session, ws } = await connect(cb);
+    session.append(chunk(100));
+    for (const delta of [' How', ' are', ' you', '?']) {
+      ws.receive({ type: DELTA, item_id: 'a', delta });
+    }
+    expect(cb.onFinal).not.toHaveBeenCalled();
+
+    // Music goes on: the audio stays open, and its chunks keep the clock
+    for (let sent = 0; sent < 8; sent++) {
+      await vi.advanceTimersByTimeAsync(100);
+      session.append(chunk(100));
+    }
+
+    expect(cb.onFinal.mock.calls.map(([text]) => text)).toEqual(['How are you?']);
+  });
+
+  it('is still cut every 4 s for a model that only writes once the sentence is closed', async () => {
+    const { session, ws } = await connect(callbacks(), { model: 'gpt-transcribe' });
+    for (let sent = 0; sent < 100; sent++) session.append(chunk(100));
+
+    expect(ws.types().filter((type) => type === 'input_audio_buffer.commit')).toHaveLength(2);
+  });
+});
+
 describe('audio', () => {
   it('appends audio before committing the sentence', async () => {
     const { session, ws } = await connect(callbacks());
