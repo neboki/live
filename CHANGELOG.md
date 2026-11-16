@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Entries are written by
 [Conventional Commits](https://www.conventionalcommits.org) on `main`, and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.3](https://github.com/neboki/live/compare/v1.0.2...v1.0.3) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** Bump @capacitor/core from 8.5.3 to 8.6.2 ([#39](https://github.com/neboki/live/issues/39)) ([30f8ccb](https://github.com/neboki/live/commit/30f8ccbf635a36bbcc732344c95a51745e7e9d53))
+* **deps:** Bump firebase from 13.2.0 to 13.3.0 ([#38](https://github.com/neboki/live/issues/38)) ([7e6689e](https://github.com/neboki/live/commit/7e6689e54cfcb0be47d62f7f87f6cf7945986c64))
+
 ## [1.0.2](https://github.com/neboki/live/compare/v1.0.1...v1.0.2) (2026-11-16)
 
 
