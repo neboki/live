@@ -278,6 +278,24 @@ watch(
     border-radius: var(--radius-pill);
   }
 
+  // In the floating window nothing moves on its own. A looping animation there, or one that
+  // eases every change of the voice level, keeps it painting, and Chrome then paints the
+  // other windows (the call or video being watched) at 60 fps: on a faster screen that
+  // video stutters. Captions still slide in, and the level still shows, without easing.
+  &--popped,
+  &--popped::before,
+  &--popped::after {
+    transition: none;
+    animation: none;
+  }
+
+  &--popped :deep(.activity__dots i),
+  &--popped :deep(.lines__translation--streaming::before),
+  &--popped :deep(.lines__source--partial::after),
+  &--popped :deep(.badge__light) {
+    animation: none;
+  }
+
   &--popped {
     width: 100%;
     max-width: none;
@@ -296,7 +314,6 @@ watch(
       border: 1px solid transparent;
       background: linear-gradient(135deg, rgb(var(--tint-a)), rgb(var(--tint-b))) border-box;
       opacity: calc(0.3 + var(--level) * 0.5);
-      transition: opacity 0.18s linear;
       mask:
         linear-gradient(#000 0 0) padding-box exclude,
         linear-gradient(#000 0 0);

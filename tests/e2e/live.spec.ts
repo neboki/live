@@ -393,6 +393,47 @@ test('the floating window stops the session with its own Stop button', async ({ 
   await expect.poll(() => floating.isClosed()).toBe(true);
 });
 
+test('nothing in the floating window keeps moving on its own, so the watched video stays smooth', async ({
+  page,
+}) => {
+  await fakeScreenShare(page, 'audio');
+  await fakeOpenAi(page);
+  const floating = await startSession(page);
+  // The app links the page's stylesheet again in the window, but under Playwright's request
+  // interception that request never completes there; the same rules are given inline instead
+  const css = await page.evaluate(() =>
+    Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules, (rule) => rule.cssText))
+      .join('\n'),
+  );
+  await floating.addStyleTag({ content: css });
+
+  // The tone is heard: the level changes all the time, as when someone speaks
+  await expect
+    .poll(() =>
+      floating
+        .locator('.bar')
+        .evaluate((el) => Number(getComputedStyle(el).getPropertyValue('--level'))),
+    )
+    .toBeGreaterThan(0.3);
+  await floating.waitForTimeout(1000);
+
+  // A looping animation, or one that eases every level change, keeps the floating window
+  // painting; Chrome then paints the shared tab at 60 fps and its video stutters
+  const moving = await floating.evaluate(() =>
+    document
+      .getAnimations()
+      .filter(
+        (animation) =>
+          animation.playState === 'running' &&
+          (animation.effect?.getComputedTiming().iterations === Infinity ||
+            (animation as CSSTransition).transitionProperty === '--level'),
+      )
+      .map((animation) => (animation as CSSAnimation).animationName ?? 'transition'),
+  );
+  expect(moving).toEqual([]);
+});
+
 test('closing the floating window moves the captions to the page, and they can float again', async ({
   page,
 }) => {
