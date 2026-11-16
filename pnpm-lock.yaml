@@ -171,10 +171,10 @@ importers:
     dependencies:
       '@capacitor/android':
         specifier: 8.5.3
-        version: 8.5.3(@capacitor/core@8.5.3)
+        version: 8.5.3(@capacitor/core@8.6.2)
       '@capacitor/core':
-        specifier: 8.5.3
-        version: 8.5.3
+        specifier: 8.6.2
+        version: 8.6.2
       firebase:
         specifier: ^13.3.0
         version: 13.3.0(supports-color@10.2.2)
@@ -340,8 +340,8 @@ packages:
     engines: {node: '>=22.0.0'}
     hasBin: true
 
-  '@capacitor/core@8.5.3':
-    resolution: {integrity: sha512-oBE1oGuYE4ZzYYrulC75OuHdSsD6zLUy7d5o1tFwDLG4govGoubY15cxpiI5l0+q87Lm5p0bhbehMdzJg4aFag==}
+  '@capacitor/core@8.6.2':
+    resolution: {integrity: sha512-UEb9crRuqEAe2Iu2eGOEuQ8rLQxpwg7ZZIpl17UJoytEpnV1e4oXXW0K7yYS2NsCOGmJjyLeKjNlgG7tkAoX8g==}
 
   '@commitlint/cli@21.2.4':
     resolution: {integrity: sha512-g3M/wrQdElqGH5vROIeL2QiYIxrzqUkhCgsDyDlWfKEyQdCt10OyMB28W2cJtpZ+VNGMvmaN923infr1hOfyrg==}
@@ -3565,9 +3565,9 @@ snapshots:
       hashery: 1.5.1
       keyv: 5.6.0
 
-  '@capacitor/android@8.5.3(@capacitor/core@8.5.3)':
+  '@capacitor/android@8.5.3(@capacitor/core@8.6.2)':
     dependencies:
-      '@capacitor/core': 8.5.3
+      '@capacitor/core': 8.6.2
 
   '@capacitor/cli@8.6.2(supports-color@10.2.2)':
     dependencies:
@@ -3592,7 +3592,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/core@8.5.3':
+  '@capacitor/core@8.6.2':
     dependencies:
       tslib: 2.8.1
 
