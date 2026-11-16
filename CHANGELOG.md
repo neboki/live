@@ -5,6 +5,13 @@ All notable changes to this project are documented here. Entries are written by
 [Conventional Commits](https://www.conventionalcommits.org) on `main`, and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.2](https://github.com/neboki/live/compare/v1.0.1...v1.0.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** update vue, vue-i18n, the build tools and the CI actions ([#32](https://github.com/neboki/live/issues/32)) ([2f93b71](https://github.com/neboki/live/commit/2f93b71969e3b627646d569c0087c14a3e773db4))
+
 ## [1.0.1](https://github.com/neboki/live/compare/v1.0.0...v1.0.1) (2026-11-16)
 
 
