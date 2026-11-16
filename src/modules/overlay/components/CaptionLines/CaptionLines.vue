@@ -115,8 +115,9 @@ watch(
         <SpeakerTag v-if="speaker !== null && newTurn" class="lines__tag" :speaker="speaker" />
         <span class="lines__text">
           <template v-for="(word, index) in words" :key="index">
-            <span class="lines__word" :style="{ animationDelay: wordDelay(index) }">{{ word }}</span
-            >{{ index < words.length - 1 ? ' ' : '' }}
+            <span class="lines__word" :style="{ animationDelay: wordDelay(index) }">{{
+              word
+            }}</span>{{ index < words.length - 1 ? ' ' : '' }}
           </template>
         </span>
       </p>

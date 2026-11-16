@@ -8,6 +8,11 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    # Major versions are taken by hand: they tend to need changes here (TypeScript 7 is
+    # not supported by typescript-eslint yet) and one of them turns the whole group red
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: fix
       prefix-development: build
