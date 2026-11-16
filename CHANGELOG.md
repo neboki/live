@@ -5,6 +5,13 @@ All notable changes to this project are documented here. Entries are written by
 [Conventional Commits](https://www.conventionalcommits.org) on `main`, and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.0.1](https://github.com/neboki/live/compare/v1.0.0...v1.0.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* show the captions only in the floating window while it is open ([#28](https://github.com/neboki/live/issues/28)) ([fa6975f](https://github.com/neboki/live/commit/fa6975f95e41f49e22c177db84b11a416553eaa7))
+
 ## 1.0.0 (2026-11-16)
 
 
