@@ -302,7 +302,7 @@ export function createInterpreterPipeline({
     abort,
     setTargetLanguage,
     resetConversation,
-    // It speaks and writes as people talk: there is no sentence to wait for
-    captionDueFrom: () => null,
+    // Its lines are written as people talk and recorded as they close
+    captionComing: () => null,
   };
 }

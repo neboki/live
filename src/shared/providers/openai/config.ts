@@ -109,6 +109,17 @@ export const MODELS: Readonly<TierModels> = TIER_MODELS[DEFAULT_TIER];
 export const PROMPT_GLOSSARY_FAMILY = /^gpt-4o/;
 /** Transcription models that take `delay`: how long to wait for context before writing */
 export const DELAY_FAMILY = /^gpt-live-transcribe/;
+/**
+ * Transcription models that write word by word while people speak. Their text is split
+ * into sentences as it comes (see transcriptSplit), so their audio is only cut at pauses.
+ */
+export const LIVE_TEXT_FAMILY = DELAY_FAMILY;
+/**
+ * Longest stretch of audio sent to a live text model without a pause before it is cut
+ * anyway (speech over music never goes quiet). The cut can fall inside a word, so it is
+ * kept rare; the captions do not wait for it.
+ */
+export const LIVE_MAX_SENTENCE_MS = 20_000;
 /** Captions favour speed: partial text early, the final sentence still has its context */
 export const TRANSCRIPTION_DELAY = 'low';
 /** Longest meeting topic sent as the transcription `prompt`; too long a prompt is rejected */
@@ -127,8 +138,9 @@ export const DRAIN_MS = 1500;
 /**
  * A closed sentence normally comes back transcribed in about a second. Past this, the
  * server has lost it: it is shown with what it has, so the sentences after it go on.
+ * Every sentence after a lost one waits this long, so it is kept short.
  */
-export const SENTENCE_TIMEOUT_MS = 8000;
+export const SENTENCE_TIMEOUT_MS = 5000;
 export const MAX_KEYWORDS = 50;
 
 /** Give up opening the transcription socket after this long */

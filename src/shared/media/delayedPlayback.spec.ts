@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHUNK_MS,
-  GLIDE_RATE,
+  GLIDE_FAST_RATE,
+  GLIDE_SLOW_RATE,
   PACE_MS,
   SLIP_SECONDS,
   canDelayPlayback,
@@ -15,14 +16,16 @@ class FakeSourceBuffer {
   updating = false;
   /** [start, end] of what is buffered */
   range: [number, number] | null = null;
+  /** Stretches buffered before `range`, each followed by a gap */
+  earlier: Array<[number, number]> = [];
   appended: ArrayBuffer[] = [];
   removed: Array<[number, number]> = [];
   failWith: Error | null = null;
   private listeners = new Map<string, Listener>();
   buffered = {
     length: 0,
-    start: () => this.range?.[0] ?? 0,
-    end: () => this.range?.[1] ?? 0,
+    start: (index: number) => this.all()[index]?.[0] ?? 0,
+    end: (index: number) => this.all()[index]?.[1] ?? 0,
   };
 
   addEventListener(type: string, listener: Listener): void {
@@ -40,10 +43,20 @@ class FakeSourceBuffer {
     this.removed.push([start, end]);
   }
 
+  private all(): Array<[number, number]> {
+    return [...this.earlier, ...(this.range ? [this.range] : [])];
+  }
+
   /** What the element has of the stream */
   hold(start: number, end: number): void {
     this.range = [start, end];
-    this.buffered.length = 1;
+    this.buffered.length = this.all().length;
+  }
+
+  /** The recording has gaps: these stretches came before what is held now */
+  holdEarlier(...ranges: Array<[number, number]>): void {
+    this.earlier = ranges;
+    this.buffered.length = this.all().length;
   }
 
   /** The browser finished the append or the removal */
@@ -288,7 +301,7 @@ describe('delayedPlayback', () => {
     playback.stop();
   });
 
-  it('corrects a real slip once: jumps when too far behind, holds when too close', () => {
+  it('corrects a real slip: jumps when too far behind, plays slower when too close', () => {
     const { video, playback } = create(3);
     const buffer = opened();
     buffer.hold(0, 10);
@@ -299,13 +312,15 @@ describe('delayedPlayback', () => {
     expect(video.currentTime).toBe(7);
 
     video.currentTime = 7 + SLIP_SECONDS + 0.5; // too close to the live edge
-    vi.advanceTimersByTime(PACE_MS);
-    expect(video.pause).toHaveBeenCalledTimes(1);
-    expect(playback.lagSeconds()).toBeNull();
-    buffer.hold(0, 12.5); // the delay is buffered again: goes on from where it was held
+    vi.advanceTimersByTime(PACE_MS * 2);
+    // Never held for it: it goes on, a little slower, until the delay is there again
+    expect(video.pause).not.toHaveBeenCalled();
+    expect(playback.lagSeconds()).not.toBeNull();
+    expect(video.playbackRate).toBe(GLIDE_SLOW_RATE);
+    buffer.hold(0, 12.5);
     vi.advanceTimersByTime(PACE_MS);
     expect(video.currentTime).toBe(9.5);
-    expect(video.play).toHaveBeenCalledTimes(2);
+    expect(video.play).toHaveBeenCalledTimes(1);
     expect(video.playbackRate).toBe(1);
     playback.stop();
   });
@@ -373,43 +388,6 @@ describe('delayedPlayback', () => {
     playback.pause();
     playback.catchUp();
     expect(playback.paused()).toBe(false);
-    expect(video.play).toHaveBeenCalledTimes(3);
-    playback.stop();
-  });
-
-  it('waits for a late caption apart from any pause, then goes on further behind', () => {
-    const { video, playback } = create(3);
-    const buffer = opened();
-    buffer.hold(0, 10);
-    vi.advanceTimersByTime(PACE_MS);
-
-    playback.wait(true);
-    expect(playback.waiting()).toBe(true);
-    expect(playback.paused()).toBe(false);
-    expect(video.pause).toHaveBeenCalledTimes(1);
-    playback.wait(true);
-    expect(video.pause).toHaveBeenCalledTimes(1);
-    // The pacer leaves it held, however much is buffered meanwhile
-    buffer.hold(0, 14);
-    vi.advanceTimersByTime(PACE_MS * 4);
-    expect(video.currentTime).toBe(7);
-
-    // Paused by the user during the wait: the end of the wait does not play it
-    playback.pause();
-    playback.wait(false);
-    expect(playback.waiting()).toBe(false);
-    expect(video.play).toHaveBeenCalledTimes(1);
-    playback.resume();
-    expect(video.play).toHaveBeenCalledTimes(2);
-    // Further behind by choice now: no jump back to the delay
-    vi.advanceTimersByTime(PACE_MS * 4);
-    expect(video.currentTime).toBe(7);
-
-    // Catching up ends a wait too
-    playback.wait(true);
-    playback.catchUp();
-    expect(playback.waiting()).toBe(false);
-    expect(video.currentTime).toBe(11);
     expect(video.play).toHaveBeenCalledTimes(3);
     playback.stop();
   });
@@ -502,7 +480,7 @@ describe('delayedPlayback', () => {
     vi.advanceTimersByTime(PACE_MS);
     // No jump: the playhead stays, the picture plays faster
     expect(video.currentTime).toBe(0);
-    expect(video.playbackRate).toBe(GLIDE_RATE);
+    expect(video.playbackRate).toBe(GLIDE_FAST_RATE);
 
     // Close enough to the new delay: back to normal speed, and kept there
     video.currentTime = 5.9;
@@ -512,20 +490,44 @@ describe('delayedPlayback', () => {
     playback.stop();
   });
 
-  it('reaches a longer delay, or one set while buffering, as setDelay does', () => {
+  it('glides to a longer delay by playing a little slower: it never stops or jumps', () => {
+    const { video, playback } = create(4);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(6);
+    expect(video.play).toHaveBeenCalledTimes(1);
+
+    playback.glideTo(8);
+    // 4 s short of the new delay, far more than a slip: it goes on playing, only slower
+    for (let end = 10.25; end < 20; end += 0.25) {
+      buffer.hold(0, end);
+      video.currentTime = end - 4;
+      vi.advanceTimersByTime(PACE_MS);
+      expect(video.currentTime).toBe(end - 4);
+    }
+    expect(video.playbackRate).toBe(GLIDE_SLOW_RATE);
+    expect(video.pause).not.toHaveBeenCalled();
+    expect(playback.lagSeconds()).not.toBeNull();
+
+    // There: back to normal speed, and kept at the new delay
+    buffer.hold(0, 30);
+    video.currentTime = 22.1;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.playbackRate).toBe(1);
+    vi.advanceTimersByTime(PACE_MS * 4);
+    expect(video.currentTime).toBe(22.1);
+    expect(video.pause).not.toHaveBeenCalled();
+    playback.stop();
+  });
+
+  it('fills up to a delay set while it is still buffering', () => {
     const { video, playback } = create(10);
     const buffer = opened();
     buffer.hold(0, 4);
-    // Still filling: the picture just starts at the new delay
     playback.glideTo(3);
     vi.advanceTimersByTime(PACE_MS);
     expect(video.currentTime).toBe(1);
-    expect(video.playbackRate).toBe(1);
-
-    // Longer: held until that much is there, never slowed down
-    playback.glideTo(6);
-    vi.advanceTimersByTime(PACE_MS);
-    expect(video.pause).toHaveBeenCalled();
     expect(video.playbackRate).toBe(1);
     playback.stop();
   });
@@ -537,7 +539,7 @@ describe('delayedPlayback', () => {
     vi.advanceTimersByTime(PACE_MS);
     playback.glideTo(4);
     vi.advanceTimersByTime(PACE_MS);
-    expect(video.playbackRate).toBe(GLIDE_RATE);
+    expect(video.playbackRate).toBe(GLIDE_FAST_RATE);
 
     playback.pause();
     expect(video.playbackRate).toBe(1);
@@ -545,6 +547,34 @@ describe('delayedPlayback', () => {
     expect(video.currentTime).toBe(6);
     vi.advanceTimersByTime(PACE_MS);
     expect(video.playbackRate).toBe(1);
+    playback.stop();
+  });
+
+  it('starts past a gap of the recording instead of in the stretch before it', () => {
+    const { video } = create(3);
+    const buffer = opened();
+    // The first chunk, a gap, then the rest: 3 s behind the end falls in the gap
+    buffer.holdEarlier([0, 0.9]);
+    buffer.hold(1.9, 4.5);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(1.9);
+    expect(video.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('jumps over a gap the playhead runs into, at once', () => {
+    const { video, playback } = create(3);
+    const buffer = opened();
+    buffer.hold(0, 10);
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(7);
+
+    // The tab stopped painting for a while: nothing was recorded between 8 and 9.5
+    buffer.holdEarlier([0, 8]);
+    buffer.hold(9.5, 11);
+    video.currentTime = 7.95;
+    vi.advanceTimersByTime(PACE_MS);
+    expect(video.currentTime).toBe(9.5);
+    expect(video.pause).not.toHaveBeenCalled();
     playback.stop();
   });
 });

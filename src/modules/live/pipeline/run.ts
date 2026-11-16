@@ -1,10 +1,21 @@
 import type { CaptionActivity } from '@/modules/overlay';
 import { createSpeakerClusters, type SpeakerClusters } from '@/shared/audio/speakerClusters';
 import type { SttActivity, SttSession, TextContext, Usage } from '@/shared/providers/types';
-import type { PipelineOptions, RecordedLine, TextRole } from './types';
+import type { TranslationAhead } from './translateAhead';
+import type { ComingCaption, PipelineOptions, RecordedLine, TextRole } from './types';
 
 /** What the summary and suggestions are written in when nothing is translated */
 const SAME_LANGUAGE = 'the language of the transcript';
+
+/**
+ * How long the caption of `sentence` took to start showing, in milliseconds, counted
+ * from when its speaker began it: what the viewer feels as "the captions are late".
+ * `sinceHeard` is the time since its transcript arrived.
+ */
+export function captionDelay(sentence: Sentence, sinceHeard: number): number {
+  const spoken = sentence.from === undefined ? 0 : Math.max(0, sentence.heardOn - sentence.from);
+  return spoken + Math.max(0, sinceHeard);
+}
 
 /** A finished sentence waiting for its translation */
 export interface Sentence {
@@ -23,6 +34,8 @@ export interface Sentence {
   speaker: number | null;
   /** Sentences heard while the translator was busy, translated together with this one */
   absorbed?: Sentence[];
+  /** Its translation, already asked for while the captions before it are shown */
+  ahead?: TranslationAhead;
 }
 
 /** The sentence being translated and the text streamed so far */
@@ -114,18 +127,20 @@ export function activityOf(run: Run): CaptionActivity | null {
 }
 
 /**
- * Epoch milliseconds where the oldest speech without a caption yet began: a sentence
- * waiting for its translation, or one still being said or transcribed. Null when every
- * sentence heard has its caption. A picture shown behind time can wait there for it.
+ * The caption being written right now: the words of the translation that came so far,
+ * and when its sentence began. Null while no translation is under way or it has no
+ * words yet. A picture shown behind time puts them on their sentence as they come,
+ * instead of waiting for the whole line.
  */
-export function captionDueFrom(run: Run): number | null {
-  const waiting = [...(run.inFlight ? [run.inFlight.sentence] : []), ...run.queue];
-  const starts = waiting.map((sentence) => sentence.from ?? sentence.heardOn);
-  if (run.sttActivity !== 'idle' && run.speechStartedOn !== null) {
-    // Still being said: it began when the speech did, or right after the last sentence
-    starts.push(Math.max(run.speechStartedOn, run.lastHeardOn ?? 0));
-  }
-  return starts.length ? Math.min(...starts) : null;
+export function captionComing(run: Run): ComingCaption | null {
+  const coming = run.inFlight;
+  if (!coming?.text) return null;
+  const { sentence } = coming;
+  return {
+    from: sentence.from ?? sentence.heardOn,
+    text: coming.text,
+    ...(sentence.speaker === null ? {} : { speaker: sentence.speaker }),
+  };
 }
 
 export function createRun(options: PipelineOptions): Run {

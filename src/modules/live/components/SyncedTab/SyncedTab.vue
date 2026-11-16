@@ -26,17 +26,13 @@ const props = defineProps<{
   playback: DelayedPlayback;
   /** Seconds the picture is held back */
   delaySeconds: number;
-  /** The delay is set automatically from the first captions */
+  /** The delay is the automatic one */
   auto?: boolean;
-  /** …and is still being worked out: the picture is held meanwhile */
-  calibrating?: boolean;
   /** Seconds the picture is behind real time; null while its buffer fills */
   lagSeconds: number | null;
   /** Paused by the user */
   paused: boolean;
-  /** Held until a late caption arrives, then it goes on */
-  waiting?: boolean;
-  /** The lines the picture has reached, oldest first */
+  /** The lines the picture has reached, oldest first; the last may still be being written */
   lines: readonly SessionLine[];
   /** The shared tab sends no sound: most likely its video is paused there */
   silent?: boolean;
@@ -156,10 +152,7 @@ watch(() => props.playback, show);
       {{ t('live.tabSilent') }}
     </p>
     <p v-else-if="buffering" class="synced-tab__notice">
-      {{ t(calibrating ? 'live.sync.calibrating' : 'live.sync.buffering', { seconds: remaining }) }}
-    </p>
-    <p v-else-if="waiting && !paused" class="synced-tab__notice" role="status">
-      {{ t('live.sync.waiting') }}
+      {{ t('live.sync.buffering', { seconds: remaining }) }}
     </p>
     <span v-else-if="paused" class="synced-tab__big" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" /></svg>
@@ -168,7 +161,7 @@ watch(() => props.playback, show);
     <div v-if="captionsOn && shown.length" class="synced-tab__lines" aria-live="polite">
       <p
         v-for="(line, index) in shown"
-        :key="`${line.at}-${index}`"
+        :key="line.from ?? line.at"
         class="synced-tab__line"
         :class="{ 'synced-tab__line--current': index === shown.length - 1 }"
       >
@@ -213,11 +206,7 @@ watch(() => props.playback, show);
         <span>{{ t('live.sync.delay') }}</span>
         <select :value="auto ? SYNC_DELAY_AUTO : delaySeconds" @change="chooseDelay">
           <option :value="SYNC_DELAY_AUTO">
-            {{
-              auto && !calibrating
-                ? t('live.sync.autoAt', { seconds: delaySeconds })
-                : t('live.sync.auto')
-            }}
+            {{ auto ? t('live.sync.autoAt', { seconds: delaySeconds }) : t('live.sync.auto') }}
           </option>
           <option v-for="seconds in SYNC_DELAY_CHOICES" :key="seconds" :value="seconds">
             {{ t('live.sync.seconds', { seconds }) }}

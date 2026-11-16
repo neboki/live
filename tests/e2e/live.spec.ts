@@ -20,6 +20,15 @@ interface FakeOpenAi {
   socketError?: string;
   /** Closes the transcription socket instead of answering */
   socketClosed?: boolean;
+  /**
+   * Answers like the live model with someone who never pauses: these words come one by
+   * one as soon as audio flows, and no sentence is ever closed
+   */
+  words?: string[];
+  /** Called with every sentence the app closes (commits) */
+  onCommit?: () => void;
+  /** Says nothing about a closed sentence for this long, then sends it whole */
+  lateMs?: number;
 }
 
 declare global {
@@ -106,8 +115,35 @@ async function fakeOpenAi(page: Page, fake: FakeOpenAi = {}): Promise<void> {
         const code = fake.socketError;
         ws.send(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', code } }));
       }
+      if (fake.words && event.type === 'input_audio_buffer.append' && item === 0) {
+        item = 1;
+        for (const delta of fake.words) {
+          ws.send(
+            JSON.stringify({
+              type: 'conversation.item.input_audio_transcription.delta',
+              item_id: 'item_1',
+              delta,
+            }),
+          );
+        }
+      }
       if (event.type !== 'input_audio_buffer.commit') return;
+      fake.onCommit?.();
+      if (fake.words) return;
       const id = `item_${++item}`;
+      if (fake.lateMs) {
+        ws.send(JSON.stringify({ type: 'input_audio_buffer.committed', item_id: id }));
+        setTimeout(() => {
+          ws.send(
+            JSON.stringify({
+              type: 'conversation.item.input_audio_transcription.completed',
+              item_id: id,
+              transcript: HEARD,
+            }),
+          );
+        }, fake.lateMs);
+        return;
+      }
       ws.send(
         JSON.stringify({
           type: 'conversation.item.input_audio_transcription.delta',
@@ -187,6 +223,37 @@ test('transcribes the shared audio and shows the translation', async ({ page }) 
   await page.locator('.live__stop').click();
   await expect(page.locator('.session')).toBeVisible();
   await expect.poll(() => floating.isClosed()).toBe(true);
+});
+
+test('shows a sentence as soon as it is written, while the speaker goes on without a pause', async ({
+  page,
+}) => {
+  // The tone never stops: nothing but the text says where the sentence ends
+  await fakeScreenShare(page, 'audio');
+  let commits = 0;
+  await fakeOpenAi(page, {
+    words: [' How', ' are', ' you', '?', ' I', ' am'],
+    onCommit: () => commits++,
+  });
+  const floating = await startSession(page);
+
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 10_000,
+  });
+  // The audio was not cut to get it: a cut in the middle of a word comes back garbled
+  expect(commits).toBe(0);
+});
+
+test('a sentence the transcriber takes too long over is shown late, not lost', async ({ page }) => {
+  await fakeScreenShare(page, 'audio');
+  // Longer than the app waits for a sentence before it moves on
+  await fakeOpenAi(page, { lateMs: 6500 });
+  const floating = await startSession(page);
+
+  await speakOneSentence(page, floating);
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 15_000,
+  });
 });
 
 test('explains a rejected key', async ({ page }) => {
@@ -453,6 +520,35 @@ test('restarting from the error in the floating window starts again', async ({ p
 
   await expect(floating.locator('.bar').getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.live__stop')).toBeVisible();
+  await speakOneSentence(page, floating);
+  await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
+    timeout: 10_000,
+  });
+});
+
+test('a language code the translator adds on its own never reaches the captions', async ({
+  page,
+}) => {
+  await fakeScreenShare(page, 'audio');
+  // The code comes split across two pieces of the stream, as it does for real
+  const frames = ['[e', `s] ${TRANSLATED}`]
+    .map(
+      (content) => `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}
+
+`,
+    )
+    .join('');
+  await fakeOpenAi(page, {
+    chat: (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: `${frames}data: [DONE]
+
+`,
+      }),
+  });
+  const floating = await startSession(page);
+
   await speakOneSentence(page, floating);
   await expect(floating.locator('.lines__translation')).toHaveText(TRANSLATED, {
     timeout: 10_000,

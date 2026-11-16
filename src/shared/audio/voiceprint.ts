@@ -18,6 +18,8 @@ export interface VoiceprintMeter {
   add: (pcm: Int16Array) => void;
   /** The print of everything added since the last take, or null with too little speech */
   take: () => Voiceprint | null;
+  /** The same print, without forgetting what was added: the sentence is still going on */
+  peek: () => Voiceprint | null;
   reset: () => void;
 }
 
@@ -172,12 +174,9 @@ export function createVoiceprintMeter(rate: number): VoiceprintMeter {
     pitches = [];
   }
 
-  function take(): Voiceprint | null {
+  function peek(): Voiceprint | null {
     const speechMs = (frames * FRAME * 1000) / rate;
-    if (speechMs < MIN_SPEECH_MS) {
-      reset();
-      return null;
-    }
+    if (speechMs < MIN_SPEECH_MS) return null;
     const means = Array.from(bandSums, (sum) => sum / frames);
     const loudness = means.reduce((total, value) => total + value, 0) / BAND_COUNT;
     const print: Voiceprint = {
@@ -185,9 +184,14 @@ export function createVoiceprintMeter(rate: number): VoiceprintMeter {
       bands: Float32Array.from(means, (value) => value - loudness),
       speechMs,
     };
+    return print;
+  }
+
+  function take(): Voiceprint | null {
+    const print = peek();
     reset();
     return print;
   }
 
-  return { add, take, reset };
+  return { add, take, peek, reset };
 }

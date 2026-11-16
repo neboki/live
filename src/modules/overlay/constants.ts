@@ -45,8 +45,8 @@ export const NEAR_SPEND_LIMIT = 0.8;
  */
 export const SYNC_DELAY_CHOICES: readonly number[] = [3, 5, 8, 10, 15, 20, 30];
 /**
- * The delay chosen as "auto": worked out at the start of each session from how long its
- * first captions take, then kept (see the live module's utils/sync)
+ * The delay chosen as "auto": one that covers a whole sentence and its translation,
+ * raised only when captions keep landing late (see the live module's utils/sync)
  */
 export const SYNC_DELAY_AUTO = 0;
 
@@ -71,7 +71,5 @@ export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
   // Off: it holds the captions to the picture's pace and costs CPU; one switch turns it on
   syncVideo: false,
   syncDelay: SYNC_DELAY_AUTO,
-  // Off: a stop for every late caption makes a monologue's picture skip (ADR 0008)
-  syncWait: false,
   placement: 'floating',
 };
