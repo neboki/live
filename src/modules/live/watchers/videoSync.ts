@@ -26,6 +26,11 @@ export interface VideoSyncDeps {
   lines: () => readonly SessionLine[];
   /** The caption being written right now, with the words that came so far; null: none */
   captionComing?: () => ComingCaption | null;
+  /**
+   * True while the captions show in the floating window. They are live there, over the
+   * tab itself: a picture held back in the page would say them a second time, later
+   */
+  floating?: () => boolean;
   now?: () => number;
 }
 
@@ -53,6 +58,7 @@ export function createVideoSync({
   overlay,
   lines,
   captionComing = () => null,
+  floating = () => false,
   now = () => Date.now(),
 }: VideoSyncDeps): VideoSync {
   const playback = shallowRef<DelayedPlayback | null>(null);
@@ -154,7 +160,7 @@ export function createVideoSync({
 
   /** Starts, retunes or ends the delayed playback to match the option and the chosen delay */
   function apply(): void {
-    if (!overlay.canSyncVideo || !overlay.syncVideo) {
+    if (!overlay.canSyncVideo || !overlay.syncVideo || floating()) {
       if (playback.value) release();
       return;
     }
@@ -177,7 +183,10 @@ export function createVideoSync({
     poll ??= setInterval(tick, PACE_MS);
   }
 
-  watch(() => [overlay.canSyncVideo, overlay.syncVideo, overlay.syncDelay] as const, apply);
+  watch(
+    () => [overlay.canSyncVideo, overlay.syncVideo, overlay.syncDelay, floating()] as const,
+    apply,
+  );
 
   function started(): void {
     failed.value = false;

@@ -84,6 +84,7 @@ export const useLiveSession = defineStore('live', () => {
     overlay,
     lines: () => record.lines,
     captionComing: () => pipeline.captionComing(),
+    floating: () => floating.isOpen,
   });
   const away = createAwayWatch({
     onBack: (heard) => {

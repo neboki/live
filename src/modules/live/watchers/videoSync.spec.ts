@@ -48,6 +48,7 @@ function setup(playback: DelayedPlayback | null = fakePlayback()): {
   lines: SessionLine[];
   now: { value: number };
   coming: { value: ComingCaption | null };
+  floating: { open: boolean };
 } {
   const now = { value: 100_000 };
   const coming: { value: ComingCaption | null } = { value: null };
@@ -57,6 +58,7 @@ function setup(playback: DelayedPlayback | null = fakePlayback()): {
     syncVideo: false,
     syncDelay: DELAY,
   });
+  const floating = reactive({ open: false });
   const capture = {
     canSync: true,
     syncOriginal: vi.fn(() => playback),
@@ -71,9 +73,10 @@ function setup(playback: DelayedPlayback | null = fakePlayback()): {
     overlay,
     lines: () => lines,
     captionComing: () => coming.value,
+    floating: () => floating.open,
     now: () => now.value,
   };
-  return { deps, capture, overlay, lines, now, coming };
+  return { deps, capture, overlay, lines, now, coming, floating };
 }
 
 describe('createVideoSync', () => {
@@ -102,6 +105,29 @@ describe('createVideoSync', () => {
     expect(capture.unsyncOriginal).toHaveBeenCalledTimes(1);
     expect(sync.playback.value).toBeNull();
     expect(sync.delaySeconds.value).toBeNull();
+    sync.ended();
+  });
+
+  it('leaves the picture alone while the captions are in the floating window', async () => {
+    const playback = fakePlayback();
+    const { deps, capture, overlay, floating } = setup(playback);
+    const sync = createVideoSync(deps);
+    overlay.syncVideo = true;
+    floating.open = true;
+    sync.started();
+    await nextTick();
+    // The captions are live in the window: none a second time, later, on a picture here
+    expect(capture.syncOriginal).not.toHaveBeenCalled();
+    expect(sync.playback.value).toBeNull();
+
+    floating.open = false;
+    await nextTick();
+    expect(sync.playback.value).toBe(playback);
+
+    floating.open = true;
+    await nextTick();
+    expect(capture.unsyncOriginal).toHaveBeenCalledTimes(1);
+    expect(sync.playback.value).toBeNull();
     sync.ended();
   });
 

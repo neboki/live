@@ -109,14 +109,14 @@ async function fakeSlowOpenAi(page: Page): Promise<void> {
   });
 }
 
-/** Starts a session with the captions in the page and the picture in step with them */
-async function startSynced(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+/** Starts a session with the picture in step with the captions, which show in the page */
+async function startSynced(page: Page, placement: 'page' | 'floating' = 'page'): Promise<void> {
+  await page.addInitScript((where) => {
     localStorage.setItem(
       'neboki-live:overlay-prefs',
-      JSON.stringify({ syncPicture: true, placement: 'page' }),
+      JSON.stringify({ syncPicture: true, placement: where }),
     );
-  });
+  }, placement);
   await page.goto('./');
   await page.locator('#lg-api-key').fill(VALID_KEY);
   await page.locator('.start__cta').click();
@@ -147,6 +147,29 @@ function longestFreeze(samples: readonly Sample[]): number {
   }
   return longest;
 }
+
+test('with the floating window the captions show only there, not on a picture in the page too', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await fakeTalkingTab(page);
+  await fakeSlowOpenAi(page);
+  const opened = page.context().waitForEvent('page');
+  await startSynced(page, 'floating');
+  const floating = await opened;
+
+  await expect(floating.locator('.lines__translation')).toContainText('Frase', {
+    timeout: 20_000,
+  });
+  // The page says where the captions are; it plays no second, later copy of them
+  await expect(page.locator('.live__stage')).toBeVisible();
+  await expect(page.locator('.live .synced-tab')).toHaveCount(0);
+  await expect(page.locator('.live video')).toHaveCount(0);
+
+  // Back in the page, the synced picture the user asked for takes over
+  await page.locator('.live__bring').click();
+  await expect(page.locator('.live .synced-tab')).toBeVisible();
+});
 
 test('the synced picture never stops while people speak, even with slow translations', async ({
   page,
