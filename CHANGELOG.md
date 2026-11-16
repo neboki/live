@@ -1,8 +1,7 @@
 # Changelog
 
-All notable changes to this project are documented here. Entries are written by
-[release-please](https://github.com/googleapis/release-please) from the
-[Conventional Commits](https://www.conventionalcommits.org) on `main`, and versions follow
+Versions up to 1.0.3 are listed here. Later versions are on the
+[GitHub releases](https://github.com/neboki/live/releases) page. Versions follow
 [Semantic Versioning](https://semver.org/).
 
 ## [1.0.3](https://github.com/neboki/live/compare/v1.0.2...v1.0.3) (2026-11-16)

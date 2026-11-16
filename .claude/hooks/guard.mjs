@@ -1,11 +1,8 @@
 #!/usr/bin/env node
-// PreToolUse guard for Bash: keeps every change on the safe path (branch → PR → green CI → beta
-// → /publicar → live). It blocks the shortcuts around that path and asks the user before the
-// steps that reach real users. Runs on every Bash call, so it only parses text, except for one
-// `gh pr view` when a merge is about to happen.
-import { execFileSync } from 'node:child_process';
-
-const PROTECTED = 'main';
+// PreToolUse guard for Bash: work happens locally and only /publicar and /volver reach the live
+// site. It blocks the commands that cannot be undone (force push, remote deletes, deploys from
+// this machine) and asks the user before the steps that reach real users: pushing a version tag
+// or starting the deploy workflow. Runs on every Bash call, so it only parses text.
 
 /** Reads the hook input Claude Code sends on stdin. */
 async function readInput() {
@@ -45,47 +42,15 @@ function words(segment) {
   return out;
 }
 
-/** The branch checked out in a directory, or '' when it cannot be read. */
-function currentBranch(dir) {
-  try {
-    return execFileSync('git', ['-C', dir, 'rev-parse', '--abbrev-ref', 'HEAD'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return '';
-  }
-}
-
-/** The head branch of a pull request, or '' when it cannot be read. */
-function prHeadBranch(prArgs) {
-  try {
-    return execFileSync(
-      'gh',
-      ['pr', 'view', ...prArgs, '--json', 'headRefName', '-q', '.headRefName'],
-      {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-        timeout: 15000,
-      },
-    ).trim();
-  } catch {
-    return '';
-  }
-}
-
-/** Blocks pushes that reach main, force or delete; asks before pushing version tags. */
-function checkGitPush(w, dir) {
-  const pushAt = w.indexOf('push');
-  const cIndex = w.indexOf('-C');
-  const where = cIndex > -1 && cIndex < pushAt ? w[cIndex + 1] : dir;
-  const args = w.slice(pushAt + 1);
+/** Blocks force pushes and remote deletes; asks before pushing version tags. */
+function checkGitPush(w) {
+  const args = w.slice(w.indexOf('push') + 1);
   const options = args.filter((a) => a.startsWith('-'));
   const positional = args.filter((a) => !a.startsWith('-'));
   const refspecs = positional.slice(1);
 
   if (options.some((o) => o === '--force' || o === '-f' || /^-[a-z]*f/.test(o))) {
-    decide('deny', 'Force push is blocked. Use --force-with-lease, and only on your own branch.');
+    decide('deny', 'Force push is blocked: it can erase published history.');
   }
   if (
     options.includes('--delete') ||
@@ -97,34 +62,27 @@ function checkGitPush(w, dir) {
       'Deleting branches or tags on the remote is blocked. Ask the user to do it by hand.',
     );
   }
-  if (options.includes('--mirror') || options.includes('--all')) {
-    decide('deny', '--mirror/--all would push main. Push your own branch only.');
+  if (options.includes('--mirror')) {
+    decide('deny', '--mirror overwrites and deletes refs on the remote. Push main and the tag.');
   }
-  const targets = refspecs.map((r) =>
-    r
-      .replace(/^\+/, '')
-      .split(':')
-      .pop()
-      .replace(/^refs\/heads\//, ''),
-  );
+  if (refspecs.some((r) => r.startsWith('+'))) {
+    decide('deny', 'A "+" refspec is a force push, which is blocked.');
+  }
+  const targets = refspecs.map((r) => r.split(':').pop());
   if (
-    targets.includes(PROTECTED) ||
-    (refspecs.length === 0 && currentBranch(where) === PROTECTED)
+    options.includes('--tags') ||
+    options.includes('--follow-tags') ||
+    options.includes('--all') ||
+    targets.some((t) => /^(refs\/tags\/)?(v\d|stable-)/.test(t))
   ) {
     decide(
-      'deny',
-      `Direct pushes to ${PROTECTED} are blocked. Push a branch and open a PR (skill /dev); main only changes through merged PRs.`,
-    );
-  }
-  if (options.includes('--tags') || targets.some((t) => /^(refs\/tags\/)?(v\d|stable-)/.test(t))) {
-    decide(
       'ask',
-      'Pushing a version tag: tags mark what can go to production. Confirm it is intended.',
+      'PRODUCTION: pushing a version tag publishes it to every user. Confirm the version.',
     );
   }
 }
 
-function check(segment, dir) {
+function check(segment) {
   const w = words(segment);
   const cmd = w.join(' ');
 
@@ -134,30 +92,18 @@ function check(segment, dir) {
       'Deploys only go through GitHub Actions: /publicar for live, /volver to roll back.',
     );
   }
-  if (w[0] === 'git' && w.includes('push')) checkGitPush(w, dir);
+  if (w[0] === 'git' && w.includes('push')) checkGitPush(w);
 
-  if (w[0] === 'gh' && w[1] === 'pr' && w[2] === 'merge') {
-    if (w.includes('--admin'))
-      decide('deny', '--admin skips the CI checks. Wait for green CI instead.');
-    const prArgs = w
-      .slice(3)
-      .filter((a) => !a.startsWith('-'))
-      .slice(0, 1);
-    if (prHeadBranch(prArgs).startsWith('release-please--')) {
-      decide(
-        'ask',
-        'PRODUCTION: merging the release PR publishes a new version to every user. Confirm.',
-      );
-    }
-  }
   if (w[0] === 'gh' && w[1] === 'workflow' && w[2] === 'run' && /firebase/.test(w[3] ?? '')) {
     decide('ask', 'PRODUCTION: this deploys a version to the live site. Confirm the version.');
   }
-  if (w[0] === 'gh' && w[1] === 'release' && ['create', 'delete', 'edit'].includes(w[2])) {
-    decide(
-      'ask',
-      'Releases are made by release-please through /publicar. Confirm this manual change.',
-    );
+  // With --verify-tag the tag already exists (and was confirmed when pushed); without it,
+  // `gh release create` makes the tag itself, which publishes
+  if (w[0] === 'gh' && w[1] === 'release') {
+    if (w[2] === 'delete') decide('ask', 'This deletes a published release. Confirm.');
+    if (w[2] === 'create' && !w.includes('--verify-tag')) {
+      decide('ask', 'PRODUCTION: creating a release creates its tag, which publishes. Confirm.');
+    }
   }
   if (w[0] === 'gh' && w[1] === 'api' && /branches\/main\/protection|rulesets/.test(cmd)) {
     if (/-X\s*(DELETE|PUT|PATCH)|--method\s*(DELETE|PUT|PATCH)/i.test(cmd)) {
@@ -170,12 +116,7 @@ try {
   const input = await readInput();
   if (input.tool_name !== 'Bash') process.exit(0);
   const command = String(input.tool_input?.command ?? '');
-  let dir = input.cwd ?? process.cwd();
-  for (const segment of segments(command)) {
-    const cd = /^cd\s+(?:"([^"]+)"|'([^']+)'|(\S+))/.exec(segment);
-    if (cd) dir = cd[1] ?? cd[2] ?? cd[3];
-    check(segment, dir);
-  }
+  for (const segment of segments(command)) check(segment);
   process.exit(0);
 } catch (error) {
   // A broken guard must not lock the session: report it and fall back to the normal prompts

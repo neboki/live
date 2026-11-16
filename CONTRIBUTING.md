@@ -61,16 +61,12 @@ hook checks this for you, and CI checks the PR title.
 
 ## Releases
 
-[release-please](https://github.com/googleapis/release-please) keeps a release PR open on `main`
-(`.github/workflows/release-please.yml`). It reads the commits since the last release, picks the
-version from their types (table above) and writes `CHANGELOG.md`. Merging the release PR bumps
-`package.json`, tags `vX.Y.Z` and publishes the GitHub release. The first release is `1.0.0`
-(`release-as` in `release-please-config.json`; remove it after that release).
-
-PRs opened by the workflow's `GITHUB_TOKEN` don't trigger CI by themselves; close and reopen the
-release PR (or push to its branch) to run the checks. The config can be checked with
-`npx release-please release-pr --dry-run --token=<token> --repo-url=neboki/live`, which
-needs a GitHub token and network access.
+A release is a version tag on `main`. The maintainer runs `pnpm check` and `pnpm test:e2e`
+locally, picks the version from the commit types since the last tag (table above), bumps
+`package.json`, tags `vX.Y.Z` and pushes it; the tag starts the deploy to the live site
+(`.github/workflows/firebase.yml`). Release notes are on the
+[GitHub releases](https://github.com/neboki/live/releases) page. Running that workflow by hand
+with an earlier tag rolls the site back.
 
 Before a release, run Lighthouse (Chrome DevTools, **Mobile**) on the deployed page; Performance,
 Accessibility, Best Practices and SEO should each be **95 or more**.

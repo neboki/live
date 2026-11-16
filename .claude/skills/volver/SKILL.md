@@ -10,7 +10,7 @@ description: Roll the live site back to an earlier version in a few minutes. Use
 ```bash
 git fetch --tags origin
 git tag -l "v*" "stable-*" --sort=-creatordate | head -10
-gh run list --workflow firebase.yml --event workflow_dispatch -L 5 --json displayTitle,conclusion,createdAt
+gh run list --workflow firebase.yml -L 5 --json event,headBranch,displayTitle,conclusion,createdAt
 ```
 
 Show the user the recent versions and which one is live now. Default suggestion: the version
@@ -28,5 +28,6 @@ it loads. Report the result.
 
 ## 3. After
 
-Rolling back changes only the live site; main and beta keep the faulty change. Offer a `/dev`
-to fix it (a revert PR, `git revert <sha>`, is the fastest) and a test that would have caught it.
+Rolling back changes only the live site; main keeps the faulty change. Offer to fix it
+locally (`git revert <sha>` is the fastest) with a test that would have caught it, and
+publish the fix with `/publicar`.
