@@ -1,47 +1,62 @@
 ---
 name: publicar
-description: Put what is on beta on the live site as a new version, after checks and an explicit yes from the user. Use when the user says "/publicar", "pásalo a producción", "publica", "sube a live".
+description: Put the local work on the live site as a new version, after the local checks pass and an explicit yes from the user. Use when the user says "/publicar", "pásalo a producción", "publica", "sube a live".
 ---
 
-# /publicar — beta to production
+# /publicar — local to production
 
 Only the user decides this. Never run it on your own initiative.
 
 ## 1. What would go live
 
 ```bash
-gh pr list --search "head:release-please--" --json number,title,url
-gh pr view <n> --json body -q .body        # the changelog release-please wrote
-gh run list --workflow CI --branch main -L 1 --json conclusion,headSha
+git fetch --tags origin -q
+git status --short                                  # work not committed yet
+git tag -l "v*" --sort=-v:refname | head -1         # the version that is live
+git log <last-tag>..HEAD --oneline                  # commits not published yet
+git diff <last-tag> --stat                          # every file that changes on live
 ```
 
-If there is no release PR, nothing new is on main since the last version: say so and stop.
+Show the user, in plain words: the list of changes, the files they touch and which
+**critical flow** (`CLAUDE.md`) each one could affect. If a file outside the feature being
+published changed, say so before anything else.
 
-Show the user, in plain words: the version number, the list of changes, and the **beta URL**
-to try first. Point out any change that touches a critical flow (`CLAUDE.md`).
+Uncommitted work: ask which of it is part of this version. Commit only that, file by file
+(never `git add -A`); the rest stays local and does not go live.
 
 ## 2. Gates (all must hold, otherwise stop and say which one failed)
 
-- CI on the latest main commit is `success`.
-- The release PR's own checks are green. A PR opened by release-please starts no CI, so
-  start it as the user: `gh pr close <n> && gh pr reopen <n>`, then `gh pr checks <n> --watch`.
-- The user has tried beta, or says explicitly they skip it.
+Run them on exactly what will be published. If uncommitted work is left out, check from a
+clean copy (`git stash -u` is not allowed here; use `git worktree add` on the commit).
+
+```bash
+pnpm check          # format, lint, types, unit tests
+pnpm test:e2e       # builds and runs the critical flows in the browser
+```
+
+- Both green. Never weaken or skip a test to get there; a red test means it is not published.
+- The user has tried the change in the local app, or says explicitly they skip it.
 
 ## 3. Explicit yes
 
-Ask: "¿Publico la versión X.Y.Z en producción?" and wait for a clear yes in this conversation.
-The guard hook asks again when you merge; that is expected.
+The version follows the commits since the last tag: `feat` → minor, anything else → patch,
+`!`/`BREAKING CHANGE` → major. Ask: "¿Publico la versión X.Y.Z en producción?" and wait for a
+clear yes in this conversation. The guard hook asks again when the tag is pushed; that is
+expected.
 
 ## 4. Publish
 
 ```bash
-gh pr merge <n> --squash
+npm version X.Y.Z --no-git-tag-version
+git commit -m "chore: release X.Y.Z" -- package.json
+git tag vX.Y.Z
+git push origin main vX.Y.Z
 gh run watch $(gh run list --workflow firebase.yml -L 1 --json databaseId -q '.[0].databaseId')
+gh release create vX.Y.Z --verify-tag --generate-notes
 ```
 
-Merging tags the version and the Release workflow starts the live deploy. Wait for it, then
-open the live site and check the critical flows still start. Report the version and the
-result. If the deploy fails or something is wrong on live, offer `/volver` right away.
+The tag starts the live deploy (2–3 minutes). Wait for it, then open the live site and check
+the critical flows still start. Report the version and the result. If the deploy fails or
+something is wrong on live, offer `/volver` right away.
 
-After the first release (1.0.0), remove `"release-as": "1.0.0"` from
-`release-please-config.json` through a `/dev` PR, or every release stays 1.0.0.
+CI also runs on the pushed commit as a second net; if it ends red, tell the user.
