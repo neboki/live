@@ -42,3 +42,6 @@ functions/lib/
 
 # Temporary worktrees (a clean copy to check before publishing)
 .worktrees/
+
+# Scratch output of local scripts (generated images, reviews)
+output/
