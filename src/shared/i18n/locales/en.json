@@ -58,6 +58,7 @@
     },
     "where": {
       "heading": "Where to see the captions",
+      "recommended": "Recommended",
       "floating": {
         "name": "Floating window",
         "for": "Above the call and every other window, even outside the browser"

@@ -58,6 +58,7 @@
     },
     "where": {
       "heading": "Dónde ver los subtítulos",
+      "recommended": "Recomendado",
       "floating": {
         "name": "Ventana flotante",
         "for": "Sobre la llamada y cualquier otra ventana, incluso fuera del navegador"

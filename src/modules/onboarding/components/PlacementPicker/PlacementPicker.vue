@@ -73,7 +73,12 @@ function choose(value: CaptionPlacement): void {
             <rect x="6" y="13" width="12" height="4" rx="1.5" class="lg-choice__icon-fill" />
           </template>
         </svg>
-        <span class="lg-choice__name">{{ t(`start.where.${option.value}.name`) }}</span>
+        <span class="lg-choice__name"
+          >{{ t(`start.where.${option.value}.name`) }}
+          <span v-if="option.value === 'floating' && !option.disabled" class="placement__tag">{{
+            t('start.where.recommended')
+          }}</span></span
+        >
         <span class="lg-choice__for">{{ t(`start.where.${option.value}.for`) }}</span>
       </label>
     </div>
@@ -81,3 +86,19 @@ function choose(value: CaptionPlacement): void {
     <p class="lg-choice__hint">{{ t(hintKey) }}</p>
   </fieldset>
 </template>
+
+<style scoped lang="scss">
+// A small pill next to the name of the suggested choice
+.placement__tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+</style>

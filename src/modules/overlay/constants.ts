@@ -58,7 +58,8 @@ export const BAR_HEIGHT: Readonly<NumberRange> = { min: 64, max: 720, step: 24 }
 export const DEFAULT_PIP_SIZE: Readonly<PipSize> = { width: 640, height: 280 };
 
 export const DEFAULT_PREFS: Readonly<OverlayPrefs> = {
-  options: { source: false, voice: false, suggestions: false, summary: false, speakers: true },
+  // Every option starts off: the user turns on what they want
+  options: { source: false, voice: false, suggestions: false, summary: false, speakers: false },
   mode: 'conversation',
   glossary: '',
   scale: 1,

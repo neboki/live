@@ -89,7 +89,7 @@ export const useOverlayStore = defineStore('overlay', () => {
 
   const waiting = computed(() => translation.value.id === 0);
   const previous = computed(() => history.value.at(-1)?.text ?? '');
-  // Telling speakers apart is on by default and not an extra panel
+  // Telling speakers apart is not an extra panel
   const activeExtras = computed(
     () => Object.entries(options).filter(([key, on]) => on && key !== 'speakers').length,
   );

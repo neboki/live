@@ -34,6 +34,23 @@ describe('PlacementPicker', () => {
     wrapper.unmount();
   });
 
+  it('marks the floating window as recommended, and only it', () => {
+    const wrapper = mountPicker(true);
+    const [floating, page] = wrapper.findAll('.lg-choice__option');
+    const recommended = i18n.global.t('start.where.recommended');
+
+    expect(floating?.text()).toContain(recommended);
+    expect(page?.text()).not.toContain(recommended);
+    wrapper.unmount();
+  });
+
+  it('does not recommend the floating window where the browser cannot open it', () => {
+    const wrapper = mountPicker(false);
+
+    expect(wrapper.text()).not.toContain(i18n.global.t('start.where.recommended'));
+    wrapper.unmount();
+  });
+
   it('settles on the page where the browser has no floating window', () => {
     const store = useOverlayStore();
     store.placement = 'floating';

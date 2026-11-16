@@ -173,6 +173,13 @@ describe('useOverlayStore', () => {
       expect(next.theme).toBe('ocean');
     });
 
+    it('start with every option off and the floating window, for someone new', () => {
+      const store = useOverlayStore();
+
+      expect(Object.values(store.options).every((on) => !on)).toBe(true);
+      expect(store.placement).toBe('floating');
+    });
+
     it('ignore an unknown stored theme', () => {
       window.localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: 'neon' }));
       expect(useOverlayStore().theme).toBe('sunset');
@@ -200,7 +207,7 @@ describe('useOverlayStore', () => {
         voice: false,
         suggestions: false,
         summary: false,
-        speakers: true,
+        speakers: false,
       });
       expect(store.scale).toBe(1);
       expect(store.glossary).toBe('');
