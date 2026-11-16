@@ -6,7 +6,8 @@
 ### Understand any conversation, in any language, live.
 
 Translated captions for calls, videos and in-person meetings, about a second after each
-sentence. No server and no account: your audio goes straight to OpenAI with your own key.
+sentence. Your audio goes straight to OpenAI: sign in with Google for 30 free minutes a month,
+or bring your own key for unlimited use with no server at all.
 
 **[Open the app](https://neboki-live.web.app/)** · works on desktop and on your phone
 
@@ -33,7 +34,8 @@ sentence. No server and no account: your audio goes straight to OpenAI with your
 
 ## Why you can trust it
 
-- Open source, no server, no analytics: audio and text go only to OpenAI.
+- Open source, no analytics. With your own key there is no server: audio and text go only to
+  OpenAI. The free minutes go through a small server of ours (below).
 - Your key stays in your browser, and only if you choose to remember it.
 - OpenAI or Azure OpenAI (handy at work), with configurable models.
 - From about **$0.24/hour** on your own OpenAI bill at the default quality.
@@ -41,8 +43,9 @@ sentence. No server and no account: your audio goes straight to OpenAI with your
 ## How to use
 
 1. Open the [app](https://neboki-live.web.app/).
-2. Paste your [OpenAI API key](https://platform.openai.com/api-keys). **Usage is billed to your
-   own OpenAI account** — a dedicated key with a spending limit is a good idea.
+2. **No key?** Sign in with Google and use your **30 free minutes a month** (translated captions,
+   Medium quality). Or paste your [OpenAI API key](https://platform.openai.com/api-keys): **usage
+   is billed to your own OpenAI account** — a dedicated key with a spending limit is a good idea.
    Using **Azure OpenAI** instead? Pick it, paste your resource endpoint and key, and set the
    model names in the settings menu to your deployment names (transcription, chat and, for
    voice, TTS deployments).
@@ -65,7 +68,12 @@ reference.
 ## Privacy
 
 - Your API key is stored only in your browser (and only if you choose to remember it).
-- Audio and text are sent directly to OpenAI; there is no Neboki Live server and no analytics.
+- With your own key, audio and text are sent directly to OpenAI; there is no Neboki Live server
+  and no analytics.
+- With the free minutes, the audio still goes straight to OpenAI (with a key that expires in a
+  minute), but the text to translate passes through our server (Google Cloud, Europe), which
+  forwards it without keeping it. To count your minutes we store the seconds used per month with
+  your account id, nothing else.
 - Only the current session can be exported; no history is kept.
 - Translating other people's speech may require their consent where you live — please ask them.
 

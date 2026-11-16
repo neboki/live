@@ -1,31 +1,39 @@
-// The demo endpoint, behind Firebase Hosting at /api/demo:
-//   POST /api/demo/session                → a short-lived OpenAI key for live transcription
-//   POST /api/demo/v1/chat/completions    → the translation, forwarded with the server's key
-// The OpenAI key itself never leaves the server.
-
-import { demoChatBody } from './chatBody.ts';
+// The free plan, behind Firebase Hosting at /api/free. Every account signed in with Google
+// gets FREE_MONTH_SECONDS a month, at Medium quality:
+//   POST /api/free/balance               → the minutes left this month (Google ID token)
+//   POST /api/free/session               → a short-lived OpenAI key for live transcription
+//   POST /api/free/tick                  → a check-in every TICK_SECONDS; pays for that time
+//   POST /api/free/v1/chat/completions   → the translation, forwarded with the server's key
+// The OpenAI key itself never leaves the server, and the audio never reaches it: the
+// browser streams it straight to OpenAI with the short-lived key.
+import { freeChatBody } from './chatBody.ts';
 import type { Grants } from './grants.ts';
+import {
+  FREE_MONTH_SECONDS,
+  FREE_TRANSCRIPTION_MODEL,
+  GLOBAL_MONTH_SECONDS,
+  TICK_SECONDS,
+  monthOf,
+} from './plan.ts';
+import type { MonthUsage, UsageStore } from './usage.ts';
 
 const OPENAI_API = 'https://api.openai.com/v1';
-/** Cheapest transcription that works live; the session is pinned to it */
-export const DEMO_TRANSCRIPTION_MODEL = 'gpt-transcribe';
 /** The app's audio format */
 const SAMPLE_RATE = 24_000;
 /** Time the browser has to open the transcription socket with the key it is given */
 const KEY_TTL_SECONDS = 60;
 
 /** The few parts of Express's request and response the handler uses */
-export interface DemoRequest {
+export interface FreeRequest {
   method: string;
   path: string;
   body: unknown;
-  ip?: string;
   headers: Record<string, string | string[] | undefined>;
 }
 
-export interface DemoResponse {
-  status: (code: number) => DemoResponse;
-  set: (field: string, value: string) => DemoResponse;
+export interface FreeResponse {
+  status: (code: number) => FreeResponse;
+  set: (field: string, value: string) => FreeResponse;
   json: (body: unknown) => void;
   write: (chunk: Uint8Array) => boolean;
   end: () => void;
@@ -33,41 +41,55 @@ export interface DemoResponse {
   headersSent?: boolean;
 }
 
-export interface DemoDeps {
+export interface FreeDeps {
   grants: Grants;
+  usage: UsageStore;
+  /** The account a Google (Firebase) ID token belongs to, or null when it is not valid */
+  verifyUser: (idToken: string) => Promise<string | null>;
   /** The server's OpenAI key (a Firebase secret) */
   openAiKey: () => string;
-  /** How long a demo lasts, in seconds; the app stops itself then */
-  demoSeconds: number;
   fetch?: typeof fetch;
   now?: () => number;
   log?: (message: string, detail?: unknown) => void;
 }
 
-function fail(res: DemoResponse, status: number, code: string, message: string): void {
+/** Why a free session may not start or go on */
+type Refusal = 'free_month' | 'free_budget';
+
+function fail(res: FreeResponse, status: number, code: string, message: string): void {
   // OpenAI's error shape, so the app reads it like any other OpenAI error
-  res.status(status).json({ error: { code, message, type: 'demo' } });
+  res.status(status).json({ error: { code, message, type: 'free' } });
 }
 
-function header(req: DemoRequest, name: string): string {
+function header(req: FreeRequest, name: string): string {
   const value = req.headers[name];
   return (Array.isArray(value) ? value[0] : value) ?? '';
 }
 
-/** The visitor's address: Hosting puts it first in X-Forwarded-For */
-export function clientOf(req: DemoRequest): string {
-  const forwarded = header(req, 'x-forwarded-for').split(',')[0]?.trim();
-  return forwarded || req.ip || 'unknown';
-}
-
-function bearer(req: DemoRequest): string {
+function bearer(req: FreeRequest): string {
   const match = /^Bearer\s+(\S+)$/i.exec(header(req, 'authorization'));
   return match?.[1] ?? '';
 }
 
-export function createDemoHandler(
-  deps: DemoDeps,
-): (req: DemoRequest, res: DemoResponse) => Promise<void> {
+/** Seconds this account still has this month */
+function left(used: MonthUsage): number {
+  return Math.max(0, FREE_MONTH_SECONDS - used.user);
+}
+
+function refusalOf(used: MonthUsage): Refusal | null {
+  if (left(used) <= 0) return 'free_month';
+  if (used.total >= GLOBAL_MONTH_SECONDS) return 'free_budget';
+  return null;
+}
+
+function refuse(res: FreeResponse, refusal: Refusal): void {
+  if (refusal === 'free_month') fail(res, 429, refusal, 'No free minutes left this month');
+  else fail(res, 429, refusal, 'Free minutes are paused until next month');
+}
+
+export function createFreeHandler(
+  deps: FreeDeps,
+): (req: FreeRequest, res: FreeResponse) => Promise<void> {
   const send = deps.fetch ?? fetch;
   const now = deps.now ?? Date.now;
   const log = deps.log ?? ((message: string, detail?: unknown) => console.error(message, detail));
@@ -80,10 +102,32 @@ export function createDemoHandler(
     });
   }
 
-  async function session(req: DemoRequest, res: DemoResponse): Promise<void> {
-    const refused = deps.grants.admit(clientOf(req), now());
+  /** The signed-in account, or null once a 401 is sent */
+  async function signedIn(req: FreeRequest, res: FreeResponse): Promise<string | null> {
+    const token = bearer(req);
+    const uid = token ? await deps.verifyUser(token) : null;
+    if (!uid) fail(res, 401, 'free_signin', 'Sign in with Google to use the free minutes');
+    return uid;
+  }
+
+  async function balance(req: FreeRequest, res: FreeResponse): Promise<void> {
+    const uid = await signedIn(req, res);
+    if (!uid) return;
+    const used = await deps.usage.read(uid, monthOf(now()));
+    res.status(200).json({
+      seconds: left(used),
+      monthSeconds: FREE_MONTH_SECONDS,
+      available: used.total < GLOBAL_MONTH_SECONDS,
+    });
+  }
+
+  async function session(req: FreeRequest, res: FreeResponse): Promise<void> {
+    const uid = await signedIn(req, res);
+    if (!uid) return;
+    const month = monthOf(now());
+    const refused = refusalOf(await deps.usage.read(uid, month));
     if (refused) {
-      fail(res, 429, `demo_${refused}`, 'No more demos for now');
+      refuse(res, refused);
       return;
     }
     const response = await openAi('/realtime/client_secrets', {
@@ -93,35 +137,56 @@ export function createDemoHandler(
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: SAMPLE_RATE },
-            transcription: { model: DEMO_TRANSCRIPTION_MODEL },
+            transcription: { model: FREE_TRANSCRIPTION_MODEL },
             turn_detection: null,
           },
         },
       },
     });
     if (!response.ok) {
-      log('OpenAI refused a demo key', { status: response.status, body: await response.text() });
-      fail(res, 502, 'demo_unavailable', 'The demo is not available right now');
+      log('OpenAI refused a free key', { status: response.status, body: await response.text() });
+      fail(res, 502, 'free_unavailable', 'The free minutes are not available right now');
       return;
     }
     const secret = (await response.json()) as { value?: unknown };
     if (typeof secret.value !== 'string' || !secret.value) {
-      log('OpenAI sent a demo key without a value', secret);
-      fail(res, 502, 'demo_unavailable', 'The demo is not available right now');
+      log('OpenAI sent a free key without a value', secret);
+      fail(res, 502, 'free_unavailable', 'The free minutes are not available right now');
       return;
     }
-    deps.grants.issue(secret.value, now());
-    res.status(200).json({ key: secret.value, seconds: deps.demoSeconds });
+    // The first stretch is paid up front, so starting over and over is never free
+    const used = await deps.usage.charge(uid, month, TICK_SECONDS);
+    deps.grants.issue(secret.value, uid, now());
+    res.status(200).json({ key: secret.value, seconds: left(used), tickSeconds: TICK_SECONDS });
   }
 
-  async function chat(req: DemoRequest, res: DemoResponse): Promise<void> {
-    if (!deps.grants.spend(bearer(req), now())) {
-      fail(res, 401, 'demo_expired', 'This demo has ended');
+  async function tick(req: FreeRequest, res: FreeResponse): Promise<void> {
+    const key = bearer(req);
+    const uid = key ? deps.grants.renew(key, now()) : null;
+    if (!uid) {
+      fail(res, 401, 'free_expired', 'This free session has ended');
       return;
     }
-    const body = demoChatBody(req.body);
+    const month = monthOf(now());
+    const before = await deps.usage.read(uid, month);
+    const refused = refusalOf(before);
+    if (refused) {
+      deps.grants.revoke(key);
+      refuse(res, refused);
+      return;
+    }
+    const used = await deps.usage.charge(uid, month, TICK_SECONDS);
+    res.status(200).json({ seconds: left(used) });
+  }
+
+  async function chat(req: FreeRequest, res: FreeResponse): Promise<void> {
+    if (!deps.grants.spend(bearer(req), now())) {
+      fail(res, 401, 'free_expired', 'This free session has ended');
+      return;
+    }
+    const body = freeChatBody(req.body);
     if (!body) {
-      fail(res, 400, 'demo_request', 'Not a request the demo makes');
+      fail(res, 400, 'free_request', 'Not a request the app makes');
       return;
     }
     const response = await openAi('/chat/completions', body);
@@ -146,22 +211,24 @@ export function createDemoHandler(
     }
   }
 
+  const routes: Record<string, (req: FreeRequest, res: FreeResponse) => Promise<void>> = {
+    '/balance': balance,
+    '/session': session,
+    '/tick': tick,
+    '/v1/chat/completions': chat,
+  };
+
   return async (req, res) => {
     try {
-      if (req.method !== 'POST') {
-        fail(res, 405, 'demo_method', 'Use POST');
-      } else if (req.path.endsWith('/session')) {
-        await session(req, res);
-      } else if (req.path.endsWith('/v1/chat/completions')) {
-        await chat(req, res);
-      } else {
-        fail(res, 404, 'demo_not_found', 'Not found');
-      }
+      const route = Object.keys(routes).find((path) => req.path.endsWith(path));
+      if (req.method !== 'POST') fail(res, 405, 'free_method', 'Use POST');
+      else if (!route) fail(res, 404, 'free_not_found', 'Not found');
+      else await routes[route]?.(req, res);
     } catch (err) {
-      log('Demo request failed', err);
+      log('Free request failed', err);
       // A stream cut halfway can only be ended; the app sees the translation stop
       if (res.headersSent) res.end();
-      else fail(res, 502, 'demo_unavailable', 'The demo is not available right now');
+      else fail(res, 502, 'free_unavailable', 'The free minutes are not available right now');
     }
   };
 }

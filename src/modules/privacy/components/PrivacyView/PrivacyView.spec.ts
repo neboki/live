@@ -6,9 +6,9 @@ import es from '@/shared/i18n/locales/es.json';
 import { PRIVACY_CONTACT } from '@/shared/links';
 import PrivacyView from './PrivacyView.vue';
 
-function render(props: { accounts?: boolean; demo?: boolean } = {}) {
+function render(props: { accounts?: boolean; free?: boolean } = {}) {
   return mount(PrivacyView, {
-    props: { accounts: false, demo: false, ...props },
+    props: { accounts: false, free: false, ...props },
     global: { plugins: [i18n] },
   });
 }
@@ -69,17 +69,17 @@ describe('PrivacyView', () => {
     wrapper.unmount();
   });
 
-  it('only mentions sign-in and the demo when the build offers them', () => {
+  it('only mentions sign-in and the free minutes when the build offers them', () => {
     const plain = render();
     expect(plain.find('#privacy-account').exists()).toBe(false);
-    expect(plain.find('#privacy-demo').exists()).toBe(false);
-    expect(plain.text()).not.toContain(en.privacyPage.summary.demo);
+    expect(plain.find('#privacy-free').exists()).toBe(false);
+    expect(plain.text()).not.toContain(en.privacyPage.summary.free);
     plain.unmount();
 
-    const full = render({ accounts: true, demo: true });
+    const full = render({ accounts: true, free: true });
     expect(full.find('#privacy-account').exists()).toBe(true);
-    expect(full.find('#privacy-demo').exists()).toBe(true);
-    expect(full.text()).toContain(en.privacyPage.summary.demo);
+    expect(full.find('#privacy-free').exists()).toBe(true);
+    expect(full.text()).toContain(en.privacyPage.summary.free);
     expect(full.text()).toContain(en.privacyPage.device.account);
     full.unmount();
   });

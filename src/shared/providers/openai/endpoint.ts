@@ -4,7 +4,7 @@
 
 import { BusinessError, ValidationError } from '@/shared/errors';
 import {
-  DEMO_API,
+  FREE_API,
   OPENAI_API,
   REALTIME_URL,
   REALTIME_TRANSCRIPTION_URL,
@@ -41,16 +41,16 @@ export function normalizeAzureEndpoint(value: string): string | null {
 }
 
 /**
- * The free demo: the endpoint is the demo server, which passes text requests on to OpenAI
- * with its own key. The key the visitor holds is a short-lived OpenAI one for live
+ * The free minutes: the endpoint is the free server, which passes text requests on to
+ * OpenAI with its own key. The key the user holds is a short-lived OpenAI one for live
  * transcription, so the transcription socket goes straight to OpenAI like a normal key.
  */
-export function isDemo(access: OpenAiAccess): boolean {
-  return DEMO_API !== '' && access.endpoint === DEMO_API;
+export function isFree(access: OpenAiAccess): boolean {
+  return FREE_API !== '' && access.endpoint === FREE_API;
 }
 
 function azureOrigin(access: OpenAiAccess): string | null {
-  if (access.endpoint === undefined || isDemo(access)) return null;
+  if (access.endpoint === undefined || isFree(access)) return null;
   const origin = normalizeAzureEndpoint(access.endpoint);
   // Never fall back to api.openai.com: an Azure key must not travel there
   if (!origin) throw new ValidationError('Not an Azure OpenAI endpoint', 'errors.invalidEndpoint');
@@ -59,7 +59,7 @@ function azureOrigin(access: OpenAiAccess): string | null {
 
 /** Base URL of the REST API, without a trailing slash. */
 export function apiBase(access: OpenAiAccess): string {
-  if (isDemo(access)) return `${DEMO_API}/v1`;
+  if (isFree(access)) return `${FREE_API}/v1`;
   const azure = azureOrigin(access);
   return azure ? `${azure}/openai/v1` : OPENAI_API;
 }
@@ -90,11 +90,11 @@ export function transcriptionSocket(access: OpenAiAccess): SocketTarget {
 
 /**
  * The voice socket: a Realtime session with `model` that reads text aloud, keyed like the
- * transcription one. On Azure `model` is the deployment name. The free demo has no voice.
+ * transcription one. On Azure `model` is the deployment name. The free minutes have no voice.
  */
 export function voiceSocket(access: OpenAiAccess, model: string): SocketTarget {
-  if (isDemo(access)) {
-    throw new BusinessError('The demo only writes captions', 'errors.demoUnavailable');
+  if (isFree(access)) {
+    throw new BusinessError('The free minutes only write captions', 'errors.freeCaptionsOnly');
   }
   const azure = azureOrigin(access);
   if (!azure) {
@@ -114,8 +114,8 @@ export function voiceSocket(access: OpenAiAccess, model: string): SocketTarget {
  * offer it, and an Azure key must never travel to api.openai.com.
  */
 export function translationSocket(access: OpenAiAccess): SocketTarget {
-  if (isDemo(access)) {
-    throw new BusinessError('The demo only writes captions', 'errors.demoUnavailable');
+  if (isFree(access)) {
+    throw new BusinessError('The free minutes only write captions', 'errors.freeCaptionsOnly');
   }
   if (azureOrigin(access)) {
     throw new BusinessError(
