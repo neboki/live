@@ -333,6 +333,8 @@ describe('useLiveSession', () => {
     fakes.syncOriginal.mockReturnValue(playback);
     const overlay = useOverlayStore();
     overlay.syncVideo = true;
+    // In the page: with the floating window the captions show there and nothing is held back
+    overlay.placement = 'page';
     const session = setup();
     await session.start('es');
     await nextTick();
