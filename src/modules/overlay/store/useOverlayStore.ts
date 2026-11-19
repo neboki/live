@@ -75,8 +75,6 @@ export const useOverlayStore = defineStore('overlay', () => {
   const voiceEngine = ref<ReadingEngine | null>(null);
   /** i18n key of why the chosen voice failed and the browser's took over, or null */
   const voiceProblem = ref<string | null>(null);
-  /** The user asked to hear lines shown as said (already in their language) all the same */
-  const readAsHeard = ref(false);
   /** i18n key of a transient, non-fatal message (rate limit, reconnecting…) */
   const notice = ref<string | null>(null);
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -141,7 +139,6 @@ export const useOverlayStore = defineStore('overlay', () => {
     speakerNames.value = {};
     suggestions.value = [];
     summary.value = [];
-    readAsHeard.value = false;
     setNotice(null);
   }
 
@@ -303,7 +300,6 @@ export const useOverlayStore = defineStore('overlay', () => {
     voiceBusy,
     voiceEngine,
     voiceProblem,
-    readAsHeard,
     originalVolume,
     notice,
     pair,
