@@ -93,6 +93,7 @@
   },
   "overlay": {
     "region": "Translated captions",
+    "experimental": "Experimental",
     "listening": "Listening",
     "listenMode": {
       "title": "Listening to",
@@ -154,7 +155,7 @@
       },
       "speakers": {
         "label": "Who is speaking",
-        "hint": "Tells voices apart (experimental)"
+        "hint": "Tells voices apart"
       }
     },
     "look": {

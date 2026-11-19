@@ -52,4 +52,18 @@ describe('SettingsMenu', () => {
     expect(page.find('kbd').exists()).toBe(false);
     page.unmount();
   });
+
+  it('marks the options that are not reliable yet as experimental, and only those', () => {
+    const t = i18n.global.t;
+    const menu = mountMenu();
+    const marked = menu
+      .findAll('.menu__option')
+      .filter((option) => option.find('.menu__experimental').exists())
+      .map((option) => option.text());
+    expect(marked).toEqual([
+      expect.stringContaining(t('overlay.options.speakers.label')),
+      expect.stringContaining(t('overlay.sync.label')),
+    ]);
+    menu.unmount();
+  });
 });

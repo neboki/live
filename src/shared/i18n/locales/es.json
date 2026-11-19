@@ -93,6 +93,7 @@
   },
   "overlay": {
     "region": "Subtítulos traducidos",
+    "experimental": "Experimental",
     "listening": "Escuchando",
     "listenMode": {
       "title": "Qué escuchas",
@@ -154,7 +155,7 @@
       },
       "speakers": {
         "label": "Quién habla",
-        "hint": "Distingue las voces (experimental)"
+        "hint": "Distingue las voces"
       }
     },
     "look": {

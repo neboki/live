@@ -31,6 +31,8 @@ interface MenuSwitch {
   hint: string;
   checked: boolean;
   disabled?: boolean;
+  /** Not reliable yet: marked as such beside its name */
+  experimental?: boolean;
   toggle: () => void;
 }
 
@@ -40,6 +42,8 @@ const MODEL_ROLES: readonly ModelRole[] = [
   'summary',
   'suggestions',
 ];
+/** Options that do not work reliably yet: the menu marks them as experimental */
+const EXPERIMENTAL: ReadonlySet<OverlayOption> = new Set(['speakers']);
 /** What can be shown on the bar, besides the captions themselves */
 const SHOWN: readonly OverlayOption[] = ['source', 'summary', 'suggestions', 'speakers'];
 const EXPORTED_FEEDBACK_MS = 2500;
@@ -104,6 +108,7 @@ const seeSwitches = computed<MenuSwitch[]>(() => {
       label: t(`overlay.options.${optionKey(option)}.label`),
       hint: t(`overlay.options.${optionKey(option)}.hint`),
       checked: store.options[option],
+      experimental: EXPERIMENTAL.has(option),
       toggle: () => store.toggleOption(option),
     });
   }
@@ -124,6 +129,7 @@ const seeSwitches = computed<MenuSwitch[]>(() => {
     hint: t(syncUnavailable.value ? 'overlay.sync.unavailable' : 'overlay.sync.hint'),
     checked: store.syncVideo,
     disabled: syncUnavailable.value,
+    experimental: true,
     toggle: () => (store.syncVideo = !store.syncVideo),
   });
   return list;
@@ -193,6 +199,9 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
       >
         <span class="menu__text">
           {{ item.label }}
+          <span v-if="item.experimental" class="menu__experimental">
+            {{ t('overlay.experimental') }}
+          </span>
           <small>{{ item.hint }}</small>
         </span>
         <span class="menu__switch"></span>
@@ -384,6 +393,22 @@ onBeforeUnmount(() => clearTimeout(feedbackTimer));
       color: var(--glass-muted);
       font-size: 11.5px;
     }
+  }
+
+  // Not reliable yet: a small amber tag beside the name
+  &__experimental {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: rgb(255 194 102 / 14%);
+    box-shadow: inset 0 0 0 1px rgb(255 194 102 / 40%);
+    color: #ffc266;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: 1px;
   }
 
   &__switch {
