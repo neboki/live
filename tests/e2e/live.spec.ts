@@ -393,7 +393,7 @@ test('the floating window stops the session with its own Stop button', async ({ 
   await expect.poll(() => floating.isClosed()).toBe(true);
 });
 
-test('the floating window says the browser reads when the ElevenLabs key is missing', async ({
+test('without the ElevenLabs key OpenAI reads, and the window and the page both say so', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -405,8 +405,10 @@ test('the floating window says the browser reads when the ElevenLabs key is miss
   const floating = await startSession(page);
 
   const tag = floating.getByTestId('voice-engine-tag');
-  await expect(tag).toHaveText(/Browser|Navegador/);
-  await expect(tag).toHaveAttribute('title', /ElevenLabs/);
+  await expect(tag).toHaveText(/OpenAI/);
+  // The page says the same, while the captions are away in the floating window
+  const pageTag = page.locator('.live').getByTestId('voice-engine-tag');
+  await expect(pageTag).toHaveText(/OpenAI/);
   await floating.getByRole('button', { name: 'Stop', exact: true }).click();
 });
 

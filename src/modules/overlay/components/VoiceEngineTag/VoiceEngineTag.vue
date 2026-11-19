@@ -64,7 +64,9 @@ const description = computed(() => {
   line-height: 1.4;
   white-space: nowrap;
 
-  &--openai {
+  // The interpreter is OpenAI's model: same colour
+  &--openai,
+  &--interpreter {
     background: rgb(16 163 127 / 18%);
     box-shadow: inset 0 0 0 1px rgb(16 163 127 / 55%);
   }
@@ -93,8 +95,11 @@ const description = computed(() => {
   }
 
   // On the page the word takes the page's own text colour, readable in light and dark
-  &--page {
+  &--page,
+  &--page.voice-tag--browser {
+    padding: 4px 10px;
     color: var(--fg);
+    font-size: 12px;
   }
 }
 </style>

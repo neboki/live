@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { CaptionBar, SettingsPanel, SYNC_DELAY_AUTO, useOverlayStore } from '@/modules/overlay';
+import {
+  CaptionBar,
+  SettingsPanel,
+  SYNC_DELAY_AUTO,
+  useOverlayStore,
+  VoiceEngineTag,
+} from '@/modules/overlay';
 import { createScreenWakeLock } from '@/shared/device';
 import { logError } from '@/shared/errors';
 import { useLiveSession } from '../../store/useLiveSession';
@@ -73,6 +79,8 @@ onBeforeUnmount(() => wakeLock.release());
         <i class="live__dot" aria-hidden="true"></i>{{ t('nav.live') }}
       </h1>
       <div class="lg-head__actions">
+        <!-- Who reads aloud, here whenever the bar (which shows it too) is not in the page -->
+        <VoiceEngineTag v-if="session.active && (!session.inPage || session.syncedTab)" on-page />
         <button
           class="live__panel-toggle lg-btn lg-btn--quiet"
           type="button"

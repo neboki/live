@@ -40,10 +40,22 @@ describe('useVoiceEngine', () => {
     expect(engine.value).toEqual({ name: 'elevenlabs', reason: null });
   });
 
-  it('says the browser reads, and why, when the ElevenLabs key is missing', () => {
+  it('says OpenAI reads, and why, when ElevenLabs is chosen without its key', () => {
     settings.tts.engine = 'elevenlabs';
     settings.voiceKey = '';
     expect(useVoiceEngine().value).toEqual({
+      name: 'openai',
+      reason: 'overlay.voiceTag.noElevenLabsKey',
+    });
+  });
+
+  it('says the browser reads, and why, without any key', () => {
+    settings.apiKey = '';
+    const engine = useVoiceEngine();
+    expect(engine.value).toEqual({ name: 'browser', reason: 'overlay.voiceTag.noOpenAiKey' });
+    settings.tts.engine = 'elevenlabs';
+    settings.voiceKey = '';
+    expect(engine.value).toEqual({
       name: 'browser',
       reason: 'overlay.voiceTag.noElevenLabsKey',
     });

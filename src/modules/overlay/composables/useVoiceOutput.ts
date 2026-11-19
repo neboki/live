@@ -83,9 +83,9 @@ export function useVoiceOutput(
   let nextLine = 0;
 
   function activeEngine(): TtsProvider {
-    const { engine } = settings.tts;
-    if (engine === 'openai' && settings.apiKey) return openAi;
-    if (engine === 'elevenlabs' && settings.voiceKey) return elevenLabs;
+    if (settings.tts.engine === 'elevenlabs' && settings.voiceKey) return elevenLabs;
+    // OpenAI's voice is the default, also while ElevenLabs is chosen without its key
+    if (settings.apiKey) return openAi;
     return browser;
   }
 

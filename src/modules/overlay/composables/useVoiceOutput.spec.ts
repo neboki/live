@@ -184,6 +184,14 @@ describe('useVoiceOutput', () => {
     expect(store.voiceProblem).toBeNull();
   });
 
+  it('reads with OpenAI while ElevenLabs is chosen without its key', () => {
+    const options = captured();
+    settings.tts.engine = 'elevenlabs';
+    settings.voiceKey = '';
+    settings.apiKey = 'openai-key';
+    expect(options.engine()).not.toBe(options.fallback);
+  });
+
   it('adds the ElevenLabs voice usage to the session cost', () => {
     const usage = {
       model: 'eleven_flash_v2_5',
