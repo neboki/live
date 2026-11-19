@@ -8,6 +8,9 @@ export default defineConfig(
       // One jsdom per worker, each spec file still in its own context: ~6x faster than a fresh
       // jsdom per file. Node's web streams fill what the VM context lacks (tests/unit/setup.ts)
       pool: 'vmThreads',
+      // Locally, keep 3 cores to spare so the laptop stays usable while agents run the suite;
+      // CI uses every core
+      maxWorkers: process.env.CI ? undefined : 3,
       setupFiles: ['tests/unit/setup.ts'],
       include: ['src/**/*.spec.ts'],
       coverage: {
