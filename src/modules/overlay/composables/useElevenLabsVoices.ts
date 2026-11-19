@@ -37,18 +37,31 @@ export function useElevenLabsVoices(key: () => string): ElevenLabsVoices {
     controller = mine;
     loading.value = true;
     try {
-      voices.value = await listElevenLabsVoices(value, mine.signal);
-    } catch (err) {
+      const listed = await listElevenLabsVoices(value, mine.signal);
       if (mine.signal.aborted) return;
-      if (err instanceof AppError && err.userMessageKey === 'errors.ttsPermission') {
-        // A key restricted to text to speech works; it just cannot see the voice list
+      // An account may list none of its own: the standard voices are there for every one
+      if (listed.length === 0) {
         voices.value = [...STANDARD_ELEVENLABS_VOICES];
         limited.value = true;
         return;
       }
-      logError('Loading the ElevenLabs voices failed', err);
+      voices.value = listed;
+    } catch (err) {
+      if (mine.signal.aborted) return;
       const refused = err instanceof AppError && err.userMessageKey === 'errors.ttsKey';
-      error.value = refused ? 'overlay.voice.keyRefused' : 'overlay.voice.loadFailed';
+      if (refused) {
+        logError('ElevenLabs refused the key', err);
+        error.value = 'overlay.voice.keyRefused';
+        return;
+      }
+      // The list could not be read (a key restricted to text to speech, the network, a
+      // blocked free plan…), but the key may still speak: the standard voices can be
+      // chosen, and if speaking fails the voice tag and notice say why
+      if (!(err instanceof AppError && err.userMessageKey === 'errors.ttsPermission')) {
+        logError('Loading the ElevenLabs voices failed; offering the standard ones', err);
+      }
+      voices.value = [...STANDARD_ELEVENLABS_VOICES];
+      limited.value = true;
     } finally {
       if (controller === mine) {
         loading.value = false;

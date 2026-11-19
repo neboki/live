@@ -139,6 +139,36 @@ describe('ElevenLabsKeyField', () => {
     wrapper.unmount();
   });
 
+  it('switches to ElevenLabs when the account lists no voices of its own', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(voicesResponse(0)));
+    const settings = useSettingsStore();
+    const wrapper = mountField();
+
+    await radios(wrapper).eleven.trigger('click');
+    await wrapper.get('input').setValue(KEY);
+    await flushPromises();
+
+    expect(settings.tts.engine).toBe('elevenlabs');
+    expect(radios(wrapper).eleven.attributes('aria-checked')).toBe('true');
+    wrapper.unmount();
+  });
+
+  it('switches to ElevenLabs even when its voice list cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const blocked = '{"detail":{"status":"detected_unusual_activity","message":"Unusual"}}';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(blocked, { status: 401 })));
+    const settings = useSettingsStore();
+    const wrapper = mountField();
+
+    await radios(wrapper).eleven.trigger('click');
+    await wrapper.get('input').setValue(KEY);
+    await flushPromises();
+
+    expect(settings.tts.engine).toBe('elevenlabs');
+    expect(wrapper.text()).not.toContain(i18n.global.t('overlay.voice.keyRefused'));
+    wrapper.unmount();
+  });
+
   it('accepts a key restricted to text to speech and offers the standard voices', async () => {
     const body =
       '{"detail":{"status":"missing_permissions","message":"The API key you used is missing the permission voices_read to execute this operation."}}';
