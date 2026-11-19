@@ -307,6 +307,11 @@ watch(
     box-shadow: none;
     backdrop-filter: none;
 
+    // A small window keeps its room for the controls and the captions
+    @media (width < 420px) {
+      padding: 8px 12px 12px;
+    }
+
     // The window's own frame, in the theme's colours: faint at rest, brighter with the voice
     &::after {
       inset: 0;

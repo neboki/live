@@ -619,3 +619,37 @@ test('the floating window gets the app styles and fonts', async ({ page }) => {
   const box = await bar.boundingBox();
   expect([Math.round(box?.width ?? 0), Math.round(box?.height ?? 0)]).toEqual(size);
 });
+
+test('a small floating window keeps its controls clear of the captions, and Stop works', async ({
+  page,
+}) => {
+  await fakeScreenShare(page, 'audio');
+  // No HTTP routing here (see fakeOpenAi): the key check is answered by a fake fetch
+  await page.addInitScript(() => {
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (input, init) =>
+      String(input instanceof Request ? input.url : input).endsWith('/v1/models')
+        ? Promise.resolve(Response.json({ data: [] }))
+        : realFetch(input, init);
+  });
+  await page.routeWebSocket(/api\.openai\.com\/v1\/realtime/, () => undefined);
+  const floating = await startSession(page);
+  await expect(floating.locator('.bar')).toHaveCSS('display', 'flex');
+
+  // Small enough for the controls to need a second row
+  await floating.setViewportSize({ width: 300, height: 140 });
+  const header = await floating.locator('.bar__top').boundingBox();
+  const actions = await floating.locator('.bar-header__actions').boundingBox();
+  const lines = await floating.locator('.bar__lines').boundingBox();
+  if (!header || !actions || !lines) throw new Error('The bar is not laid out');
+  // The header holds all its controls and the captions start below them
+  expect(header.y + header.height).toBeGreaterThanOrEqual(actions.y + actions.height);
+  expect(lines.y).toBeGreaterThanOrEqual(header.y + header.height);
+  // The light alone says it is listening: the word does not take the room
+  const badge = await floating.locator('.bar__top .badge').boundingBox();
+  expect(badge?.width ?? 0).toBeLessThan(40);
+
+  // Nothing covers Stop: a real click on it ends the session
+  await floating.locator('.bar-header__stop').click({ timeout: 5000 });
+  await expect.poll(() => floating.isClosed()).toBe(true);
+});

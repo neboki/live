@@ -359,6 +359,27 @@ const costLabel = computed(() => formatEur(costUsd(record.usage), locale.value))
     }
   }
 
+  // The floating window is resized by hand: the controls never give up their room to the
+  // captions, or the captions end up on top of them and swallow the clicks (Stop above all)
+  &--popped {
+    flex: none;
+  }
+
+  // There the light alone says it is listening: the word stays for screen readers only
+  &--popped :deep(.badge) {
+    gap: 0;
+    padding: 5px;
+  }
+
+  &--popped :deep(.badge__label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   // A narrow floating window keeps every control on one line: the numbers go to the tooltip
   &--popped :deep(.stepper__value) {
     @media (width < 520px) {
