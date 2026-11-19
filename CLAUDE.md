@@ -17,6 +17,17 @@ work locally in this folder → tests → the user tries it on :5173
 - Commit when a change is done and checked. Commits stay local until `/publicar`.
 - `stable-2026-11-11` is the live version from before the release process (commit 640d0d2).
 
+### Working from the cloud (claude.ai/code)
+
+The cloud session clones GitHub, not this folder: anything not pushed to `main` is not there.
+
+- The cloud works on its own `claude/...` branch and opens a pull request into `main`. That
+  branch and PR are the only exception to "no branches"; one PR per change, merged by the user.
+- In the cloud run `pnpm check` (and `pnpm test:e2e` when it applies). Microphone and tab
+  sharing cannot be tried there: say so, and leave the try in the real app to the user.
+- Never push a version tag from the cloud. Publishing stays `/publicar`, run after the PR is
+  merged into `main`.
+
 ## A change touches only its own feature (the most important rule)
 
 Adding or changing one feature must not change any other.

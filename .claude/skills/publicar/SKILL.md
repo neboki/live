@@ -9,6 +9,10 @@ Only the user decides this. Never run it on your own initiative.
 
 ## 1. What would go live
 
+Work done from the cloud arrives as `claude/...` pull requests. Only what is merged into
+`main` goes live: list open PRs (`gh pr list`) and ask which ones the user wants merged
+first; never merge one without their yes. Then bring `main` here (`git pull --ff-only`).
+
 ```bash
 git fetch --tags origin -q
 git status --short                                  # work not committed yet
