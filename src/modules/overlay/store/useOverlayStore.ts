@@ -14,6 +14,7 @@ import type {
   OverlayPrefs,
   OverlayTheme,
   Suggestion,
+  ReadingEngine,
   Translation,
 } from '../types';
 import { clampTo } from '../utils/range';
@@ -70,6 +71,10 @@ export const useOverlayStore = defineStore('overlay', () => {
   const selfVoiced = ref(false);
   /** A translation is being read aloud right now */
   const voiceBusy = ref(false);
+  /** The engine that read the last sentence; null until one is read after a (re)start */
+  const voiceEngine = ref<ReadingEngine | null>(null);
+  /** i18n key of why the chosen voice failed and the browser's took over, or null */
+  const voiceProblem = ref<string | null>(null);
   /** i18n key of a transient, non-fatal message (rate limit, reconnecting…) */
   const notice = ref<string | null>(null);
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -293,6 +298,8 @@ export const useOverlayStore = defineStore('overlay', () => {
     canSyncVideo,
     selfVoiced,
     voiceBusy,
+    voiceEngine,
+    voiceProblem,
     originalVolume,
     notice,
     pair,

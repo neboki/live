@@ -393,6 +393,23 @@ test('the floating window stops the session with its own Stop button', async ({ 
   await expect.poll(() => floating.isClosed()).toBe(true);
 });
 
+test('the floating window says the browser reads when the ElevenLabs key is missing', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('neboki-live:overlay-prefs', JSON.stringify({ options: { voice: true } }));
+    localStorage.setItem('neboki-live:tts', JSON.stringify({ engine: 'elevenlabs' }));
+  });
+  await fakeScreenShare(page, 'audio');
+  await fakeOpenAi(page);
+  const floating = await startSession(page);
+
+  const tag = floating.getByTestId('voice-engine-tag');
+  await expect(tag).toHaveText(/Browser|Navegador/);
+  await expect(tag).toHaveAttribute('title', /ElevenLabs/);
+  await floating.getByRole('button', { name: 'Stop', exact: true }).click();
+});
+
 test('nothing in the floating window keeps moving on its own, so the watched video stays smooth', async ({
   page,
 }) => {

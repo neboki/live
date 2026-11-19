@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useOverlayStore, useQuickControls } from '@/modules/overlay';
+import { VoiceEngineTag, useOverlayStore, useQuickControls } from '@/modules/overlay';
 import { logError } from '@/shared/errors';
 import { usePlayerChrome } from '../../composables/usePlayerChrome';
 
@@ -175,6 +175,7 @@ onBeforeUnmount(() => {
         >
           +
         </button>
+        <VoiceEngineTag />
       </div>
 
       <div class="live-player__group" :aria-label="t('overlay.quick.text')" role="group">

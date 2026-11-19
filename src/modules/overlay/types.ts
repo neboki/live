@@ -13,6 +13,15 @@ export type CaptionPlacement = 'page' | 'floating';
 /** Something is on its way to the captions: someone speaking, or a sentence being worked on */
 export type CaptionActivity = 'hearing' | 'translating';
 
+/** An engine that reads the captions aloud: the chosen one, or the browser's own voice */
+export type ReadingEngine = 'openai' | 'elevenlabs' | 'browser';
+
+/**
+ * Who reads the translation aloud: a reading engine, or the translation model itself
+ * (interpreter mode)
+ */
+export type VoiceEngineName = ReadingEngine | 'interpreter';
+
 /** Colour scheme of the bar: each one is a dark glass tinted by two glows */
 export type OverlayTheme = 'aurora' | 'sunset' | 'ocean' | 'forest' | 'graphite';
 

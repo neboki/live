@@ -8,6 +8,7 @@ import { spokenUpTo } from '@/shared/speech/sentences';
 import type { TtsProvider } from '@/shared/speech/types';
 import { useSpeech } from '@/shared/speech/useSpeech';
 import { useOverlayStore } from '../store/useOverlayStore';
+import type { ReadingEngine } from '../types';
 import { dueLines, type PictureClock } from './pictureVoice';
 
 const NOTICE_TTL_MS = 8000;
@@ -37,9 +38,24 @@ export function useVoiceOutput(
   const store = useOverlayStore();
   const settings = useSettingsStore();
   const record = useSessionRecord();
-  const browser = createBrowserTts(() => store.voiceVolume);
+
+  /** The same engine, saying in the store that it is the one reading */
+  function reporting(engine: TtsProvider, name: ReadingEngine): TtsProvider {
+    return {
+      ...engine,
+      speak: (text, lang, signal) => {
+        store.voiceEngine = name;
+        return engine.speak(text, lang, signal);
+      },
+    };
+  }
+
+  const browser = reporting(
+    createBrowserTts(() => store.voiceVolume),
+    'browser',
+  );
   // Both voices are billed to the user's own keys, so they count in the session cost
-  const openAi = createOpenAiVoice(
+  const openAiVoice = createOpenAiVoice(
     () => ({
       apiKey: settings.apiKey,
       endpoint: settings.endpoint,
@@ -49,7 +65,8 @@ export function useVoiceOutput(
     }),
     (usage) => record.addUsage(usage),
   );
-  const elevenLabs = createElevenLabsTts(
+  const openAi = reporting(openAiVoice, 'openai');
+  const elevenLabsVoice = createElevenLabsTts(
     () => ({
       apiKey: settings.voiceKey,
       model: settings.tts.elevenLabsModel,
@@ -58,6 +75,7 @@ export function useVoiceOutput(
     }),
     (usage) => record.addUsage(usage),
   );
+  const elevenLabs = reporting(elevenLabsVoice, 'elevenlabs');
   /** The line being read and how much of its text is already queued */
   let spokenId = 0;
   let spokenChars = 0;
@@ -74,14 +92,20 @@ export function useVoiceOutput(
   const { speak, stop } = useSpeech({
     engine: activeEngine,
     fallback: browser,
-    onError: (key) => store.setNotice(key, NOTICE_TTL_MS),
+    onError: (key) => {
+      store.voiceProblem = key;
+      store.setNotice(key, NOTICE_TTL_MS);
+    },
     onBusy: (busy) => (store.voiceBusy = busy),
   });
 
+  /** After a stop the chosen engine gets its turn again, so what was shown no longer holds */
   function stopAll(): void {
     stop();
     openAi.stop();
     elevenLabs.stop();
+    store.voiceEngine = null;
+    store.voiceProblem = null;
   }
 
   function voiceOn(speaker: number | null): boolean {
@@ -167,6 +191,14 @@ export function useVoiceOutput(
   watch(
     () => settings.tts.engine,
     () => stopAll(),
+  );
+  // A key added or changed: the next sentence may use it, and the past failure no longer counts
+  watch(
+    () => [settings.apiKey, settings.voiceKey] as const,
+    () => {
+      store.voiceEngine = null;
+      store.voiceProblem = null;
+    },
   );
   onScopeDispose(() => {
     stopAll();

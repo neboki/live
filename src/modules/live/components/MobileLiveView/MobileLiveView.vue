@@ -6,6 +6,7 @@ import {
   SettingsPanel,
   useOverlayStore,
   useQuickControls,
+  VoiceEngineTag,
 } from '@/modules/overlay';
 import { useSessionRecord } from '@/modules/session';
 import { createScreenWakeLock, exitImmersive, immersive, toggleImmersive } from '@/shared/device';
@@ -229,6 +230,7 @@ onBeforeUnmount(() => {
         >
           <QuickIcon :name="overlay.options.voice ? 'voice' : 'mute'" />
         </button>
+        <VoiceEngineTag />
       </div>
       <span class="mlive__sep" aria-hidden="true"></span>
       <div class="mlive__size" role="group" :aria-label="t('overlay.quick.text')">

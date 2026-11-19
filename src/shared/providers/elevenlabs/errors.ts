@@ -5,6 +5,7 @@ import {
   type AppError,
   ExternalServiceError,
   ForbiddenError,
+  NotFoundError,
   RateLimitError,
   UnauthorizedError,
   isAbortError,
@@ -22,7 +23,13 @@ const MAX_DETAIL_CHARS = 300;
 const NO_CREDIT_STATUSES = ['quota_exceeded', 'payment_required', 'insufficient_credits'];
 /** A valid key that lacks the permission the request needs (e.g. voices_read) */
 const MISSING_PERMISSIONS = 'missing_permissions';
+/** Free plan used from a VPN or proxy: refused with a 401, though the key is fine */
+const UNUSUAL_ACTIVITY = 'detected_unusual_activity';
+/** A library voice asked for on the free plan */
+const PAID_PLAN_REQUIRED = 'paid_plan_required';
+const VOICE_NOT_FOUND = 'voice_not_found';
 const STATUS_UNAUTHORIZED = 401;
+const STATUS_NOT_FOUND = 404;
 const STATUS_PAYMENT = 402;
 const STATUS_TOO_MANY = 429;
 
@@ -52,6 +59,16 @@ function readDetail(bodyText: string): { status: string; message: string } {
 export function elevenLabsError(httpStatus: number, bodyText: string, apiKey?: string): AppError {
   const { status, message } = readDetail(bodyText);
   const clean = redactElevenLabsKey(message, apiKey).slice(0, MAX_DETAIL_CHARS);
+  // Refusals that are not about the key come first: ElevenLabs sends some as a 401
+  if (status === UNUSUAL_ACTIVITY) {
+    return new ForbiddenError(`ElevenLabs flagged unusual activity: ${clean}`, 'errors.ttsUnusual');
+  }
+  if (status === PAID_PLAN_REQUIRED) {
+    return new ForbiddenError(`ElevenLabs needs a paid plan: ${clean}`, 'errors.ttsPlan');
+  }
+  if (status === VOICE_NOT_FOUND || httpStatus === STATUS_NOT_FOUND) {
+    return new NotFoundError(`ElevenLabs voice not found: ${clean}`, 'errors.ttsVoice');
+  }
   if (NO_CREDIT_STATUSES.includes(status) || httpStatus === STATUS_PAYMENT) {
     return new RateLimitError(`ElevenLabs has no credit left: ${clean}`, 'errors.ttsCredit');
   }

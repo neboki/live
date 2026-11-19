@@ -163,6 +163,27 @@ describe('useVoiceOutput', () => {
     expect(options.engine()).toBe(options.fallback);
   });
 
+  it('records which engine reads, and why the browser took over', async () => {
+    const store = overlay as typeof overlay & {
+      voiceEngine: string | null;
+      voiceProblem: string | null;
+    };
+    settings.tts.engine = 'elevenlabs';
+    await nextTick();
+    const options = captured();
+    const engine = options.engine() as { speak: (text: string, lang: string) => Promise<void> };
+    await engine.speak('Hola', 'es');
+    expect(store.voiceEngine).toBe('elevenlabs');
+
+    options.onError('errors.ttsUnusual');
+    expect(store.voiceProblem).toBe('errors.ttsUnusual');
+
+    overlay.paused = true;
+    await nextTick();
+    expect(store.voiceEngine).toBeNull();
+    expect(store.voiceProblem).toBeNull();
+  });
+
   it('adds the ElevenLabs voice usage to the session cost', () => {
     const usage = {
       model: 'eleven_flash_v2_5',

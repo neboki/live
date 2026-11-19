@@ -64,6 +64,34 @@ test('a phone listens with one tap and shows one quiet row of controls', async (
   await expect(page.locator('.home')).toBeVisible();
 });
 
+test('the live bar says the translator itself reads aloud on the phone', async ({ page }) => {
+  await pretendPhone(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('neboki-live:overlay-prefs', JSON.stringify({ options: { voice: true } }));
+    localStorage.setItem('neboki-live:tts', JSON.stringify({ engine: 'elevenlabs' }));
+  });
+  await page.goto('./');
+  await page.locator('#lg-api-key').fill(VALID_KEY);
+  await page.locator('.home__mode').first().click();
+
+  const live = page.locator('.mlive');
+  await expect(live).toBeVisible();
+  const tag = live.getByTestId('voice-engine-tag');
+  // On the phone the voice is the translator's own, whatever engine is chosen for the computer
+  await expect(tag).toHaveText(/Interpreter|Intérprete/);
+  // The tag fits in the one row of controls
+  const width = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    width,
+  );
+  await page.screenshot({ path: 'test-results/mobile-voice-tag.png' });
+
+  // Voice off: the tag goes away
+  await live.getByRole('button', { name: /Stop hearing|Dejar de escuchar/ }).click();
+  await expect(tag).toHaveCount(0);
+  await live.getByRole('button', { name: /Stop|Parar/ }).click();
+});
+
 test('a conversation splits the screen, the top half turned to the other person', async ({
   page,
 }) => {

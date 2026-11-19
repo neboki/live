@@ -8,6 +8,7 @@ import { NEAR_SPEND_LIMIT } from '../../constants';
 import { useOverlayStore } from '../../store/useOverlayStore';
 import ListeningBadge from '../ListeningBadge/ListeningBadge.vue';
 import QuickStepper from '../QuickStepper/QuickStepper.vue';
+import VoiceEngineTag from '../VoiceEngineTag/VoiceEngineTag.vue';
 
 /** From this delay on the captions are running behind, and the bar says so */
 const SLOW_LATENCY_MS = 8000;
@@ -143,6 +144,7 @@ const costLabel = computed(() => formatEur(costUsd(record.usage), locale.value))
             <path v-else d="m10.5 6.2 3 3.6m0-3.6-3 3.6" />
           </svg>
         </QuickStepper>
+        <VoiceEngineTag />
 
         <!-- 3 · Text size -->
         <QuickStepper
