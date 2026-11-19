@@ -90,13 +90,14 @@ const elevenLabsChoices = computed<Choice[]>(() =>
     tag: voice.category === 'premade' ? 'ElevenLabs' : t('overlay.voice.yours'),
   })),
 );
-/** The cards in two groups: OpenAI (default) and ElevenLabs (optional, once its key works) */
-const groups = computed(() =>
-  [
-    { id: 'openai', title: t('overlay.voice.openai'), choices: openAiChoices.value },
-    { id: 'elevenlabs', title: t('overlay.voice.elevenlabs'), choices: elevenLabsChoices.value },
-  ].filter((group) => group.choices.length > 0),
-);
+/**
+ * The cards in two groups: OpenAI (default) and ElevenLabs (optional). The ElevenLabs
+ * group shows even before its key works, so people see where its voices will be.
+ */
+const groups = computed(() => [
+  { id: 'openai', title: t('overlay.voice.openai'), choices: openAiChoices.value },
+  { id: 'elevenlabs', title: t('overlay.voice.elevenlabs'), choices: elevenLabsChoices.value },
+]);
 
 const selected = computed(() => {
   const { engine, voice, elevenLabsVoice } = settings.tts;
@@ -162,16 +163,29 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="voices">
-    <p v-if="interpreter" class="voices__note">{{ t('overlay.voice.interpreter') }}</p>
-    <template v-else>
+    <!-- In Interpreter mode the voices stay in sight, dimmed, so people know where they are -->
+    <template v-if="interpreter">
+      <p class="voices__note voices__note--interpreter" role="note">
+        {{ t('overlay.voice.interpreter') }}
+      </p>
+      <p class="voices__note">{{ t('overlay.voice.unusedInInterpreter') }}</p>
+    </template>
+    <div class="voices__body" :class="{ 'voices__body--off': interpreter }">
       <div
         class="voices__grid"
         role="radiogroup"
         :aria-label="t('overlay.voice.voice')"
+        :aria-disabled="interpreter || undefined"
         @keydown="onRadioKeydown"
       >
         <template v-for="group in groups" :key="group.id">
           <p class="voices__group">{{ group.title }}</p>
+          <p
+            v-if="group.choices.length === 0 && !loading && !loadError"
+            class="voices__note voices__empty"
+          >
+            {{ t('overlay.voice.needsElevenLabsKey') }}
+          </p>
           <div
             v-for="choice in group.choices"
             :key="choice.id"
@@ -184,6 +198,7 @@ onBeforeUnmount(() => {
               role="radio"
               :aria-checked="selected === choice.id"
               :tabindex="selected === choice.id ? 0 : -1"
+              :disabled="interpreter"
               @click="choose(choice)"
             >
               {{ choice.name }}
@@ -234,7 +249,7 @@ onBeforeUnmount(() => {
           }}</a>
         </small>
       </label>
-    </template>
+    </div>
     <label class="voices__volume">
       <span>{{ t('overlay.sound.voice') }}</span>
       <output class="voices__value">{{ volumeLabel }}</output>
@@ -421,14 +436,38 @@ onBeforeUnmount(() => {
     font: 500 11.5px var(--font-ui);
   }
 
+  // The voices and key, as one block that dims in Interpreter mode
+  &__body {
+    display: grid;
+    gap: 6px;
+
+    &--off {
+      opacity: 0.45;
+    }
+  }
+
+  // ElevenLabs before its key: a line across the grid where its voices will be
+  &__empty {
+    grid-column: 1 / -1;
+  }
+
   &__note {
     margin: 0;
     color: var(--glass-muted);
     font-size: 11px;
 
+    // Why the voice changes in Interpreter mode: read before the dimmed voices
+    &--interpreter {
+      color: var(--glass-fg);
+    }
+
     &--error {
       color: #f87171;
     }
+  }
+
+  &__pick:disabled {
+    cursor: default;
   }
 }
 </style>

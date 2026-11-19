@@ -276,7 +276,8 @@
       "chooseVoice": "Elegir otra voz",
       "loadFailed": "No se pudieron cargar tus voces de ElevenLabs. Prueba de nuevo en un momento.",
       "cost": "La voz de OpenAI se cobra a tu clave de OpenAI (≈ 1 $/h con voz) y las de ElevenLabs a tu cuenta de ElevenLabs (≈ 1,50 $/h). Si la voz elegida falla, lee la del navegador.",
-      "interpreter": "En modo Intérprete la voz la pone el propio modelo de traducción."
+      "interpreter": "En modo Intérprete la voz la genera OpenAI y sigue a cada persona que habla (dynamic voice adaptation), así que puede cambiar de voz. Si quieres una voz fija, elige otro nivel de calidad.",
+      "unusedInInterpreter": "Estas voces no se usan en modo Intérprete."
     },
     "meeting": {
       "label": "Sobre la reunión",
