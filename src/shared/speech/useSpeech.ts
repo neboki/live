@@ -18,6 +18,8 @@ export interface SpeechOptions {
   onError?: (userMessageKey: string) => void;
   /** True while something is being read aloud, false once the queue is done or stopped */
   onBusy?: (busy: boolean) => void;
+  /** The clock, in milliseconds; for tests */
+  now?: () => number;
 }
 
 interface QueueItem {
@@ -38,6 +40,26 @@ const SENTENCE_START = /[.!?…。！？]["'”’»)\]]*\s+/g;
 const TTS_FAILED_KEY = 'errors.ttsFailed';
 /** Voice errors that say why (a refused key, no credit left) keep their own message */
 const TTS_KEY_PREFIX = 'errors.tts';
+/**
+ * After a passing failure (network, rate limit, server), the chosen engine is tried again
+ * this long after; each failure in a row doubles the wait, up to RETRY_MAX_MS.
+ */
+export const RETRY_AFTER_MS = 5_000;
+export const RETRY_MAX_MS = 120_000;
+const STATUS_TOO_MANY = 429;
+const STATUS_SERVER = 500;
+/** Rate-limit errors that are not passing: the account has no credit left */
+const NO_CREDIT_KEY = 'errors.ttsCredit';
+
+/**
+ * Whether trying again later may work: a rate limit, a server error or a network failure.
+ * A refused key, a missing permission or no credit stay as they are until the user acts.
+ */
+function isPassing(err: unknown): boolean {
+  if (!(err instanceof AppError)) return true;
+  if (err.userMessageKey === NO_CREDIT_KEY) return false;
+  return err.status === STATUS_TOO_MANY || err.status >= STATUS_SERVER;
+}
 
 /**
  * The last MAX_PENDING_CHARS of `text`, starting at a whole sentence when one starts there,
@@ -61,23 +83,41 @@ function noticeKey(err: unknown): string {
 }
 
 /**
- * A FIFO queue over the active TTS engine. After an engine error, the item and
- * the rest of the run use the fallback (browser) engine until stop() is called.
+ * A FIFO queue over the active TTS engine. After an engine error the item is read by the
+ * fallback (browser) engine, and so is what follows: for a few seconds after a passing
+ * failure (longer if it keeps failing), or until stop() after one that needs the user
+ * (a refused key, no credit left).
  */
 export function useSpeech(options: SpeechOptions = {}): Speech {
   const fallback = options.fallback ?? createBrowserTts();
   const queue: QueueItem[] = [];
   let run = 0;
   let playing = false;
-  let degraded = false;
+  const now = options.now ?? Date.now;
+  /** The fallback reads until this time (Infinity: until stop()); 0 when not degraded */
+  let degradedUntil = 0;
+  /** Passing failures in a row, for the growing wait before trying again */
+  let failures = 0;
   let controller: AbortController | null = null;
   let current: TtsProvider | null = null;
   /** Ends the wait for the audio to finish when a new item is queued meanwhile */
   let wake: (() => void) | null = null;
 
   function activeEngine(): TtsProvider {
-    if (degraded) return fallback;
+    if (degradedUntil > now()) return fallback;
+    degradedUntil = 0;
     return options.engine?.() ?? fallback;
+  }
+
+  /** The fallback takes over: for a while after a passing failure, else until stop() */
+  function degrade(err: unknown): void {
+    if (!isPassing(err)) {
+      degradedUntil = Infinity;
+      return;
+    }
+    const wait = Math.min(RETRY_AFTER_MS * 2 ** failures, RETRY_MAX_MS);
+    failures++;
+    degradedUntil = now() + wait;
   }
 
   async function play(item: QueueItem, myRun: number, signal: AbortSignal): Promise<void> {
@@ -85,6 +125,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
     current = engine;
     try {
       await engine.speak(item.text, item.lang, signal);
+      if (engine !== fallback) failures = 0;
     } catch (err) {
       if (signal.aborted || myRun !== run) return;
       if (engine === fallback) {
@@ -92,7 +133,7 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
         return;
       }
       logError('Voice engine failed, falling back to the browser voice', err);
-      degraded = true;
+      degrade(err);
       options.onError?.(noticeKey(err));
       current = fallback;
       try {
@@ -153,7 +194,8 @@ export function useSpeech(options: SpeechOptions = {}): Speech {
   function stop(): void {
     run++;
     playing = false;
-    degraded = false;
+    degradedUntil = 0;
+    failures = 0;
     queue.length = 0;
     controller?.abort();
     controller = null;

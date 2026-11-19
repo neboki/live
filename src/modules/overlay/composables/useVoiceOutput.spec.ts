@@ -184,6 +184,12 @@ describe('useVoiceOutput', () => {
     expect(store.voiceProblem).toBeNull();
   });
 
+  it('gives the chosen engine another turn when a key is fixed', async () => {
+    settings.voiceKey = 'fixed-key';
+    await nextTick();
+    expect(speech.stop).toHaveBeenCalled();
+  });
+
   it('reads with OpenAI while ElevenLabs is chosen without its key', () => {
     const options = captured();
     settings.tts.engine = 'elevenlabs';

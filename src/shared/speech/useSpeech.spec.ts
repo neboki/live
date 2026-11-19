@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createBrowserTts } from './browserTts';
 import type { TtsProvider } from './types';
-import { MAX_BACKLOG, MAX_PENDING_CHARS, useSpeech } from './useSpeech';
+import { ExternalServiceError, RateLimitError } from '@/shared/errors';
+import {
+  MAX_BACKLOG,
+  MAX_PENDING_CHARS,
+  RETRY_AFTER_MS,
+  RETRY_MAX_MS,
+  useSpeech,
+} from './useSpeech';
 
 interface FakeEngine extends TtsProvider {
   spoken: string[];
@@ -134,6 +141,93 @@ describe('useSpeech', () => {
     await flush();
     expect(browser.spoken).toEqual(['one', 'two']);
     expect(primary.spoken).toEqual(['one']);
+  });
+
+  it('goes back to the chosen engine a few seconds after a passing failure', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let clock = 0;
+    const primary = fakeEngine();
+    const browser = fakeEngine();
+    const speech = useSpeech({ engine: () => primary, fallback: browser, now: () => clock });
+    speech.speak('one', 'es');
+    await flush();
+    primary.fail(new ExternalServiceError('ElevenLabs responded 503', 'errors.ttsFailed'));
+    await flush();
+    expect(browser.spoken).toEqual(['one']);
+    browser.finish();
+    await flush();
+
+    // Still within the wait: the browser reads
+    clock = RETRY_AFTER_MS - 1;
+    speech.speak('two', 'es');
+    await flush();
+    expect(browser.spoken).toEqual(['one', 'two']);
+    browser.finish();
+    await flush();
+
+    clock = RETRY_AFTER_MS;
+    speech.speak('three', 'es');
+    await flush();
+    expect(primary.spoken).toEqual(['one', 'three']);
+  });
+
+  it('waits longer each time the chosen engine fails again', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let clock = 0;
+    const primary = fakeEngine();
+    const browser = fakeEngine();
+    const speech = useSpeech({ engine: () => primary, fallback: browser, now: () => clock });
+    speech.speak('one', 'es');
+    await flush();
+    primary.fail(new RateLimitError('ElevenLabs rate limit', 'errors.ttsFailed'));
+    await flush();
+    browser.finish();
+    await flush();
+
+    clock = RETRY_AFTER_MS;
+    speech.speak('two', 'es');
+    await flush();
+    primary.fail(new RateLimitError('ElevenLabs rate limit', 'errors.ttsFailed'));
+    await flush();
+    browser.finish();
+    await flush();
+
+    // The second wait is twice the first
+    clock = RETRY_AFTER_MS * 2;
+    speech.speak('three', 'es');
+    await flush();
+    expect(browser.spoken).toEqual(['one', 'two', 'three']);
+    browser.finish();
+    await flush();
+    clock = RETRY_AFTER_MS * 3;
+    speech.speak('four', 'es');
+    await flush();
+    expect(primary.spoken).toEqual(['one', 'two', 'four']);
+  });
+
+  it('stays on the browser after a refused key or no credit, until stopped', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let clock = 0;
+    const primary = fakeEngine();
+    const browser = fakeEngine();
+    const speech = useSpeech({ engine: () => primary, fallback: browser, now: () => clock });
+    speech.speak('one', 'es');
+    await flush();
+    primary.fail(new RateLimitError('ElevenLabs has no credit left', 'errors.ttsCredit'));
+    await flush();
+    browser.finish();
+    await flush();
+
+    clock = RETRY_MAX_MS * 10;
+    speech.speak('two', 'es');
+    await flush();
+    expect(primary.spoken).toEqual(['one']);
+    expect(browser.spoken).toEqual(['one', 'two']);
+
+    speech.stop();
+    speech.speak('three', 'es');
+    await flush();
+    expect(primary.spoken).toEqual(['one', 'three']);
   });
 
   it('ignores blank text', async () => {

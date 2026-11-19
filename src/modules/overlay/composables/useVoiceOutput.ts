@@ -192,13 +192,10 @@ export function useVoiceOutput(
     () => settings.tts.engine,
     () => stopAll(),
   );
-  // A key added or changed: the next sentence may use it, and the past failure no longer counts
+  // A key added or fixed: the chosen engine gets its turn again with the next sentence
   watch(
     () => [settings.apiKey, settings.voiceKey] as const,
-    () => {
-      store.voiceEngine = null;
-      store.voiceProblem = null;
-    },
+    () => stopAll(),
   );
   onScopeDispose(() => {
     stopAll();
