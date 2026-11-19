@@ -64,7 +64,9 @@ test('a phone listens with one tap and shows one quiet row of controls', async (
   await expect(page.locator('.home')).toBeVisible();
 });
 
-test('the live bar says the translator itself reads aloud on the phone', async ({ page }) => {
+test('without an ElevenLabs key, the phone is read by the OpenAI interpreter, and says so', async ({
+  page,
+}) => {
   await pretendPhone(page);
   await page.addInitScript(() => {
     localStorage.setItem('neboki-live:overlay-prefs', JSON.stringify({ options: { voice: true } }));
@@ -77,8 +79,8 @@ test('the live bar says the translator itself reads aloud on the phone', async (
   const live = page.locator('.mlive');
   await expect(live).toBeVisible();
   const tag = live.getByTestId('voice-engine-tag');
-  // On the phone the voice is the translator's own, whatever engine is chosen for the computer
-  await expect(tag).toHaveText(/Interpreter|Intérprete/);
+  // ElevenLabs is chosen but its key is not in this browser: OpenAI's interpreter speaks
+  await expect(tag).toHaveText(/OpenAI · (Interpreter|Intérprete)/);
   // The tag fits in the one row of controls
   const width = await page.evaluate(() => document.documentElement.clientWidth);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
@@ -90,6 +92,23 @@ test('the live bar says the translator itself reads aloud on the phone', async (
   await live.getByRole('button', { name: /Stop hearing|Dejar de escuchar/ }).click();
   await expect(tag).toHaveCount(0);
   await live.getByRole('button', { name: /Stop|Parar/ }).click();
+});
+
+test('with ElevenLabs chosen and its key, the phone is read by ElevenLabs', async ({ page }) => {
+  await pretendPhone(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('neboki-live:overlay-prefs', JSON.stringify({ options: { voice: true } }));
+    localStorage.setItem('neboki-live:tts', JSON.stringify({ engine: 'elevenlabs' }));
+    localStorage.setItem('neboki-live:elevenlabs-key', 'sk_' + 'f'.repeat(40));
+  });
+  await page.goto('./');
+  await page.locator('#lg-api-key').fill(VALID_KEY);
+  await page.locator('.home__mode').first().click();
+
+  const live = page.locator('.mlive');
+  await expect(live).toBeVisible();
+  await expect(live.getByTestId('voice-engine-tag')).toHaveText('ElevenLabs');
+  await live.getByRole('button', { name: /^(Stop|Parar)$/ }).click();
 });
 
 test('a conversation splits the screen, the top half turned to the other person', async ({

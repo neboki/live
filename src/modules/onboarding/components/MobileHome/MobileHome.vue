@@ -74,9 +74,18 @@ function run(starting: Promise<unknown>): void {
   starting.catch((err: unknown) => logError('Could not start from the phone home', err));
 }
 
+/**
+ * With the voice on, OpenAI's interpreter speaks as it translates, unless the user chose
+ * ElevenLabs and its key is in this browser: then the captions are read by ElevenLabs
+ */
+function interpret(): boolean {
+  const elevenLabs = settings.tts.engine === 'elevenlabs' && settings.voiceKey.trim() !== '';
+  return overlay.options.voice && !elevenLabs;
+}
+
 /** Others talk: translated into the user's language, spoken as they talk if voice is on */
 function listen(): void {
-  run(session.start(settings.targetLanguage, { mode: 'listen', interpret: overlay.options.voice }));
+  run(session.start(settings.targetLanguage, { mode: 'listen', interpret: interpret() }));
 }
 
 function startTalk(): void {
@@ -88,7 +97,7 @@ function startTalk(): void {
 function startPresent(): void {
   writeStorage(ROOM_KEY, room.value);
   asking.value = null;
-  run(session.start(room.value, { mode: 'present', interpret: overlay.options.voice }));
+  run(session.start(room.value, { mode: 'present', interpret: interpret() }));
 }
 </script>
 

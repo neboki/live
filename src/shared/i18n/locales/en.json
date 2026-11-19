@@ -115,7 +115,7 @@
       "openai": "OpenAI",
       "elevenlabs": "ElevenLabs",
       "browser": "Browser",
-      "interpreter": "Interpreter",
+      "interpreter": "OpenAI · Interpreter",
       "reading": "Reading the translation: {engine}",
       "noOpenAiKey": "Your OpenAI key is missing in this browser.",
       "noElevenLabsKey": "Your ElevenLabs key is missing in this browser. Paste it in Voice."
