@@ -5,10 +5,11 @@ import { useVoiceEngine } from '../../composables/useVoiceEngine';
 import type { VoiceEngineName } from '../../types';
 
 /**
- * Who reads the translation aloud, beside the voice control: OpenAI, ElevenLabs, the
- * translator itself, or the browser's own voice. The browser only reads when the chosen
- * voice has no key or failed, so it is marked as a warning and its tooltip says why.
- * Nothing shows while the voice is off.
+ * Who reads the translation aloud, as a small dot beside the voice control: green for
+ * OpenAI (and its interpreter), violet for ElevenLabs, amber for the browser's own voice,
+ * hollow when nobody reads the line. The tooltip names it and, when the chosen voice is
+ * not the one reading, says why (an amber ring marks that). Nothing shows while the voice
+ * is off.
  */
 defineProps<{
   /** On the page itself (light or dark), not on the bar's dark glass */
@@ -40,68 +41,75 @@ const description = computed(() => {
   <span
     v-if="engine"
     class="voice-tag"
-    :class="[`voice-tag--${engine.name}`, { 'voice-tag--page': onPage }]"
+    :class="[
+      `voice-tag--${engine.name === 'asHeard' ? 'as-heard' : engine.name}`,
+      { 'voice-tag--warn': engine.reason, 'voice-tag--page': onPage },
+    ]"
     role="status"
     :title="description"
     :aria-label="description"
     data-testid="voice-engine-tag"
   >
-    <span v-if="engine.reason" class="voice-tag__warn" aria-hidden="true">!</span>
-    {{ name }}
+    <span class="voice-tag__dot" aria-hidden="true"></span>
+    <span class="voice-tag__name">{{ name }}</span>
   </span>
 </template>
 
 <style scoped lang="scss">
+// A small dot beside the speaker: its colour says who reads, the tooltip says it in words
 .voice-tag {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 10%);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
-  color: var(--glass-fg, #fff);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.4;
-  white-space: nowrap;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  cursor: help;
+
+  &__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #8b8f98;
+  }
+
+  // The name stays for screen readers and the tooltip, not on screen
+  &__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 
   // The interpreter is OpenAI's model: same colour
-  &--openai,
-  &--interpreter {
-    background: rgb(16 163 127 / 18%);
-    box-shadow: inset 0 0 0 1px rgb(16 163 127 / 55%);
+  &--openai &__dot,
+  &--interpreter &__dot {
+    background: #10a37f;
   }
 
-  &--elevenlabs {
-    background: rgb(124 92 255 / 20%);
-    box-shadow: inset 0 0 0 1px rgb(124 92 255 / 60%);
+  &--elevenlabs &__dot {
+    background: #8b6cff;
   }
 
-  &--browser {
-    background: rgb(255 176 32 / 18%);
-    box-shadow: inset 0 0 0 1px rgb(255 176 32 / 60%);
-    color: #ffd27a;
-  }
-
-  &__warn {
-    display: grid;
-    place-items: center;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
+  &--browser &__dot {
     background: #ffb020;
-    color: #1a1a1a;
-    font-size: 9px;
-    font-weight: 800;
   }
 
-  // On the page the word takes the page's own text colour, readable in light and dark
-  &--page,
-  &--page.voice-tag--browser {
-    padding: 4px 10px;
-    color: var(--fg);
-    font-size: 12px;
+  // Nobody reads this line: a hollow dot
+  &--as-heard &__dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px #8b8f98;
+  }
+
+  // Not the voice chosen (no key, or it failed): an amber ring says to look at the tooltip
+  &--warn &__dot {
+    box-shadow: 0 0 0 2px rgb(255 176 32 / 70%);
+  }
+
+  &--page &__dot {
+    width: 10px;
+    height: 10px;
   }
 }
 </style>
