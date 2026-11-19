@@ -49,6 +49,18 @@ describe('ElevenLabsKeyField', () => {
     wrapper.unmount();
   });
 
+  it('leaves Interpreter quality when OpenAI is picked, so its voice reads', async () => {
+    const settings = useSettingsStore();
+    settings.applyTier('interpreter');
+    const wrapper = mountField();
+
+    await radios(wrapper).openai.trigger('click');
+    expect(settings.tier).toBe('medium');
+    expect(settings.tts.engine).toBe('openai');
+    expect(useOverlayStore().options.voice).toBe(true);
+    wrapper.unmount();
+  });
+
   it('opens the ElevenLabs key, labelled, only under ElevenLabs, and OpenAI keeps reading', async () => {
     const settings = useSettingsStore();
     const overlay = useOverlayStore();

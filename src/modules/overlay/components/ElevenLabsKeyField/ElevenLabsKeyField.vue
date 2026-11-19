@@ -3,6 +3,7 @@ import { computed, nextTick, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@/modules/settings';
 import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
+import { DEFAULT_TIER } from '@/shared/providers/openai/config';
 import type { TtsEngine } from '@/shared/speech/types';
 import { onRadioKeydown } from '../../composables/radioGroup';
 import {
@@ -75,8 +76,10 @@ function use(next: VoiceChoice): void {
     return;
   }
   settings.tts.engine = next;
-  // Choosing a voice means wanting to hear it
+  // Choosing a voice means wanting to hear it, and in Interpreter quality the model's own
+  // voice would read instead: leave that quality so the chosen voice does
   overlay.options.voice = true;
+  if (settings.tier === 'interpreter') settings.applyTier(DEFAULT_TIER);
 }
 
 // The key started to work while ElevenLabs was open: now it can read

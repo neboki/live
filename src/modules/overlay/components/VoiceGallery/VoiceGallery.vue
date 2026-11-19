@@ -12,7 +12,7 @@ import { useSettingsStore } from '@/modules/settings';
 import { logError } from '@/shared/errors';
 import { KEY_PAGE } from '@/shared/providers/elevenlabs/config';
 import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
-import { INTERPRETER_MODEL, VOICES } from '@/shared/providers/openai/config';
+import { DEFAULT_TIER, INTERPRETER_MODEL, VOICES } from '@/shared/providers/openai/config';
 import { createOpenAiVoice } from '@/shared/providers/openai/realtime/realtimeVoice';
 import type { TtsEngine } from '@/shared/speech/types';
 import { useOverlayStore } from '../../store/useOverlayStore';
@@ -99,14 +99,21 @@ const groups = computed(() => [
   { id: 'elevenlabs', title: t('overlay.voice.elevenlabs'), choices: elevenLabsChoices.value },
 ]);
 
+/** In interpreter mode the model speaks with its own voice */
+const interpreter = computed(() => settings.models.translation === INTERPRETER_MODEL);
+/** The card that reads; none in interpreter mode, where none of them does */
 const selected = computed(() => {
+  if (interpreter.value) return '';
   const { engine, voice, elevenLabsVoice } = settings.tts;
   return engine === 'elevenlabs' ? `elevenlabs:${elevenLabsVoice}` : `openai:${voice}`;
 });
+/** The card reached with Tab: the selected one, or the first when none is */
+function tabStop(choice: Choice): 0 | -1 {
+  if (selected.value) return selected.value === choice.id ? 0 : -1;
+  return choice.id === openAiChoices.value[0]?.id ? 0 : -1;
+}
 const hasOpenAiKey = computed(() => settings.apiKey.trim() !== '');
 const hasVoices = computed(() => voices.value.length > 0);
-/** In interpreter mode the model speaks with its own voice */
-const interpreter = computed(() => settings.models.translation === INTERPRETER_MODEL);
 
 // Without a usable ElevenLabs key its voices cannot read: back to OpenAI's, the default
 watch(
@@ -122,6 +129,9 @@ watch(
 function choose(choice: Choice): void {
   // Picking a voice means wanting to hear it: with the voice off nothing would read
   store.options.voice = true;
+  // In Interpreter quality the model's own voice reads: leave it, so this one does. A
+  // running session reconnects with the new quality at once (useLiveSession)
+  if (interpreter.value) settings.applyTier(DEFAULT_TIER);
   settings.tts.engine = choice.engine;
   if (choice.engine === 'openai') settings.tts.voice = choice.voice;
   if (choice.engine === 'elevenlabs') settings.tts.elevenLabsVoice = choice.voice;
@@ -163,19 +173,18 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="voices">
-    <!-- In Interpreter mode the voices stay in sight, dimmed, so people know where they are -->
+    <!-- In Interpreter mode the model speaks; picking a voice here leaves that mode -->
     <template v-if="interpreter">
       <p class="voices__note voices__note--interpreter" role="note">
         {{ t('overlay.voice.interpreter') }}
       </p>
       <p class="voices__note">{{ t('overlay.voice.unusedInInterpreter') }}</p>
     </template>
-    <div class="voices__body" :class="{ 'voices__body--off': interpreter }">
+    <div class="voices__body">
       <div
         class="voices__grid"
         role="radiogroup"
         :aria-label="t('overlay.voice.voice')"
-        :aria-disabled="interpreter || undefined"
         @keydown="onRadioKeydown"
       >
         <template v-for="group in groups" :key="group.id">
@@ -197,8 +206,7 @@ onBeforeUnmount(() => {
               type="button"
               role="radio"
               :aria-checked="selected === choice.id"
-              :tabindex="selected === choice.id ? 0 : -1"
-              :disabled="interpreter"
+              :tabindex="tabStop(choice)"
               @click="choose(choice)"
             >
               {{ choice.name }}
@@ -436,14 +444,10 @@ onBeforeUnmount(() => {
     font: 500 11.5px var(--font-ui);
   }
 
-  // The voices and key, as one block that dims in Interpreter mode
+  // The voices and key, as one block
   &__body {
     display: grid;
     gap: 6px;
-
-    &--off {
-      opacity: 0.45;
-    }
   }
 
   // ElevenLabs before its key: a line across the grid where its voices will be
