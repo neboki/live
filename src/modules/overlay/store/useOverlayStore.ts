@@ -75,6 +75,8 @@ export const useOverlayStore = defineStore('overlay', () => {
   const voiceEngine = ref<ReadingEngine | null>(null);
   /** i18n key of why the chosen voice failed and the browser's took over, or null */
   const voiceProblem = ref<string | null>(null);
+  /** The user asked to hear lines shown as said (already in their language) all the same */
+  const readAsHeard = ref(false);
   /** i18n key of a transient, non-fatal message (rate limit, reconnecting…) */
   const notice = ref<string | null>(null);
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -139,6 +141,7 @@ export const useOverlayStore = defineStore('overlay', () => {
     speakerNames.value = {};
     suggestions.value = [];
     summary.value = [];
+    readAsHeard.value = false;
     setNotice(null);
   }
 
@@ -148,13 +151,13 @@ export const useOverlayStore = defineStore('overlay', () => {
   }
 
   /** Starts a new sentence; the previous one moves to the history. */
-  function startTranslation(text = '', speaker: number | null = null): void {
+  function startTranslation(text = '', speaker: number | null = null, asHeard = false): void {
     const current = translation.value;
     if (current.id > 0 && current.text.trim()) {
       const line = { id: current.id, text: current.text.trim(), speaker: current.speaker ?? null };
       history.value = [...history.value, line].slice(-MAX_HISTORY);
     }
-    translation.value = { id: current.id + 1, text, done: false, speaker };
+    translation.value = { id: current.id + 1, text, done: false, speaker, asHeard };
   }
 
   /** Empty screen, same session: captions, voices, summary and suggestions start over */
@@ -300,6 +303,7 @@ export const useOverlayStore = defineStore('overlay', () => {
     voiceBusy,
     voiceEngine,
     voiceProblem,
+    readAsHeard,
     originalVolume,
     notice,
     pair,

@@ -23,12 +23,14 @@ const NAMES: Readonly<Record<VoiceEngineName, string>> = {
   elevenlabs: 'overlay.voiceTag.elevenlabs',
   browser: 'overlay.voiceTag.browser',
   interpreter: 'overlay.voiceTag.interpreter',
+  asHeard: 'overlay.voiceTag.asHeard',
 };
 
 const name = computed(() => (engine.value ? t(NAMES[engine.value.name]) : ''));
 const description = computed(() => {
   const state = engine.value;
   if (!state) return '';
+  if (state.name === 'asHeard') return t('overlay.voiceTag.asHeardHint');
   const who = t('overlay.voiceTag.reading', { engine: name.value });
   return state.reason ? `${who}. ${t(state.reason)}` : who;
 });

@@ -33,7 +33,13 @@ describe('useOverlayStore', () => {
     store.appendTranslation('one.');
 
     expect(store.previous).toBe('Hello there.');
-    expect(store.translation).toEqual({ id: 2, text: 'Second one.', done: false, speaker: null });
+    expect(store.translation).toEqual({
+      id: 2,
+      text: 'Second one.',
+      done: false,
+      speaker: null,
+      asHeard: false,
+    });
   });
 
   it('keeps who said each sentence, and the names given to the voices', () => {

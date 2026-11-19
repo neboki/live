@@ -94,7 +94,7 @@ export function createLivePipeline({
    * already said in the target language).
    */
   function showAsHeard(run: Run, sentence: Sentence, translation: string): void {
-    overlay.startTranslation(sentence.text, sentence.speaker);
+    overlay.startTranslation(sentence.text, sentence.speaker, true);
     overlay.setLatency(captionDelay(sentence, now() - sentence.heardAt));
     overlay.finishTranslation();
     recordLine(run, sentence, translation);

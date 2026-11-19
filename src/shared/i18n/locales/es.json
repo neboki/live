@@ -118,7 +118,11 @@
       "interpreter": "OpenAI · Intérprete",
       "reading": "Lee la traducción: {engine}",
       "noOpenAiKey": "Falta tu clave de OpenAI en este navegador.",
-      "noElevenLabsKey": "Falta tu clave de ElevenLabs en este navegador. Pégala en Voz."
+      "noElevenLabsKey": "Falta tu clave de ElevenLabs en este navegador. Pégala en Voz.",
+      "asHeard": "Sin voz",
+      "asHeardHint": "Ya está en tu idioma: se muestra tal cual y la voz no lo repite.",
+      "sameLanguage": "Ya está en tu idioma: los subtítulos salen tal cual y la voz no lo repite, porque no tiene sentido.",
+      "onlyCaptions": "Solo subtítulos: la voz no lee lo que ya se oye."
     },
     "original": "Audio original",
     "originalOn": "Escuchar el audio original",

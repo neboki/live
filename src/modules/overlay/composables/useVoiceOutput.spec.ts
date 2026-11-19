@@ -190,6 +190,20 @@ describe('useVoiceOutput', () => {
     expect(speech.stop).toHaveBeenCalled();
   });
 
+  it('does not repeat a line already in the user language, and says why once', async () => {
+    overlay.translation = { id: 1, text: 'Hello there.', done: true, asHeard: true } as never;
+    await nextTick();
+    overlay.translation = { id: 2, text: 'Again.', done: true, asHeard: true } as never;
+    await nextTick();
+    expect(speech.speak).not.toHaveBeenCalled();
+    expect(overlay.setNotice).toHaveBeenCalledTimes(1);
+    expect(overlay.setNotice).toHaveBeenCalledWith('overlay.voiceTag.sameLanguage', 8000);
+
+    // A translated line is read as usual
+    await finishTranslation(3, 'Hola');
+    expect(speech.speak.mock.calls).toEqual([['Hola', 'es']]);
+  });
+
   it('reads with OpenAI while ElevenLabs is chosen without its key', () => {
     const options = captured();
     settings.tts.engine = 'elevenlabs';

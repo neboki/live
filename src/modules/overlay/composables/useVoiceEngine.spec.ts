@@ -5,6 +5,7 @@ import { useVoiceEngine } from './useVoiceEngine';
 const overlay = reactive({
   options: { voice: true },
   selfVoiced: false,
+  translation: { asHeard: false },
   voiceEngine: null as 'openai' | 'elevenlabs' | 'browser' | null,
   voiceProblem: null as string | null,
 });
@@ -21,6 +22,7 @@ describe('useVoiceEngine', () => {
   beforeEach(() => {
     overlay.options.voice = true;
     overlay.selfVoiced = false;
+    overlay.translation.asHeard = false;
     overlay.voiceEngine = null;
     overlay.voiceProblem = null;
     settings.apiKey = 'openai-key';
@@ -66,6 +68,11 @@ describe('useVoiceEngine', () => {
     overlay.voiceEngine = 'browser';
     overlay.voiceProblem = 'errors.ttsUnusual';
     expect(useVoiceEngine().value).toEqual({ name: 'browser', reason: 'errors.ttsUnusual' });
+  });
+
+  it('says no voice reads a line shown as said', () => {
+    overlay.translation.asHeard = true;
+    expect(useVoiceEngine().value).toEqual({ name: 'asHeard', reason: null });
   });
 
   it('names the interpreter when the translator speaks by itself', () => {

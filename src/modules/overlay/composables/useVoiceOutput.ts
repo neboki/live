@@ -1,6 +1,6 @@
 import { onScopeDispose, watch } from 'vue';
 import { useSessionRecord } from '@/modules/session';
-import { useSettingsStore } from '@/modules/settings';
+import { ORIGINAL_LANGUAGE, useSettingsStore } from '@/modules/settings';
 import { createElevenLabsTts } from '@/shared/providers/elevenlabs/tts';
 import { createOpenAiVoice } from '@/shared/providers/openai/realtime/realtimeVoice';
 import { createBrowserTts } from '@/shared/speech/browserTts';
@@ -12,6 +12,9 @@ import type { ReadingEngine } from '../types';
 import { dueLines, type PictureClock } from './pictureVoice';
 
 const NOTICE_TTL_MS = 8000;
+/** Why a line shown as it was said is not read aloud */
+const SAME_LANGUAGE_KEY = 'overlay.voiceTag.sameLanguage';
+const ONLY_CAPTIONS_KEY = 'overlay.voiceTag.onlyCaptions';
 
 /**
  * Reads the translation aloud while the "voice" option is on, with the engine chosen in
@@ -81,6 +84,8 @@ export function useVoiceOutput(
   let spokenChars = 0;
   /** With the picture behind time: the first line of the record it has not reached yet */
   let nextLine = 0;
+  /** The notice about lines shown as said was given this session */
+  let toldAsHeard = false;
 
   function activeEngine(): TtsProvider {
     if (settings.tts.engine === 'elevenlabs' && settings.voiceKey) return elevenLabs;
@@ -116,6 +121,17 @@ export function useVoiceOutput(
     return live() && voiceOn(speaker) && !store.paused && !store.selfVoiced;
   }
 
+  /**
+   * A line shown as it was said (already in the user's language, or only transcribing) is
+   * not read: the voice would repeat what can already be heard. Said once per session.
+   */
+  function skipAsHeard(): void {
+    if (toldAsHeard || !store.options.voice) return;
+    toldAsHeard = true;
+    const onlyCaptions = settings.targetLanguage === ORIGINAL_LANGUAGE;
+    store.setNotice(onlyCaptions ? ONLY_CAPTIONS_KEY : SAME_LANGUAGE_KEY, NOTICE_TTL_MS);
+  }
+
   /** Reads the lines the picture behind time has just reached */
   function speakReached(): void {
     const clock = picture();
@@ -129,7 +145,11 @@ export function useVoiceOutput(
     nextLine = next;
     due.forEach((line) => {
       const speaker = line.speaker ?? null;
-      if (canSpeak(speaker)) speak(line.translation.trim(), lang(speaker));
+      if (!canSpeak(speaker)) return;
+      const text = line.translation.trim();
+      // Recorded as said: no translation, or the very words heard
+      if (!text || text === line.source.trim()) skipAsHeard();
+      else speak(text, lang(speaker));
     });
   }
 
@@ -151,6 +171,10 @@ export function useVoiceOutput(
       }
       // Behind time, lines are read when the picture gets to them (speakReached)
       if (!id || picture() || !canSpeak()) return;
+      if (store.translation.asHeard) {
+        skipAsHeard();
+        return;
+      }
       speakUpTo(done ? text.length : spokenUpTo(text, spokenChars));
     },
   );
@@ -160,6 +184,9 @@ export function useVoiceOutput(
       if (!on) stopAll();
     },
   );
+  watch(live, (on) => {
+    if (!on) toldAsHeard = false;
+  });
   // The picture starts or stops playing behind time: what was queued belongs to the other
   // clock, and only lines heard from now on are read on the picture's
   watch(
@@ -180,8 +207,8 @@ export function useVoiceOutput(
   watch(
     () => store.options.voice,
     (on) => {
-      const { id, done, text } = store.translation;
-      if (on && done && text.trim() && !picture() && canSpeak()) {
+      const { id, done, text, asHeard } = store.translation;
+      if (on && done && text.trim() && !asHeard && !picture() && canSpeak()) {
         spokenId = id;
         spokenChars = 0;
         speakUpTo(text.length);

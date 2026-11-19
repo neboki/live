@@ -27,6 +27,8 @@ export function useVoiceEngine(): ComputedRef<VoiceEngineState | null> {
   return computed(() => {
     if (!store.options.voice) return null;
     if (store.selfVoiced) return { name: 'interpreter', reason: null };
+    // Shown as it was said: the voice does not repeat it
+    if (store.translation.asHeard) return { name: 'asHeard', reason: null };
     const wantsElevenLabs = settings.tts.engine === 'elevenlabs';
     const elevenLabs = wantsElevenLabs && !!settings.voiceKey;
     const openAi = !!settings.apiKey;

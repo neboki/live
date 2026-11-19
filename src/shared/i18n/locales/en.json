@@ -118,7 +118,11 @@
       "interpreter": "OpenAI · Interpreter",
       "reading": "Reading the translation: {engine}",
       "noOpenAiKey": "Your OpenAI key is missing in this browser.",
-      "noElevenLabsKey": "Your ElevenLabs key is missing in this browser. Paste it in Voice."
+      "noElevenLabsKey": "Your ElevenLabs key is missing in this browser. Paste it in Voice.",
+      "asHeard": "No voice",
+      "asHeardHint": "Already in your language: shown as said, and the voice does not repeat it.",
+      "sameLanguage": "Already in your language: the captions show it as said and the voice does not repeat it, as that makes no sense.",
+      "onlyCaptions": "Captions only: the voice does not read what can already be heard."
     },
     "original": "Original audio",
     "originalOn": "Hear the original audio",

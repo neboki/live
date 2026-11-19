@@ -138,7 +138,7 @@ describe('createLivePipeline', () => {
     stt.callbacks().onFinal('Buenos días', { language: 'es' });
 
     await vi.waitFor(() => {
-      expect(overlay.translation).toMatchObject({ text: 'Buenos días', done: true });
+      expect(overlay.translation).toMatchObject({ text: 'Buenos días', done: true, asHeard: true });
     });
     expect(translate).not.toHaveBeenCalled();
     expect(record.addLine).toHaveBeenCalledWith(
@@ -146,7 +146,9 @@ describe('createLivePipeline', () => {
     );
 
     stt.callbacks().onFinal('Hello', { language: 'en' });
-    await vi.waitFor(() => expect(overlay.translation).toMatchObject({ text: 'Hola' }));
+    await vi.waitFor(() =>
+      expect(overlay.translation).toMatchObject({ text: 'Hola', asHeard: false }),
+    );
   });
 
   it('shows what is on its way until the first translated words arrive', async () => {

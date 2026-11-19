@@ -29,6 +29,8 @@ interface FakeOpenAi {
   onCommit?: () => void;
   /** Says nothing about a closed sentence for this long, then sends it whole */
   lateMs?: number;
+  /** The language the transcriber reports for each sentence */
+  language?: string;
 }
 
 declare global {
@@ -156,6 +158,7 @@ async function fakeOpenAi(page: Page, fake: FakeOpenAi = {}): Promise<void> {
           type: 'conversation.item.input_audio_transcription.completed',
           item_id: id,
           transcript: HEARD,
+          ...(fake.language ? { language: fake.language } : {}),
         }),
       );
     });
@@ -409,6 +412,30 @@ test('without the ElevenLabs key OpenAI reads, and the window and the page both 
   // The page says the same, while the captions are away in the floating window
   const pageTag = page.locator('.live').getByTestId('voice-engine-tag');
   await expect(pageTag).toHaveText(/OpenAI/);
+  await floating.getByRole('button', { name: 'Stop', exact: true }).click();
+});
+
+test('a sentence already in the user language shows as said, and the voice does not repeat it', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('neboki-live:overlay-prefs', JSON.stringify({ options: { voice: true } }));
+    localStorage.setItem('neboki-live:target-language', 'es');
+  });
+  await fakeScreenShare(page, 'audio');
+  // The transcriber reports the sentence is already in Spanish, the language read
+  await fakeOpenAi(page, { language: 'es' });
+  const floating = await startSession(page);
+  await speakOneSentence(page, floating);
+
+  await expect(floating.locator('.lines__translation')).toHaveText(HEARD, { timeout: 10_000 });
+  await expect(floating.locator('.lines__notice')).toHaveText(
+    /Already in your language|Ya está en tu idioma/,
+  );
+  await expect(floating.getByTestId('voice-engine-tag')).toHaveAttribute(
+    'title',
+    /Already in your language|Ya está en tu idioma/,
+  );
   await floating.getByRole('button', { name: 'Stop', exact: true }).click();
 });
 

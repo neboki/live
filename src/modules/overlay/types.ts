@@ -17,10 +17,10 @@ export type CaptionActivity = 'hearing' | 'translating';
 export type ReadingEngine = 'openai' | 'elevenlabs' | 'browser';
 
 /**
- * Who reads the translation aloud: a reading engine, or the translation model itself
- * (interpreter mode)
+ * Who reads the translation aloud: a reading engine, the translation model itself
+ * (interpreter mode), or nobody because the line is shown as it was said (`asHeard`)
  */
-export type VoiceEngineName = ReadingEngine | 'interpreter';
+export type VoiceEngineName = ReadingEngine | 'interpreter' | 'asHeard';
 
 /** Colour scheme of the bar: each one is a dark glass tinted by two glows */
 export type OverlayTheme = 'aurora' | 'sunset' | 'ocean' | 'forest' | 'graphite';
@@ -36,6 +36,11 @@ export interface Translation {
   done: boolean;
   /** Who said it (0, 1, …), when speakers are told apart */
   speaker?: number | null;
+  /**
+   * Shown as it was said, not translated (already in the user's language, or only
+   * transcribing): the voice does not repeat it over the original
+   */
+  asHeard?: boolean;
 }
 
 /** An earlier sentence, as the captions keep it */
