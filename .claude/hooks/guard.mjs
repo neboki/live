@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// PreToolUse guard for Bash: work happens locally and only /publicar and /volver reach the live
-// site. It blocks the commands that cannot be undone (force push, remote deletes, deploys from
-// this machine) and asks the user before the steps that reach real users: pushing a version tag
-// or starting the deploy workflow. Runs on every Bash call, so it only parses text.
+// PreToolUse guard for Bash: only /publicar and /volver reach the live site. It blocks the
+// commands that cannot be undone (force push, remote deletes, deploys from this machine).
+// Publishing a version (tag push, deploy workflow, release) runs without asking: the user chose
+// that Claude publishes every finished change on its own (2026-11-21). Runs on every Bash call,
+// so it only parses text.
 
 /** Reads the hook input Claude Code sends on stdin. */
 async function readInput() {
@@ -42,7 +43,7 @@ function words(segment) {
   return out;
 }
 
-/** Blocks force pushes and remote deletes; asks before pushing version tags. */
+/** Blocks force pushes and remote deletes. Pushing version tags is allowed (it publishes). */
 function checkGitPush(w) {
   const args = w.slice(w.indexOf('push') + 1);
   const options = args.filter((a) => a.startsWith('-'));
@@ -68,18 +69,6 @@ function checkGitPush(w) {
   if (refspecs.some((r) => r.startsWith('+'))) {
     decide('deny', 'A "+" refspec is a force push, which is blocked.');
   }
-  const targets = refspecs.map((r) => r.split(':').pop());
-  if (
-    options.includes('--tags') ||
-    options.includes('--follow-tags') ||
-    options.includes('--all') ||
-    targets.some((t) => /^(refs\/tags\/)?(v\d|stable-)/.test(t))
-  ) {
-    decide(
-      'ask',
-      'PRODUCTION: pushing a version tag publishes it to every user. Confirm the version.',
-    );
-  }
 }
 
 function check(segment) {
@@ -94,16 +83,8 @@ function check(segment) {
   }
   if (w[0] === 'git' && w.includes('push')) checkGitPush(w);
 
-  if (w[0] === 'gh' && w[1] === 'workflow' && w[2] === 'run' && /firebase/.test(w[3] ?? '')) {
-    decide('ask', 'PRODUCTION: this deploys a version to the live site. Confirm the version.');
-  }
-  // With --verify-tag the tag already exists (and was confirmed when pushed); without it,
-  // `gh release create` makes the tag itself, which publishes
-  if (w[0] === 'gh' && w[1] === 'release') {
-    if (w[2] === 'delete') decide('ask', 'This deletes a published release. Confirm.');
-    if (w[2] === 'create' && !w.includes('--verify-tag')) {
-      decide('ask', 'PRODUCTION: creating a release creates its tag, which publishes. Confirm.');
-    }
+  if (w[0] === 'gh' && w[1] === 'release' && w[2] === 'delete') {
+    decide('ask', 'This deletes a published release. Confirm.');
   }
   if (w[0] === 'gh' && w[1] === 'api' && /branches\/main\/protection|rulesets/.test(cmd)) {
     if (/-X\s*(DELETE|PUT|PATCH)|--method\s*(DELETE|PUT|PATCH)/i.test(cmd)) {

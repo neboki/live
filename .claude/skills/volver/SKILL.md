@@ -23,7 +23,7 @@ gh workflow run firebase.yml --ref main -f tag=<tag>
 gh run watch $(gh run list --workflow firebase.yml -L 1 --json databaseId -q '.[0].databaseId')
 ```
 
-The guard hook asks for confirmation. Takes 2–3 minutes. Then open the live site and check
+Takes 2–3 minutes. Then open the live site and check
 it loads. Report the result.
 
 ## 3. After

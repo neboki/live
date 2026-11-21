@@ -3,18 +3,19 @@
 ## How code reaches users (mandatory)
 
 ```
-work locally in this folder → tests → the user tries it on :5173
-/publicar → local checks green → user's explicit yes → version tag → live
+change locally → checks sized to the change → commit → /publicar (automatic) → version tag → live
 /volver   → an earlier tag back on live
 /estado   → what is live and what is only local
 ```
 
 - There are two places only: this folder and the live site. No branches, pull requests,
   worktrees or beta for normal work.
-- Only the user decides what goes live, and only through `/publicar` or `/volver`. Never
-  push a version tag, run the deploy workflow or `firebase deploy` on your own;
-  `.claude/hooks/guard.mjs` blocks or asks for these. Do not work around the guard.
-- Commit when a change is done and checked. Commits stay local until `/publicar`.
+- Direct publishing (user's decision, 2026-11-21): when a change is done, checked and
+  committed, run `/publicar` on your own, without asking. Choose the checks by the size of
+  the change (table in `.claude/skills/publicar/SKILL.md`); a red check stops the publish.
+- Never deploy from this machine with the Firebase CLI or force push;
+  `.claude/hooks/guard.mjs` blocks these. Do not work around the guard.
+- If live breaks after a publish, run `/volver` to the previous version right away.
 - `stable-2026-11-11` is the live version from before the release process (commit 640d0d2).
 
 ### Working from the cloud (claude.ai/code)
@@ -48,7 +49,7 @@ Adding or changing one feature must not change any other.
 
 ## Critical flows (must keep working)
 
-Any change that touches one of these needs an e2e test for it and a look in the real app
+Any change that touches one of these needs an e2e test for it, and `pnpm test:e2e` green
 before it is published:
 
 1. Listen with the microphone: captions appear while the person speaks.

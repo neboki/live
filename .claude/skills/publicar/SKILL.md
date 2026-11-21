@@ -1,17 +1,15 @@
 ---
 name: publicar
-description: Put the local work on the live site as a new version, after the local checks pass and an explicit yes from the user. Use when the user says "/publicar", "pásalo a producción", "publica", "sube a live".
+description: Put the local work on the live site as a new version. Claude runs it on its own after every finished, committed change, without asking, once the checks that fit the change pass. Also when the user says "/publicar", "pásalo a producción", "publica", "sube a live".
 ---
 
 # /publicar — local to production
 
-Only the user decides this. Never run it on your own initiative.
+The user decided (2026-11-21) that every finished change goes live directly, with no
+confirmation. Run this on your own as soon as a change is done and committed. Do not ask
+"¿publico?"; just publish and report.
 
 ## 1. What would go live
-
-Work done from the cloud arrives as `claude/...` pull requests. Only what is merged into
-`main` goes live: list open PRs (`gh pr list`) and ask which ones the user wants merged
-first; never merge one without their yes. Then bring `main` here (`git pull --ff-only`).
 
 ```bash
 git fetch --tags origin -q
@@ -21,34 +19,29 @@ git log <last-tag>..HEAD --oneline                  # commits not published yet
 git diff <last-tag> --stat                          # every file that changes on live
 ```
 
-Show the user, in plain words: the list of changes, the files they touch and which
-**critical flow** (`CLAUDE.md`) each one could affect. If a file outside the feature being
-published changed, say so before anything else.
+Publish only your own committed work. Uncommitted files from another session stay local
+(never `git add -A`). If `main` has commits you did not make and do not understand, say so
+in the report.
 
-Uncommitted work: ask which of it is part of this version. Commit only that, file by file
-(never `git add -A`); the rest stays local and does not go live.
+Open `claude/...` pull requests from the cloud are not merged automatically; mention them.
 
-## 2. Gates (all must hold, otherwise stop and say which one failed)
+## 2. Checks — sized to the change
 
-Run them on exactly what will be published. If uncommitted work is left out, check from a
-clean copy (`git stash -u` is not allowed here; use `git worktree add` on the commit).
+Pick by what the change touches (`git diff <last-tag> --stat`):
 
-```bash
-pnpm check          # format, lint, types, unit tests
-pnpm test:e2e       # builds and runs the critical flows in the browser
-```
+| Change                                                                                                                                                              | Checks                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Text, styles, docs, copy only                                                                                                                                       | `pnpm check`                   |
+| Logic in one feature, no critical flow                                                                                                                              | `pnpm check`                   |
+| Audio, capture, captions, sync, phone layout, voice, sign-in, prefs, shared code (`src/shared/`, `useLiveSession`, providers, `functions/`), build or deploy config | `pnpm check` + `pnpm test:e2e` |
 
-- Both green. Never weaken or skip a test to get there; a red test means it is not published.
-- The user has tried the change in the local app, or says explicitly they skip it.
+When in doubt, run both. A red check means it is not published: fix it or report it. Never
+weaken or skip a test to get green.
 
-## 3. Explicit yes
+## 3. Publish
 
 The version follows the commits since the last tag: `feat` → minor, anything else → patch,
-`!`/`BREAKING CHANGE` → major. Ask: "¿Publico la versión X.Y.Z en producción?" and wait for a
-clear yes in this conversation. The guard hook asks again when the tag is pushed; that is
-expected.
-
-## 4. Publish
+`!`/`BREAKING CHANGE` → major.
 
 ```bash
 npm version X.Y.Z --no-git-tag-version
@@ -60,7 +53,7 @@ gh release create vX.Y.Z --verify-tag --generate-notes
 ```
 
 The tag starts the live deploy (2–3 minutes). Wait for it, then open the live site and check
-the critical flows still start. Report the version and the result. If the deploy fails or
-something is wrong on live, offer `/volver` right away.
+it loads. Report in a few lines: version, what changed, which checks ran, result. If the
+deploy fails or something is wrong on live, run `/volver` to the previous version and say so.
 
 CI also runs on the pushed commit as a second net; if it ends red, tell the user.
