@@ -63,7 +63,7 @@
     "vue-tsc": "^3.3.14"
   },
   "dependencies": {
-    "@capacitor/android": "8.5.3",
+    "@capacitor/android": "8.6.2",
     "@capacitor/core": "8.6.2",
     "firebase": "^13.3.0",
     "pinia": "^4.1.0",
