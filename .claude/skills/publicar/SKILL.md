@@ -48,12 +48,14 @@ npm version X.Y.Z --no-git-tag-version
 git commit -m "chore: release X.Y.Z" -- package.json
 git tag vX.Y.Z
 git push origin main vX.Y.Z
-gh run watch $(gh run list --workflow firebase.yml -L 1 --json databaseId -q '.[0].databaseId')
+gh run watch --exit-status $(gh run list --workflow firebase.yml -L 1 --json databaseId -q '.[0].databaseId')
 gh release create vX.Y.Z --verify-tag --generate-notes
 ```
 
-The tag starts the live deploy (2–3 minutes). Wait for it, then open the live site and check
-it loads. Report in a few lines: version, what changed, which checks ran, result. If the
-deploy fails or something is wrong on live, run `/volver` to the previous version and say so.
+The tag starts the live deploy (2–3 minutes). After the deploy, its `check-live` job opens the
+published site in a browser and checks it starts and shows captions (`pnpm test:live`,
+OpenAI faked); `gh run watch --exit-status` waits for both. Report in a few lines: version,
+what changed, which checks ran, result. If the deploy or `check-live` fails, run `/volver` to
+the previous version right away and say so.
 
 CI also runs on the pushed commit as a second net; if it ends red, tell the user.

@@ -26,6 +26,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:live": "playwright test -c playwright.live.config.ts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "lint:commits": "commitlint --from origin/main --to HEAD",
     "prepare": "lefthook install",
