@@ -1,6 +1,6 @@
 {
   "name": "neboki-live",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "description": "Live translated captions that float over any call, video or webinar.",
   "author": "Neboki <neboki@neboki.com>",
