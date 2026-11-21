@@ -13,7 +13,7 @@ or bring your own key for unlimited use with no server at all.
 
 ![A call in German with the English captions appearing on the picture, sentence by sentence](docs/demo.gif)
 
-> **Status:** working pre-release (v1.0.0 in preparation). Feedback is welcome.
+> **Status:** in use and updated often. Feedback is welcome.
 
 ## Where it works
 
